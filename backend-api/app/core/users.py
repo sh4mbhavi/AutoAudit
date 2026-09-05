@@ -10,6 +10,7 @@ Key components:
 - Dependencies: get_user_db, get_user_manager for dependency injection
 """
 
+import logging
 from typing import Optional
 from fastapi import Depends, Request
 from fastapi_users import BaseUserManager, FastAPIUsers, IntegerIDMixin
@@ -26,6 +27,7 @@ from app.db.session import get_async_session
 from app.models.user import User
 from app.models.oauth_account import OAuthAccount
 
+logger = logging.getLogger(__name__)
 settings = get_settings()
 
 
@@ -37,27 +39,27 @@ class UserManager(IntegerIDMixin, BaseUserManager[User, int]):
 
     async def on_after_register(self, user: User, request: Optional[Request] = None):
         """Called after user registration."""
-        print(f"User {user.id} has registered.")
+        logger.info("User %s registered.", user.id)
 
     async def on_after_forgot_password(
         self, user: User, token: str, request: Optional[Request] = None
     ):
         """Called after forgot password request."""
-        print(f"User {user.id} has forgot their password. Reset token: {token}")
+        logger.info("Password reset requested for user %s.", user.id)
 
     async def on_after_request_verify(
         self, user: User, token: str, request: Optional[Request] = None
     ):
         """Called after verification request."""
-        print(f"Verification requested for user {user.id}. Verification token: {token}")
+        logger.info("Verification requested for user %s.", user.id)
 
 
-async def get_user_db(session: AsyncSession = Depends(get_async_session)):
+async def get_user_db(session: AsyncSession = Depends(get_async_session)):  # noqa: B008 - FastAPI dependency
     """Dependency for getting the user database."""
     yield SQLAlchemyUserDatabase(session, User, OAuthAccount)
 
 
-async def get_user_manager(user_db: SQLAlchemyUserDatabase = Depends(get_user_db)):
+async def get_user_manager(user_db: SQLAlchemyUserDatabase = Depends(get_user_db)):  # noqa: B008 - FastAPI dependency
     """Dependency for getting the user manager."""
     yield UserManager(user_db)
 

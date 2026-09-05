@@ -36,7 +36,7 @@ export const landingFeatures: LandingFeature[] = [
     icon: Shield,
     title: "Enterprise-Grade Security",
     description:
-      "Bank-level encrypted data handling with a zero-knowledge architecture keeps your sensitive data in your control.",
+      "Review supported Microsoft 365 settings and the evidence used to assess them.",
   },
   {
     icon: Rocket,

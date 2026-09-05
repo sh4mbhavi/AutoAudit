@@ -13,7 +13,10 @@ VALID_TENANT_IDS = [
     ("ABCDEF01-2345-6789-ABCD-EF0123456789", "ABCDEF01-2345-6789-ABCD-EF0123456789"),
     ("aAbBcCdD-1234-5678-9012-eEfF00112233", "aAbBcCdD-1234-5678-9012-eEfF00112233"),
     # GUIDs with surrounding whitespace (should be stripped)
-    ("  12345678-1234-1234-1234-123456789abc  ", "12345678-1234-1234-1234-123456789abc"),
+    (
+        "  12345678-1234-1234-1234-123456789abc  ",
+        "12345678-1234-1234-1234-123456789abc",
+    ),
     # Domain names
     ("contoso.onmicrosoft.com", "contoso.onmicrosoft.com"),
     ("tenant.contoso.com", "tenant.contoso.com"),
@@ -51,7 +54,7 @@ INVALID_TENANT_IDS = [
     # Newline injection
     "valid.com\nInvoke-Expression bad",
     # GUID without hyphens
-    "12345678123412341234123456789abc",
+    "12345678123412341234123456789abc",  # pragma: allowlist secret - synthetic malformed GUID
     # Partial GUID
     "12345678-1234-1234-1234",
     # GUID with extra segment

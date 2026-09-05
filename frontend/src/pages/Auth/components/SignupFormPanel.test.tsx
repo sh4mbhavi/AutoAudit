@@ -49,8 +49,8 @@ describe('SignupFormPanel', () => {
       lastName: 'B',
       email: 'a@b.com',
       organizationName: 'Org',
-      password: 'same123',
-      confirmPassword: 'same123',
+      password: 'same123', // pragma: allowlist secret - synthetic form input
+      confirmPassword: 'same123', // pragma: allowlist secret - synthetic form input
     });
 
     await userEvent.click(screen.getByRole('button', { name: /create account/i }));
@@ -65,8 +65,8 @@ describe('SignupFormPanel', () => {
       lastName: 'B',
       email: 'a@b.com',
       organizationName: 'Org',
-      password: 'onepassword',
-      confirmPassword: 'otherpassword',
+      password: 'onepassword', // pragma: allowlist secret - synthetic form input
+      confirmPassword: 'otherpassword', // pragma: allowlist secret - synthetic form input
     });
 
     await userEvent.click(
@@ -86,8 +86,8 @@ describe('SignupFormPanel', () => {
       lastName: 'Doe',
       email: 'jane@example.com',
       organizationName: 'Acme',
-      password: 'SecurePass1',
-      confirmPassword: 'SecurePass1',
+      password: 'SecurePass1', // pragma: allowlist secret - synthetic form input
+      confirmPassword: 'SecurePass1', // pragma: allowlist secret - synthetic form input
     });
 
     await userEvent.click(screen.getByRole('checkbox', { name: /i agree to the/i }));
@@ -98,8 +98,8 @@ describe('SignupFormPanel', () => {
       lastName: 'Doe',
       email: 'jane@example.com',
       organizationName: 'Acme',
-      password: 'SecurePass1',
-      confirmPassword: 'SecurePass1',
+      password: 'SecurePass1', // pragma: allowlist secret - synthetic form input
+      confirmPassword: 'SecurePass1', // pragma: allowlist secret - synthetic form input
     });
   });
 

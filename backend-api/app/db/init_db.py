@@ -1,65 +1,57 @@
-"""
-Database initialization script for seeding default admin user.
+"""Explicit local-development administrator bootstrap: python -m app.db.init_db.
 
-Run this script to create the default admin user:
-    python -m app.db.init_db
+Requires APP_ENV=dev, DEV_ADMIN_SEED_ENABLED=true and caller-supplied credentials.
+Container startup does not invoke this command. Existing accounts are never changed.
 """
+
 import asyncio
+import logging
 
+from app.core.config import get_settings
+from app.db.session import async_session_maker
+from app.models.user import Role, User
+from fastapi_users.password import PasswordHelper
 from sqlalchemy import select
 
-from app.db.session import async_session_maker
-from app.models.user import User, Role
-from fastapi_users.password import PasswordHelper
+logger = logging.getLogger(__name__)
 
 
 async def init_db():
-    """
-    Database seeding for local/dev environments.
+    settings = get_settings()
+    if settings.APP_ENV != "dev" or not settings.DEV_ADMIN_SEED_ENABLED:
+        logger.info("Development administrator bootstrap is disabled.")
+        return
 
-    IMPORTANT:
-    - Passwords are stored hashed in the DB (see User.hashed_password).
-    - This script will create OR update a default admin user for local development.
-    """
-    admin_email = "admin@example.com"
-    admin_password = "admin"  # pragma: allowlist secret
-
-    password_helper = PasswordHelper()
+    if not settings.DEV_ADMIN_EMAIL or not settings.DEV_ADMIN_PASSWORD:
+        raise ValueError(
+            "DEV_ADMIN_EMAIL and DEV_ADMIN_PASSWORD must be explicitly set"
+        )
+    password = settings.DEV_ADMIN_PASSWORD.get_secret_value()
+    if len(password) < 16:
+        raise ValueError("DEV_ADMIN_PASSWORD must contain at least 16 characters")
 
     async with async_session_maker() as session:
-        # Look up the canonical seed user.
         result = await session.execute(
-            select(User).where(User.email == admin_email)
+            select(User).where(User.email == settings.DEV_ADMIN_EMAIL)
         )
-        # Be resilient to relationship eager-loads that can duplicate rows.
-        existing_user = result.unique().scalar_one_or_none()
+        if result.unique().scalar_one_or_none() is not None:
+            logger.info(
+                "Development administrator bootstrap skipped: account already exists."
+            )
+            return
 
-        created = False
-        if existing_user:
-            admin_user = existing_user
-        else:
-            created = True
-            admin_user = User(email=admin_email)
-            session.add(admin_user)
-
-        # Ensure the account is a usable admin for local development.
-        admin_user.hashed_password = password_helper.hash(admin_password)
-        admin_user.role = Role.ADMIN.value
-        admin_user.is_active = True
-        admin_user.is_superuser = True
-        admin_user.is_verified = True
-
+        session.add(
+            User(
+                email=settings.DEV_ADMIN_EMAIL,
+                hashed_password=PasswordHelper().hash(password),
+                role=Role.ADMIN.value,
+                is_active=True,
+                is_superuser=True,
+                is_verified=True,
+            )
+        )
         await session.commit()
-
-        print(
-            "[SUCCESS] Created default admin user with the following details."
-            if created
-            else "[SUCCESS] Updated default admin user with the following details."
-        )
-        print(f"  Email: {admin_email}")
-        print(f"  Password: {admin_password}")
-        print(f"  Role: {Role.ADMIN.value}")
-        print("\nIMPORTANT: Change this password after first login.")
+        logger.info("Development administrator created.")
 
 
 if __name__ == "__main__":

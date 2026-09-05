@@ -53,19 +53,29 @@ The startup sequence is:
    uv run alembic upgrade head
    ```
 
-2. Seed the default administrator account:
-
-   ```bash
-   uv run python -m app.db.init_db
-   ```
-
-3. Start the FastAPI application:
+2. Start the FastAPI application:
 
    ```bash
    uv run uvicorn app.main:app --host 0.0.0.0 --port 8000
    ```
 
 This ensures that the database schema is updated before the backend application starts when using the Docker container.
+
+### Optional local administrator bootstrap
+
+Startup never creates, promotes, or resets an administrator. For an explicit local
+bootstrap, set `APP_ENV=dev`, `DEV_ADMIN_SEED_ENABLED=true`, `DEV_ADMIN_EMAIL` and
+`DEV_ADMIN_PASSWORD` in your untracked backend `.env`, then run
+`uv run python -m app.db.init_db`. Choose a unique password of at least 16 characters.
+The command does nothing in any other environment or when disabled. Existing
+accounts are left untouched. Remove the bootstrap credentials from `.env` afterward.
+Never configure this opt-in in preview or production. Administrators for those
+environments must be provisioned through the operator's approved account process.
+
+Upgrading does not remove accounts created by older releases. Before deploying,
+the environment owner must audit existing privileged accounts, disable or rotate
+legacy bootstrap credentials, and record the outcome. Do not delete or demote users
+based only on their email address.
 
 ### Future DevSecOps Improvement
 

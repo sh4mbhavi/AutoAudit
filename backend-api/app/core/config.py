@@ -1,3 +1,4 @@
+from pydantic import EmailStr, SecretStr
 from pydantic_settings import BaseSettings
 
 
@@ -5,6 +6,11 @@ class Settings(BaseSettings):
     # The below settings are defaults, and not duplicates of .env
     # The contents of .env overrides what is defined here.
     APP_ENV: str = "dev"
+    # Explicit opt-in for local development only; never reset existing accounts.
+    DEV_ADMIN_SEED_ENABLED: bool = False
+    DEV_ADMIN_EMAIL: EmailStr | None = None
+    DEV_ADMIN_PASSWORD: SecretStr | None = None
+
     API_PREFIX: str = "/v1"
 
     # Database

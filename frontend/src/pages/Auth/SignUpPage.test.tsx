@@ -45,8 +45,8 @@ describe('SignUpPage', () => {
           lastName: 'Lee',
           email: 'sam@example.com',
           organizationName: 'OrgCo',
-          password: 'Password1!',
-          confirmPassword: 'Password1!',
+          password: 'Password1!', // pragma: allowlist secret - synthetic form input
+          confirmPassword: 'Password1!', // pragma: allowlist secret - synthetic form input
         })
       );
     });

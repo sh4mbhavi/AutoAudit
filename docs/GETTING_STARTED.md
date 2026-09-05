@@ -48,10 +48,8 @@ Once the containers are running:
 - API Documentation: http://localhost:8000/docs
 - OPA: http://localhost:8181
 
-The backend automatically runs database migrations and seeds a default admin user on first startup:
-
-- Email: `admin@example.com`
-- Password: `admin`
+The backend automatically runs database migrations. It does not seed an administrator.
+For a local administrator, follow the explicit [development bootstrap](../backend-api/README.md#optional-local-administrator-bootstrap).
 
 
 ### Infrastructure Only (default)
@@ -119,6 +117,7 @@ uv sync
 uv run alembic upgrade head
 
 # Seed default admin user (optional, dev only)
+# Optional: first configure the development bootstrap settings described above.
 uv run python -m app.db.init_db
 
 # Start the development server with hot reload

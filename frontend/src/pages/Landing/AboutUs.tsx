@@ -55,7 +55,7 @@ const features: AboutFeature[] = [
     icon: Shield,
     title: "Enterprise-Grade Security",
     description:
-      "Bank-level encrypted data handling with a zero-knowledge architecture keeps your sensitive data in your control.",
+      "Review supported Microsoft 365 settings and the evidence used to assess them.",
   },
   {
     icon: Rocket,
@@ -216,10 +216,8 @@ const AboutUs = ({ onSignInClick = () => {} }: AboutUsProps) => {
             </p>
             <br />
             <p className="text-[1.05rem] leading-[1.8] text-[rgb(var(--landing-text-soft))]">
-              Privacy and security are fundamental to everything we do. We
-              employ bank-level encryption, follow zero-trust principles, and
-              maintain strict data governance practices to protect your
-              sensitive information.
+              Privacy and security are fundamental to everything we do. Review your deployment, access controls, and data retention
+              requirements before connecting a tenant or uploading evidence.
             </p>
           </div>
         </section>
