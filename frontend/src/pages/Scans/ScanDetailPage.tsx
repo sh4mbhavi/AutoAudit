@@ -23,6 +23,7 @@ import { RelativeTime, relativeTimePresetClass } from "../../components/Relative
 import type { ScanAssessmentFields, ScanResult, ScanResultStatus } from "../../types/scan";
 import { getScanAssessment, RESULT_LABELS } from "../../utils/scanAssessment";
 import AssessmentSummary from "../../components/AssessmentSummary";
+import Soc2ReportPanel from "../../components/Soc2ReportPanel";
 
 type ScanDetailPageProps = {
 	sidebarWidth?: number;
@@ -703,6 +704,11 @@ const ScanDetailPage: React.FC<ScanDetailPageProps> = ({
 						</div>
 					</div>
 				)}
+
+				{/* The SOC 2 projection. The endpoint has existed since
+				    Phase 4 with no caller, so the report a reviewer is meant to
+				    read could not be reached from the product. */}
+				<Soc2ReportPanel scanId={scanId ?? ""} isDarkMode={isDarkMode} />
 
 				{/* Error card */}
 				{scan.status === "failed" && scan.error && (

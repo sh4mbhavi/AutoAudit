@@ -27,20 +27,24 @@ const faqItems: FAQ[] = [
     answer:
       "AutoAudit processes configuration and evidence data to produce assessment results. Security depends on how the service is deployed and operated. AutoAudit does not claim SOC 2 certification or an independent security audit. Review your deployment and data-handling requirements before connecting a tenant.",
   },
+  // There is no billing system, no plan tier and no trial: nothing in the
+  // product distinguishes one account's entitlements from another's. The
+  // export answer promised PDF, Excel and CSV; the only report the product
+  // generates is a plain-text file per evidence scan.
   {
-    question: "Do you offer a free trial?",
+    question: "Is there a paid plan or a trial?",
     answer:
-      "Yes! We offer a 14-day free trial with full access to all features. No credit card required. Experience the power of automated compliance monitoring risk-free.",
+      "Not yet. AutoAudit has no billing, plan tiers or trial system; every account has the same access. Contact us if you want to discuss how it would be run for your organisation.",
   },
   {
     question: "What kind of support do you provide?",
     answer:
-      "We provide email and chat support for all customers. Premium and Enterprise plans include priority support, dedicated account managers, and 24/7 emergency assistance. We also offer comprehensive documentation and video tutorials.",
+      "Contact us through the form on this page. There are no support tiers or service commitments to describe yet.",
   },
   {
     question: "Can I export compliance reports?",
     answer:
-      "Yes! Generate and export comprehensive compliance reports in PDF, Excel, or CSV formats. Reports are audit-ready and can be customized to meet your specific regulatory requirements.",
+      "Each evidence scan produces a plain-text report you can download, and each scan's SOC 2 projection is readable in the application. There is no PDF, Excel or CSV export.",
   },
 ];
 

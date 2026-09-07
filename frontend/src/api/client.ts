@@ -11,6 +11,7 @@ import type {
   ScanResultRead,
   ScanSummary,
 } from "./generated/scans";
+import type { Soc2ReportResponse } from "../types/soc2";
 
 export type {
   ControlCategoryBreakdown,
@@ -569,6 +570,27 @@ export async function getScanResults(
   if (options.offset !== undefined) query.set("offset", String(options.offset));
   const suffix = query.toString() ? `?${query}` : "";
   return fetchWithAuth<ScanResultRead[]>(`/v1/scans/${id}/results${suffix}`, {
+    signal: options.signal,
+  });
+}
+
+/**
+ * The SOC 2 projection for one scan.
+ *
+ * `GET /v1/scans/{id}/soc2-report` has existed since Phase 4 and had no caller:
+ * `types/soc2.ts` typed the whole response and nothing ever fetched it, so 34
+ * backend tests covered a report no reviewer could reach.
+ *
+ * Two limits travel with it and are surfaced by the component that renders it:
+ * the endpoint is owner-scoped only -- the auditor role that gates cross-owner
+ * review elsewhere does not apply here -- and the response carries no identifier
+ * for the tenant it describes, only the scan's.
+ */
+export async function getSoc2Report(
+  id: string | number,
+  options: RequestOptions = {},
+): Promise<Soc2ReportResponse> {
+  return fetchWithAuth<Soc2ReportResponse>(`/v1/scans/${id}/soc2-report`, {
     signal: options.signal,
   });
 }
