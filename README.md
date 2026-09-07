@@ -52,9 +52,14 @@ What actually exists:
   topology: a private internal network, TLS between every service, secrets
   mounted as files, and no host port on PostgreSQL, Redis or the PowerShell
   service.
-- **The only registry push in the repository** is `pr.preview-deploy.yml`, which
-  pushes mutable `pr-<number>` tags to GHCR for pull-request previews. Those tags
-  are overwritten on each run and are not release artifacts.
+- **Nothing pushes to a registry.** The three `pr.preview-*` workflows that once
+  pushed mutable `pr-<number>` tags to GHCR were removed: the deploy job had been
+  unable to start a backend since Phase 5 made `POSTGRES_PASSWORD` mandatory and
+  the runtime validator began rejecting `APP_ENV=preview` with a dev password and
+  a plaintext `redis://` broker, and it carried that published default credential
+  in a tracked file. Reviving previews means solving those, plus supplying
+  `ENGINE_GIT_SHA` as a build arg and `POWERSHELL_SERVICE_SECRET` for the M365
+  variant; `git log -- .github/workflows/pr.preview-deploy.yml` has the original.
 - **Release traceability** comes from `ENGINE_GIT_SHA`, which the worker image
   refuses to build without and which is written into every scan's provenance
   record, plus `tools/ops/release_manifest.py`, which records the source
