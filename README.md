@@ -1,7 +1,7 @@
 # AutoAudit Monorepo - Main/Deployment Branch
 
 ## Project Overview
-AutoAudit is a M365 compliance automation platform built by several specialist teams. This monorepo centralizes all codebases—including backend services, APIs, compliance scanners, and frontends—enabling unified CI/CD, streamlined development, and rapid automated deployments to the cloud.
+AutoAudit is a M365 compliance automation platform built by several specialist teams. This monorepo centralizes all codebases—including backend services, APIs, compliance scanners, and frontends—so one set of CI gates covers the whole system. It does **not** deploy: there is no deployment pipeline, no target environment and no registry push, and the production platform has not been selected. See the deployment section below.
 
 ## Documentation
 
@@ -76,5 +76,9 @@ What actually exists:
 
 ## Contact & Support
 For production deployment queries:
-- Contact the DevOps lead managing GCP integration.
-- Report critical issues with `main` branch deployments on GitHub with relevant tags.
+- Open a GitHub issue. There is no GCP integration to route these to: the only
+  workflow that ever touched GCP is `ops.collector.yml`, which is hard-disabled
+  (`if: false`) because it used a long-lived service-account key, and the
+  production platform is an open decision recorded in
+  `docs/compliance/phase-10/deployment-platform-decision.md`.
+- Report critical issues with the `main` branch on GitHub with relevant tags.

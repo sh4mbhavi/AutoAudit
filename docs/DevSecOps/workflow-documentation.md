@@ -26,12 +26,22 @@ Workflow files use a prefix to group them by purpose:
 | `ci.validate-alerts.yml` | **None** |
 | `ci.supply-chain.yml` | **None** |
 | `ci.grype.yml` | **None** — scans the whole repository (`path: "."`) |
+| `ci.runtime.yml` | **None** — builds and starts the containers |
+| `ci.secret-examples.yml` | **None** |
 | `ci.security.yml` | `security/**` (the unmaintained TPRM module) |
 
 ### When they run
 
 Every workflow above except `ci.security.yml` triggers on **all** pull requests
 and pushes to `main`, regardless of which files changed.
+
+The table above previously listed seven workflows and generalised over them as
+if it were complete, while `.github/workflows/` held nine `ci.` files.
+`ci.runtime.yml` and `ci.secret-examples.yml` were missing from it and described
+nowhere else on this page -- and `ci.runtime.yml` is the only job that starts the
+API, the worker and the PowerShell service, exercises the production Compose
+overlay, and proves Redis enforces TLS. Both supply a required-check context in
+`docs/compliance/phase-4/branch-protection-proposal.json`.
 
 This corrects a previous version of this page, which said each workflow watched
 its own directory and "never starts" otherwise. Phase 4 deliberately removed
@@ -98,6 +108,9 @@ push. Do not re-enable the trigger before both conditions in that header are met
 
 **`ops.workflow-cleanup.yml`** runs weekly as a **dry run only**: it reports which runs are older than `RETENTION_DAYS` and deletes nothing. Deletion requires a manual `workflow_dispatch` with `dry_run=false` and `confirm=DELETE`. So workflow-run history is **not** currently being retained to any period by an automated process, and must not be cited as retained evidence on the strength of this workflow alone.
 
+**`ops.branch-cleanup.yml`** deletes merged branches. It was absent from this
+page entirely.
+
 **`ops.short-test.yml`** is the canary used to verify the cleanup workflow. It
 triggers only when its own file changes — and until Phase 10 its path filter
 named `short-test.yml` while the file is `ops.short-test.yml`, so it could never
@@ -128,6 +141,31 @@ description ("does not do anything meaningful") no longer applies. It now:
   `tools/ci/external_metrics.json` with the exporter that provides it.
 
 It is no longer path-filtered.
+
+**`ci.runtime.yml`** builds the API and worker images with
+`tools/ci/container_smoke.py`, then starts **every** service in
+`docker-compose.production.yml` with `tools/ci/production_overlay_smoke.py` and
+asserts the boundaries hold: only `backend-api` publishes a host port, Redis
+refuses a plaintext connection and completes a TLS handshake under its ACL,
+`/readiness` answers, and the worker replies to a Celery ping over the TLS
+broker. It also runs the Redis transport and PowerShell transport smokes.
+
+**`ci.secret-examples.yml`** proves the `detect-secrets` canary is still
+rejected, so the secret gate cannot be silently disarmed.
+
+---
+
+## PR Workflows
+
+**`pr.size-warning.yml`** comments on unusually large pull requests.
+
+The three `pr.preview-*` workflows that used to live here -- deploy, teardown and
+instructions -- were removed. The deploy job had been unable to start a backend
+since Phase 5 made `POSTGRES_PASSWORD` mandatory and the runtime validator began
+rejecting `APP_ENV=preview` with a development password and a plaintext
+`redis://` broker, and it carried that published default credential in a tracked
+file. `git log --diff-filter=D -- .github/workflows/pr.preview-deploy.yml` has
+the original, and README.md records what reviving previews would take.
 
 ---
 

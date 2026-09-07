@@ -1,0 +1,349 @@
+{
+  "head": "be241f52beb5ffec10904771bf7cfa4b98233ab0",
+  "upstream_main": "be241f52beb5ffec10904771bf7cfa4b98233ab0",
+  "metadata_sha256": "fda55f9b3f35af94364546fafac283c81236c85074456386f526d4d02c059aef",
+  "registry_sha256": "c78fa26a4fcfacc5eca0e7d8adb8e9ff71dc5d52579a9a29c1af92f1b2f0a851",
+  "appendix_a_sha256": "34908f289a5155ce8b776a040a5a1ee82b4b4c37a6e6bbc4594ec5fdd098a7a0",
+  "appendix_b_sha256": "23daa41ff898ef9d19fd1f8b4ab7687c96a8ee00c3200f8371e7f3a2313b5ac4",
+  "metadata_total": 140,
+  "status_totals": {
+    "blocked": 31,
+    "deferred": 12,
+    "manual": 11,
+    "not_started": 17,
+    "ready": 69
+  },
+  "ready_unique_collectors": 43,
+  "explicit_crosswalk_controls": 44,
+  "explicit_crosswalk_unique_collectors": 30,
+  "ratings": {
+    "No": 18,
+    "Partial": 16,
+    "Yes": 13
+  },
+  "benchmark_extract_version": "v6.0.1 \u2013 2-26-2026",
+  "source_sha256": {
+    "README.md": "822f3ab38721764c329b22d3169871acabd986dec2f81fb364a1c1c9c81304ce",
+    "backend-api/README.md": "79f36e34f588deb546df28bf7ef6e5a8d9e2de149b14baee8dfbc10f4ff01c33",
+    "engine/collectors/README.md": "89c0bf95682901ccc9fc677418231fd8b84825cf60d4711419684b74d021b236",
+    "engine/policies/README.md": "50072725b1f04f2fc911fb0e9d65fa14514734b50c7bed3d4a706487ae6a8cd9",
+    "docs/engine/sharepoint-control-development.md": "00c08d86f27e7330429c4acc6541dec17b7453b070bfc95c4d63f0a04955b516",
+    "docs/engine/sharepoint-local-runtime.md": "378da43845b6c7e5f3d7a73c31901d3882b7c3d7354fe55c4a7dcd01434e8d1b",
+    "docs/engine/manual-collector-testing.md": "bb748bffda068a0d1c7477d6714515e6fe6ef2d1af1e9223835a89da6cfa1a5d",
+    "docs/features/pre-scan/prescan-readiness.md": "0ae321c8506cc49507eaca075ae88082f3a42d4738de68df965b88c9f692994d",
+    "docs/DevSecOps/workflow-documentation.md": "4aef964eac45b453fb5e6bfdc476742a347df3fe2859d4085633ef0aa7827898",
+    "docs/compliance/manual_control_classification.md": "c623db9e9454ec6094142150fe7841c3734e7c34952ee156f3c2f842d9deef76",
+    "docs/compliance/Risk_Impact_Prioritisation_Matrix.md": "99af5f55f07efbc30c13ba33d495bc56bc5c9f0e1a052b5698a9bcc60eb2c57e",
+    "docs/engine/Framework/CIS_M365_Benchmarks.json": "b44d7b56ce73a4b8ea44f516f29974be311fd71aa466b3c54acfe6fda14ef83e"
+  },
+  "resolution": [
+    {
+      "control_id": "1.1.1",
+      "policy_file": "1.1.1_admin_cloud_only.rego",
+      "policy_sha256": "99ff481a6309ac18e2c845fb45ca70a8184e50a8297bc98065eb06512aae0af7",
+      "collector_id": "entra.roles.cloud_only_admins",
+      "collector_class": "collectors.entra.roles.cloud_only_admins.CloudOnlyAdminsDataCollector"
+    },
+    {
+      "control_id": "1.1.3",
+      "policy_file": "1.1.3_global_admin_count.rego",
+      "policy_sha256": "a501ada6f7e04d75fca931be0cdb918c0ac861e589a65fe31fdf3f70b4dc9821",
+      "collector_id": "entra.roles.privileged_roles",
+      "collector_class": "collectors.entra.roles.privileged_roles.PrivilegedRolesDataCollector"
+    },
+    {
+      "control_id": "1.1.4",
+      "policy_file": "1.1.4_admin_license_footprint.rego",
+      "policy_sha256": "1662c7b836d6fe9e1091eed3522b519004593d0eabbe8d0d49ebf64ac50d0a10",
+      "collector_id": "entra.roles.admin_license_footprint",
+      "collector_class": "collectors.entra.roles.admin_license_footprint.AdminLicenseFootprintDataCollector"
+    },
+    {
+      "control_id": "1.2.1",
+      "policy_file": "1.2.1_no_unmanaged_public_groups.rego",
+      "policy_sha256": "73a493bc2e52fd206be1a1d6606771e3dcca258dd2cc8d243adfb931b592184f",
+      "collector_id": "entra.groups.groups",
+      "collector_class": "collectors.entra.groups.groups.GroupsDataCollector"
+    },
+    {
+      "control_id": "1.3.1",
+      "policy_file": "1.3.1_password_expiration.rego",
+      "policy_sha256": "c4a369c7501203a77c29feea84b0294ef2ff3920943290b01e036da357b5acb0",
+      "collector_id": "entra.domains.password_policy",
+      "collector_class": "collectors.entra.domains.password_policy.PasswordPolicyDataCollector"
+    },
+    {
+      "control_id": "1.3.4",
+      "policy_file": "1.3.4_user_owned_apps_restricted.rego",
+      "policy_sha256": "9813d3a0acaf4fbded95e92a4b6064f894110d95adabd6126f8c6603c366b82e",
+      "collector_id": "entra.applications.apps_and_services_settings",
+      "collector_class": "collectors.entra.applications.apps_and_services_settings.AppsAndServicesSettingsDataCollector"
+    },
+    {
+      "control_id": "2.1.1",
+      "policy_file": "2.1.1_SafeLinks_OfficeApplications_Enabled.rego",
+      "policy_sha256": "9d47135574a17ae29ac53b38c910bc8703c0d960c5744469a7db94b6bceddc2a",
+      "collector_id": "exchange.protection.safe_links_policy",
+      "collector_class": "collectors.exchange.protection.safe_links_policy.SafeLinksPolicyDataCollector"
+    },
+    {
+      "control_id": "2.1.2",
+      "policy_file": "2.1.2_Common_AttachmentTypes_Filter_Enabled.rego",
+      "policy_sha256": "90065c424345db4b3048c4efc46b681db1ca7f215bed8bcccfecc46c36cb9ae1",
+      "collector_id": "exchange.protection.malware_filter_policy",
+      "collector_class": "collectors.exchange.protection.malware_filter_policy.MalwareFilterPolicyDataCollector"
+    },
+    {
+      "control_id": "2.1.3",
+      "policy_file": "2.1.3_Notifications_InternalUsers_sendingMalware_Enabled.rego",
+      "policy_sha256": "99c114607b9078190cbc17b7d05065b4a5cd6e8e4584672bf93479085ab3d1b6",
+      "collector_id": "exchange.protection.malware_filter_policy",
+      "collector_class": "collectors.exchange.protection.malware_filter_policy.MalwareFilterPolicyDataCollector"
+    },
+    {
+      "control_id": "2.1.4",
+      "policy_file": "2.1.4_Safe_AttachementsPolicy_Enabled.rego",
+      "policy_sha256": "f1689fa9f1a86f07e78fd2300a5ca347af4322188de1ecc34a6cf705b8df1e62",
+      "collector_id": "exchange.protection.safe_attachment_policy",
+      "collector_class": "collectors.exchange.protection.safe_attachment_policy.SafeAttachmentPolicyDataCollector"
+    },
+    {
+      "control_id": "2.1.5",
+      "policy_file": "2.1.5_Safe_Attachments_SharePoint_OneDrive_MSTeams_Enabled.rego",
+      "policy_sha256": "5520e7d960b6d6da5a018c18a47287ea479aceb35bdc9a8688bd35b2943fce85",
+      "collector_id": "exchange.protection.atp_policy_o365",
+      "collector_class": "collectors.exchange.protection.atp_policy_o365.AtpPolicyO365DataCollector"
+    },
+    {
+      "control_id": "2.1.6",
+      "policy_file": "2.1.6_Exchange_OnlineSpam_Policies_Notify_Administrators.rego",
+      "policy_sha256": "96beed7b6085911d9dfe2eba9627f8e7630b7d353af092ef3aa6bcb72065bdf6",
+      "collector_id": "exchange.protection.hosted_outbound_spam_filter",
+      "collector_class": "collectors.exchange.protection.hosted_outbound_spam_filter.HostedOutboundSpamFilterDataCollector"
+    },
+    {
+      "control_id": "2.1.7",
+      "policy_file": "2.1.7_AntiPhishing_Policy_is_created.rego",
+      "policy_sha256": "12778bb8c6c2c9d1d7b1f57ede8166585db6ec0839091beec8eee55503683a0a",
+      "collector_id": "exchange.protection.anti_phish_policy",
+      "collector_class": "collectors.exchange.protection.anti_phish_policy.AntiPhishPolicyDataCollector"
+    },
+    {
+      "control_id": "2.1.11",
+      "policy_file": "2.1.11_Comprehensive_Attachment_Filtering_Applied.rego",
+      "policy_sha256": "a3d7496f83d6c7c7307247369ffb10e38f9b852df2d0b516460c3a44481aca01",
+      "collector_id": "exchange.protection.malware_filter_policy",
+      "collector_class": "collectors.exchange.protection.malware_filter_policy.MalwareFilterPolicyDataCollector"
+    },
+    {
+      "control_id": "2.4.4",
+      "policy_file": "2.4.4_Zero_hour_AutoPurge_MSTeams_is_On.rego",
+      "policy_sha256": "acdb78669236986b9daebe4f046020463a80fc8f859af77f0fd9fbfcd315f09b",
+      "collector_id": "exchange.protection.teams_protection_policy",
+      "collector_class": "collectors.exchange.protection.teams_protection_policy.TeamsProtectionPolicyDataCollector"
+    },
+    {
+      "control_id": "4.2",
+      "policy_file": "4.2_block_personal_device_enrollment.rego",
+      "policy_sha256": "52b8d2f9b1cafd3a6eee43bfeb22b1384080d3e3721547c85e80cd8ca0945b9e",
+      "collector_id": "entra.devices.enrollment_restrictions",
+      "collector_class": "collectors.entra.devices.enrollment_restrictions.EnrollmentRestrictionsDataCollector"
+    },
+    {
+      "control_id": "5.1.2.2",
+      "policy_file": "5.1.2.2_block_third_party_integrated_apps.rego",
+      "policy_sha256": "7f936e57488b9885ed559bc200ac289802897798694fa95e9f4ee22fe689977f",
+      "collector_id": "entra.policies.authorization_policy",
+      "collector_class": "collectors.entra.policies.authorization_policy.AuthorizationPolicyDataCollector"
+    },
+    {
+      "control_id": "5.1.5.1",
+      "policy_file": "5.1.5.1_block_user_app_consent.rego",
+      "policy_sha256": "472b357c78b0c59293bb25662c89ede96f4b57e31e61b29b60970a40f5fee8b7",
+      "collector_id": "entra.policies.authorization_policy",
+      "collector_class": "collectors.entra.policies.authorization_policy.AuthorizationPolicyDataCollector"
+    },
+    {
+      "control_id": "5.1.5.2",
+      "policy_file": "5.1.5.2_admin_consent_workflow_enabled.rego",
+      "policy_sha256": "81554280eb1fa04e5d36bc81293080af267f6527965269342ab6d5f120752348",
+      "collector_id": "entra.policies.admin_consent_request_policy",
+      "collector_class": "collectors.entra.policies.admin_consent_request_policy.AdminConsentRequestPolicyDataCollector"
+    },
+    {
+      "control_id": "5.1.6.1",
+      "policy_file": "5.1.6.1_restrict_collaboration_invite_domains.rego",
+      "policy_sha256": "04d5873b9ac9d43010d5857c9843d1e41dc9a56addffc7934f3ea0adfb2bd5b6",
+      "collector_id": "entra.policies.b2b_policy",
+      "collector_class": "collectors.entra.policies.b2b_policy.B2BPolicyDataCollector"
+    },
+    {
+      "control_id": "5.1.6.2",
+      "policy_file": "5.1.6.2_restrict_guest_user_access.rego",
+      "policy_sha256": "cebe7646dd6a501eecc469d4aac4a2db6d6562778849781a73334c4879b89139",
+      "collector_id": "entra.policies.authorization_policy",
+      "collector_class": "collectors.entra.policies.authorization_policy.AuthorizationPolicyDataCollector"
+    },
+    {
+      "control_id": "5.1.6.3",
+      "policy_file": "5.1.6.3_limit_guest_invitations.rego",
+      "policy_sha256": "7e58cc3399dbae02d31e1a66eb7fa9f36349f351dbc32bae18839da8b07318d6",
+      "collector_id": "entra.policies.authorization_policy",
+      "collector_class": "collectors.entra.policies.authorization_policy.AuthorizationPolicyDataCollector"
+    },
+    {
+      "control_id": "5.2.2.3",
+      "policy_file": "5.2.2.3_block_legacy_auth.rego",
+      "policy_sha256": "ca83b396ecd5477d99b6b0bbb2dc762d58a3dff670d31076ae13479e4d1adc9f",
+      "collector_id": "entra.conditional_access.legacy_auth_block",
+      "collector_class": "collectors.entra.conditional_access.legacy_auth_block.LegacyAuthBlockDataCollector"
+    },
+    {
+      "control_id": "5.2.3.1",
+      "policy_file": "5.2.3.1_mfa_fatigue_protection.rego",
+      "policy_sha256": "002bbd0358be8cf2a408b0bf8e0ef88c86e5069b6cce1cd2561059d117165848",
+      "collector_id": "entra.authentication.mfa_fatigue_protection",
+      "collector_class": "collectors.entra.authentication.mfa_fatigue_protection.MfaFatigueProtectionDataCollector"
+    },
+    {
+      "control_id": "5.2.3.2",
+      "policy_file": "5.2.3.2_custom_banned_passwords_enabled.rego",
+      "policy_sha256": "38a22734d3c352f62c385ab4945dc3404874ac89d8b666182b6b7019c6cef14a",
+      "collector_id": "entra.authentication.password_protection",
+      "collector_class": "collectors.entra.authentication.password_protection.PasswordProtectionDataCollector"
+    },
+    {
+      "control_id": "5.2.3.3",
+      "policy_file": "5.2.3.3_enable_on_prem_password_protection.rego",
+      "policy_sha256": "247dba73ee5d11d958d66adb26d2525871dbc3e1cf5a7ce742ea9b1d1b87afe2",
+      "collector_id": "entra.authentication.password_protection",
+      "collector_class": "collectors.entra.authentication.password_protection.PasswordProtectionDataCollector"
+    },
+    {
+      "control_id": "5.2.3.4",
+      "policy_file": "5.2.3.4_all_members_mfa_capable.rego",
+      "policy_sha256": "938d066344c289859374ff838f3fd06d23247d1ad33290fed969f6d66d2a35ee",
+      "collector_id": "entra.authentication.mfa_registration_report",
+      "collector_class": "collectors.entra.authentication.mfa_registration_report.MFARegistrationReportDataCollector"
+    },
+    {
+      "control_id": "5.2.3.5",
+      "policy_file": "5.2.3.5_disable_weak_auth_methods.rego",
+      "policy_sha256": "498337acfa6c7eed59d11ed6ccf3b42c778625041889eb0e09219f84eefbaaa9",
+      "collector_id": "entra.authentication.authentication_methods",
+      "collector_class": "collectors.entra.authentication.authentication_methods.AuthenticationMethodsDataCollector"
+    },
+    {
+      "control_id": "5.2.3.6",
+      "policy_file": "5.2.3.6_enable_system_preferred_mfa.rego",
+      "policy_sha256": "73a72067642bceb6619f5054f2f3ffa250f8629c2a9941adf66a5e2fe0efad49",
+      "collector_id": "entra.authentication.authentication_methods",
+      "collector_class": "collectors.entra.authentication.authentication_methods.AuthenticationMethodsDataCollector"
+    },
+    {
+      "control_id": "5.2.3.7",
+      "policy_file": "5.2.3.7_disable_email_otp.rego",
+      "policy_sha256": "afc6b482a368223d50663bde1ff82523ffa0668f2e70ac1847331b690ea8c1b0",
+      "collector_id": "entra.authentication.authentication_methods",
+      "collector_class": "collectors.entra.authentication.authentication_methods.AuthenticationMethodsDataCollector"
+    },
+    {
+      "control_id": "5.3.1",
+      "policy_file": "5.3.1_pim_enabled.rego",
+      "policy_sha256": "2786eff39c1428ded53373c20a573bb13d64f74ef404bd054f5e7054a7dfe871",
+      "collector_id": "entra.governance.pim_role_policies",
+      "collector_class": "collectors.entra.governance.pim_role_policies.PimRolePoliciesDataCollector"
+    },
+    {
+      "control_id": "5.3.2",
+      "policy_file": "5.3.2_guest_access_reviews_configured.rego",
+      "policy_sha256": "a792f2940cfc05432fb645379adc903a2ce61bb47a3618c9720bce3ccdc01c8a",
+      "collector_id": "entra.governance.access_reviews",
+      "collector_class": "collectors.entra.governance.access_reviews.AccessReviewsDataCollector"
+    },
+    {
+      "control_id": "5.3.3",
+      "policy_file": "5.3.3_privileged_role_access_reviews_configured.rego",
+      "policy_sha256": "08af2ea291d558ddc314654af308672a2853d565856a26a08e3ed30648153c28",
+      "collector_id": "entra.governance.access_reviews",
+      "collector_class": "collectors.entra.governance.access_reviews.AccessReviewsDataCollector"
+    },
+    {
+      "control_id": "5.3.4",
+      "policy_file": "5.3.4_ga_activation_requires_approval.rego",
+      "policy_sha256": "6dd175291154aab4b14e56e88a514fcea67fb035c5474da237f64c427fa01c67",
+      "collector_id": "entra.governance.pim_role_policies",
+      "collector_class": "collectors.entra.governance.pim_role_policies.PimRolePoliciesDataCollector"
+    },
+    {
+      "control_id": "5.3.5",
+      "policy_file": "5.3.5_pra_activation_requires_approval.rego",
+      "policy_sha256": "9e2c8a0086389d0ae38813f698a9246c37939961d1e3a64283cf1ec4f1483949",
+      "collector_id": "entra.governance.pim_role_policies",
+      "collector_class": "collectors.entra.governance.pim_role_policies.PimRolePoliciesDataCollector"
+    },
+    {
+      "control_id": "6.1.1",
+      "policy_file": "6.1.1_audit_disabled.rego",
+      "policy_sha256": "475e7f0ef73bf8f8895af3576fe093003670f00ebad6cd99d868717db369c24d",
+      "collector_id": "exchange.organization.organization_config",
+      "collector_class": "collectors.exchange.organization.organization_config.OrganizationConfigDataCollector"
+    },
+    {
+      "control_id": "6.1.2",
+      "policy_file": "6.1.2_mailbox_audit_actions.rego",
+      "policy_sha256": "4d12f24238d593b04eb3808d3626ec6697f22d01b5335cce048024ba9b234069",
+      "collector_id": "exchange.mailbox.mailbox_audit_actions",
+      "collector_class": "collectors.exchange.mailbox.mailbox_audit_actions.MailboxAuditActionsDataCollector"
+    },
+    {
+      "control_id": "6.1.3",
+      "policy_file": "6.1.3_audit_bypass.rego",
+      "policy_sha256": "1739259c233a0693da537453bb0343650eb18f8e9c80573fa6bb4bcb91beb45c",
+      "collector_id": "exchange.mailbox.mailbox_audit",
+      "collector_class": "collectors.exchange.mailbox.mailbox_audit.MailboxAuditDataCollector"
+    },
+    {
+      "control_id": "6.2.1",
+      "policy_file": "6.2.1_mail_forwarding_blocked.rego",
+      "policy_sha256": "317fc1401cb763bb0a21ee4e11a2978398fe7331db5ac731a41e7b31773a9205",
+      "collector_id": "exchange.transport.transport_rules",
+      "collector_class": "collectors.exchange.transport.transport_rules.TransportRulesDataCollector"
+    },
+    {
+      "control_id": "6.2.2",
+      "policy_file": "6.2.2_transport_whitelist.rego",
+      "policy_sha256": "2ca1d2183c4958cd7d1c3ff27671b7202468180f1a810a5fbd70b41b16722143",
+      "collector_id": "exchange.transport.transport_rules",
+      "collector_class": "collectors.exchange.transport.transport_rules.TransportRulesDataCollector"
+    },
+    {
+      "control_id": "6.2.3",
+      "policy_file": "6.2.3_external_sender_tagging.rego",
+      "policy_sha256": "ade06d7ed8433695f6c6affc1900119eca42d46482c1b83d36f340cdeed7fd37",
+      "collector_id": "exchange.transport.external_in_outlook",
+      "collector_class": "collectors.exchange.transport.external_in_outlook.ExternalInOutlookDataCollector"
+    },
+    {
+      "control_id": "6.5.1",
+      "policy_file": "6.5.1_modern_auth.rego",
+      "policy_sha256": "566e42303a2d2295fb5e52ffda636e337eb3720cee52b63d21a4b115bd5e1bc1",
+      "collector_id": "exchange.organization.organization_config",
+      "collector_class": "collectors.exchange.organization.organization_config.OrganizationConfigDataCollector"
+    },
+    {
+      "control_id": "6.5.4",
+      "policy_file": "6.5.4_smtp_auth.rego",
+      "policy_sha256": "f495c8bf9311ed58d6d8f464c79ea402a3da70b84a59e9ff767d6f75d57bc51f",
+      "collector_id": "exchange.organization.transport_config",
+      "collector_class": "collectors.exchange.organization.transport_config.TransportConfigDataCollector"
+    },
+    {
+      "control_id": "6.5.5",
+      "policy_file": "6.5.5_direct_send.rego",
+      "policy_sha256": "d0ba213004c51b2172c05b8393f6695f7bcb27e4d53fdd9329ff0f38675ae8a0",
+      "collector_id": "exchange.organization.organization_config",
+      "collector_class": "collectors.exchange.organization.organization_config.OrganizationConfigDataCollector"
+    }
+  ]
+}

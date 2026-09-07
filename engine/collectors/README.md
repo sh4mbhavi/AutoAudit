@@ -17,7 +17,15 @@ A collector is a simple class with one job: call an API and return structured da
 
 ### 1. Create the collector class
 
-Inherit from `BaseDataCollector` and implement the `collect` method:
+Inherit from `BaseDataCollector` and implement the `collect` method.
+
+**Pick the right client first.** Half of the registered collectors do not use
+Graph at all: 24 of the 50 take a `PowerShellClient` and reach Exchange Online,
+Teams or SharePoint through the PowerShell service, because the settings they
+read have no Graph endpoint. The two are not interchangeable, and the worker
+routes a collector by the client its `collect` method declares.
+
+For a Graph collector:
 
 ```python
 from typing import Any
@@ -102,9 +110,20 @@ In the benchmark's `metadata.json`, set the `data_collector_id` for your control
 
 **Async all the way.** Collectors are async. Use `await` for all API calls. This lets us run multiple collectors concurrently during scans.
 
-## The Graph client
+## The two clients
 
-`GraphClient` handles Microsoft Graph API authentication and requests. It's shared across all Microsoft collectors (Entra, M365 services).
+`GraphClient` handles Microsoft Graph API authentication and requests. It is
+used by the Entra and Intune collectors -- 26 of the 50 registered today.
+
+The other 24 take a `PowerShellClient` and run a fixed, allow-listed cmdlet
+through the PowerShell service, because Exchange Online, Teams and SharePoint
+expose these settings only through PowerShell. Those collectors declare
+`async def collect(self, client: PowerShellClient)` and call
+`client.run_operation(...)` with an operation id, never a free-text command.
+
+This page used to say `GraphClient` was "shared across all Microsoft
+collectors", which was false for nearly half of them and sent every new
+Exchange, Teams or SharePoint collector to the wrong client.
 
 ```python
 # Basic GET request
