@@ -34,12 +34,19 @@ metadata_path = version_dir / "metadata.json"
 metadata = json.loads(metadata_path.read_text())
 assert metadata["version"] == "v6.0.0"
 controls = metadata["controls"]
-assert len({c["control_id"] for c in controls}) == len(controls), "Duplicate control IDs"
+assert len({c["control_id"] for c in controls}) == len(
+    controls
+), "Duplicate control IDs"
 by_id = {c["control_id"]: c for c in controls}
 registry_path = ROOT / "engine/collectors/registry.py"
 tree = ast.parse(registry_path.read_text())
-registry_dicts = [n.value for n in tree.body if isinstance(n, ast.AnnAssign)
-                  and isinstance(n.target, ast.Name) and n.target.id == "DATA_COLLECTORS"]
+registry_dicts = [
+    n.value
+    for n in tree.body
+    if isinstance(n, ast.AnnAssign)
+    and isinstance(n.target, ast.Name)
+    and n.target.id == "DATA_COLLECTORS"
+]
 assert len(registry_dicts) == 1 and isinstance(registry_dicts[0], ast.Dict)
 registry_keys = [ast.literal_eval(k) for k in registry_dicts[0].keys]
 assert len(registry_keys) == len(set(registry_keys)), "Duplicate registry keys"
@@ -49,16 +56,27 @@ for control_id, policy_file, collector_id in rows:
     assert control["automation_status"] == "ready", control_id
     assert control["policy_file"] == policy_file, control_id
     assert control["data_collector_id"] == collector_id, control_id
-    assert registry_keys.count(collector_id) == 1 and collector_id in DATA_COLLECTORS, control_id
+    assert (
+        registry_keys.count(collector_id) == 1 and collector_id in DATA_COLLECTORS
+    ), control_id
     policy_path = version_dir / policy_file
     policy = policy_path.read_text()
-    expected_package = "cis.microsoft_365_foundations.v6_0_0.control_" + control_id.replace(".", "_")
-    assert re.findall(r"^package\s+(\S+)", policy, re.M) == [expected_package], control_id
+    expected_package = (
+        "cis.microsoft_365_foundations.v6_0_0.control_" + control_id.replace(".", "_")
+    )
+    assert re.findall(r"^package\s+(\S+)", policy, re.M) == [
+        expected_package
+    ], control_id
     collector = DATA_COLLECTORS[collector_id]
-    resolution.append({"control_id": control_id, "policy_file": policy_file,
-                       "policy_sha256": digest(policy_path.read_bytes()),
-                       "collector_id": collector_id,
-                       "collector_class": collector.__module__ + "." + collector.__name__})
+    resolution.append(
+        {
+            "control_id": control_id,
+            "policy_file": policy_file,
+            "policy_sha256": digest(policy_path.read_bytes()),
+            "collector_id": collector_id,
+            "collector_class": collector.__module__ + "." + collector.__name__,
+        }
+    )
 ratings = Counter()
 explicit_ids = set()
 for line in appendix_a.splitlines():
@@ -71,29 +89,42 @@ for line in appendix_a.splitlines():
 assert explicit_ids == {r[0] for r in rows}, "Appendix A/B explicit control mismatch"
 assert sum(ratings.values()) == 47, "Appendix A row count drift"
 source_paths = [
-    "README.md", "backend-api/README.md", "engine/collectors/README.md",
-    "engine/policies/README.md", "docs/engine/sharepoint-control-development.md",
-    "docs/engine/sharepoint-local-runtime.md", "docs/engine/manual-collector-testing.md",
-    "docs/features/pre-scan/prescan-readiness.md", "docs/DevSecOps/workflow-documentation.md",
+    "README.md",
+    "backend-api/README.md",
+    "engine/collectors/README.md",
+    "engine/policies/README.md",
+    "docs/engine/sharepoint-control-development.md",
+    "docs/engine/sharepoint-local-runtime.md",
+    "docs/engine/manual-collector-testing.md",
+    "docs/features/pre-scan/prescan-readiness.md",
+    "docs/DevSecOps/workflow-documentation.md",
     "docs/compliance/manual_control_classification.md",
     "docs/compliance/Risk_Impact_Prioritisation_Matrix.md",
     "docs/engine/Framework/CIS_M365_Benchmarks.json",
 ]
 ready = [c for c in controls if c["automation_status"] == "ready"]
 snapshot = {
-    "head": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip(),
-    "upstream_main": subprocess.check_output(["git", "rev-parse", "upstream/main"], cwd=ROOT, text=True).strip(),
+    "head": subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=ROOT, text=True
+    ).strip(),
+    "upstream_main": subprocess.check_output(
+        ["git", "rev-parse", "upstream/main"], cwd=ROOT, text=True
+    ).strip(),
     "metadata_sha256": digest(metadata_path.read_bytes()),
     "registry_sha256": digest(registry_path.read_bytes()),
     "appendix_a_sha256": digest(appendix_a.encode()),
     "appendix_b_sha256": digest(appendix_b.encode()),
     "metadata_total": len(controls),
-    "status_totals": dict(sorted(Counter(c["automation_status"] for c in controls).items())),
+    "status_totals": dict(
+        sorted(Counter(c["automation_status"] for c in controls).items())
+    ),
     "ready_unique_collectors": len({c["data_collector_id"] for c in ready}),
     "explicit_crosswalk_controls": len(rows),
     "explicit_crosswalk_unique_collectors": len({r[2] for r in rows}),
     "ratings": dict(sorted(ratings.items())),
-    "benchmark_extract_version": json.loads((ROOT / source_paths[-1]).read_text())["document_version"],
+    "benchmark_extract_version": json.loads((ROOT / source_paths[-1]).read_text())[
+        "document_version"
+    ],
     "source_sha256": {p: digest((ROOT / p).read_bytes()) for p in source_paths},
     "resolution": resolution,
 }
