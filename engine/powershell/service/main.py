@@ -60,7 +60,13 @@ def _max_concurrency() -> int:
     return value
 
 
-_EXECUTION_POOL: ThreadPoolExecutor | None = None
+# PEP 604 syntax cannot be used here. This module is a module-level annotation
+# away from the image's interpreter: engine/powershell/Dockerfile installs
+# Mariner's `python3`, which is 3.9, and pyproject.toml declares
+# requires-python = ">=3.9". A module-level `X | None` is evaluated at import,
+# so it raises TypeError before uvicorn ever binds. tools/tests/
+# test_powershell_service_python_floor.py holds this to the declared floor.
+_EXECUTION_POOL: Optional[ThreadPoolExecutor] = None
 
 
 def execution_pool() -> ThreadPoolExecutor:
