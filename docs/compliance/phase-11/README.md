@@ -514,3 +514,7 @@ Full record in [review.json](review.json).
   or documentation and can start immediately — the first is a one-line fix.
   Conditions 8 and 9 need a repository administrator and a GRC owner and cannot.
   Phase 11 is re-runnable once 1–7 land.
+- **Since executed.** [remediation-report.md](remediation-report.md) records what
+  happened to conditions 1–7 on `fix/soc2-phase-11-conditions`: all four blockers
+  closed, three of the six unmet criteria now met, and what remains reduced to
+  two decisions and two permissions.

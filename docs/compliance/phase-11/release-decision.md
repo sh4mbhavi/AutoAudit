@@ -307,6 +307,9 @@ is not good".
 The execution plan for conditions 1–7 is
 [remediation-plan.md](remediation-plan.md), which also adds the evidence-lifecycle
 and residual-security work this list originally omitted (criteria 6 and 11).
+It has since been executed: [remediation-report.md](remediation-report.md)
+records the outcome, including that condition 2 turned out to be thirty policies
+rather than eighteen.
 
 1. Fix §1 (one line) and add an overlay smoke that starts every service.
 2. Fix §2 (eighteen policies) and add a gate that validates every **ready** control's

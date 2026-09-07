@@ -1,5 +1,8 @@
 # Phase 11 — remediation plan for conditions 1–7
 
+**Executed.** What happened to each condition is recorded in
+[remediation-report.md](remediation-report.md).
+
 Companion to [release-decision.md](release-decision.md). That document says
 **DO NOT RELEASE** and lists ten conditions. This one is the execution plan for
 the seven that need no permission we do not have.
