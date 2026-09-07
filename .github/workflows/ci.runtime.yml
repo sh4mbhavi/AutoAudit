@@ -14,7 +14,10 @@ jobs:
   startup:
     name: API and worker container startup
     runs-on: ubuntu-latest
-    timeout-minutes: 35
+    # The overlay smoke now builds and starts all six production services,
+    # including the PowerShell image, which installs three modules from the
+    # gallery on a cold cache.
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v6
@@ -22,12 +25,11 @@ jobs:
           python-version: '3.11'
       - name: Build and smoke test disposable containers
         run: python tools/ci/container_smoke.py
-      # Phase 10: the reviewed production topology, actually started. Phases 7, 8
-      # and 9 each carried forward "the Compose overlay was not exercised
-      # against a running container" -- it had only ever been rendered with
-      # `docker compose config`, which cannot show that Redis enforces TLS or
-      # that the containers really have no host port binding.
-      - name: Start the production Compose overlay and check its boundaries
+      # Phase 10 started db and redis; Phase 11 found what that scope was
+      # hiding. This starts all six services, so a service that cannot import
+      # its own entrypoint, or a worker that cannot reach the broker, fails here
+      # rather than in a customer's deployment.
+      - name: Start every production Compose service and check its boundaries
         run: python tools/ci/production_overlay_smoke.py
       - uses: astral-sh/setup-uv@v6
       - name: Reject unsafe Redis transport and authentication

@@ -31,7 +31,21 @@ user. `REDIS_ACL_FILE` is a secret-manager-generated ACL file that disables the
 default user and authorizes the worker with a password hash; it must never allow
 `nopass`. API and worker require Celery broker permissions. The deployment
 owner must review the ACL and restrict it to the agreed queues/key prefixes and
-operational requirements. Verify anonymous and wrong-password rejection after
+operational requirements.
+
+Celery needs **pub/sub channel permissions, not only key and command
+permissions**. Redis 7 starts every ACL user with `resetchannels`, so a rule as
+permissive as `~* +@all` still denies channels, and the worker dies during its
+`mingle` startup step with
+
+```text
+kombu.exceptions.OperationalError: No permissions to access a channel
+```
+
+which names neither Redis nor the ACL. Grant channels explicitly -- `&*`, or the
+narrower prefix the queue design agrees on. `tools/ci/production_overlay_smoke.py`
+generates an ACL of the required shape and starts the worker against it, so the
+requirement is executed rather than only written down. Verify anonymous and wrong-password rejection after
 provisioning; a mounted filename alone is not proof of its contents.
 
 The template disables Redis RDB/AOF persistence and uses temporary storage;
