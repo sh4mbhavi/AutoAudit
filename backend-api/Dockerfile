@@ -1,5 +1,14 @@
 # Backend API Dockerfile
-FROM python:3.11-slim
+
+# uv comes from a digest-pinned image rather than `pip install uv`, which
+# resolved a different installer on every build. engine/Dockerfile already did
+# this; this one still did not.
+FROM ghcr.io/astral-sh/uv:0.8.22@sha256:9874eb7afe5ca16c363fe80b294fe700e460df29a55532bbfea234a0f12eddb1 AS uv
+
+# Digest-pinned: `python:3.11-slim` is a moving tag, so two builds of the same
+# commit produced two different base layers and the SBOM described whichever one
+# happened to be current.
+FROM python:3.11-slim@sha256:9534e5a8e315485d4061ed659af0fd78a284c015f9b73661b41d6bab25604534
 
 WORKDIR /app
 
@@ -14,8 +23,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN adduser --disabled-password --gecos "" --uid 1000 appuser
 RUN chown appuser:appuser /app
 
-# Install uv
-RUN pip install uv
+# Install uv from the digest-pinned image copied in above.
+COPY --chown=appuser:appuser --from=uv /uv /usr/local/bin/uv
 
 # Copy dependency files and install dependencies
 COPY --chown=appuser:appuser backend-api/pyproject.toml backend-api/uv.lock ./

@@ -161,27 +161,58 @@ def _expressions(path: Path):
     are valid YAML and valid PromQL; this function only has to find the
     expressions inside files that have already been proven well-formed.
     Anything it cannot parse is reported, never skipped.
+
+    Rule entries are located by their list-item boundary rather than by reading
+    ``alert:`` first and ``expr:`` after it. YAML mapping keys have no required
+    order, so a rule written
+
+        - expr: made_up_total > 0
+          alert: SomethingFired
+
+    used to have its expression dropped entirely: the previous implementation
+    only yielded an ``expr:`` once it had already seen an ``alert:``, and it
+    never reset the name between entries, so an expression could also be
+    attributed to the previous rule. Either way the metric went unchecked.
+    An entry with an expression and no name is still yielded, under a
+    placeholder, because the expression is the part this gate exists to read.
     """
-    alert = None
     lines = path.read_text().splitlines()
+    entries: list[dict] = []
+    current: dict | None = None
     index = 0
     while index < len(lines):
         line = lines[index]
-        match = re.match(r"\s*-?\s*alert:\s*(\S+)", line)
-        if match:
-            alert = match.group(1)
+
+        # A new list item ends the previous rule entry, whatever it contained.
+        item = re.match(r"(\s*)-\s+(\S.*)$", line)
+        if item:
+            if current is not None:
+                entries.append(current)
+            current = {"name": None, "expr": None}
+            # Re-read the remainder of the line as an ordinary mapping key at
+            # the item's key indent, so `- alert: X` and `- expr: |` both work.
+            line = item.group(1) + "  " + item.group(2)
+
+        if current is None:
             index += 1
             continue
-        match = re.match(r"(\s*)expr:\s*(.*)$", line)
-        if match and alert:
-            indent, inline = match.group(1), match.group(2).strip()
+
+        name = re.match(r"\s*(?:alert|record):\s*(\S.*)$", line)
+        if name:
+            current["name"] = name.group(1).strip().strip("\"'")
+            index += 1
+            continue
+
+        expr = re.match(r"(\s*)expr:\s*(.*)$", line)
+        if expr:
+            indent, inline = expr.group(1), expr.group(2).strip()
             if inline and inline not in {"|", ">", "|-", ">-"}:
                 # A quoted scalar IS the expression; the quotes are YAML, not
                 # PromQL. Leaving them on made the whole expression look like a
                 # string literal to the stripper below, which erased it.
                 if len(inline) >= 2 and inline[0] == inline[-1] and inline[0] in "\"'":
                     inline = inline[1:-1]
-                yield alert, inline
+                current["expr"] = inline
                 index += 1
                 continue
             # Block scalar: consume every line indented past the `expr:` key.
@@ -193,9 +224,18 @@ def _expressions(path: Path):
                     break
                 block.append(following)
                 index += 1
-            yield alert, "\n".join(block)
+            current["expr"] = "\n".join(block)
             continue
+
         index += 1
+
+    if current is not None:
+        entries.append(current)
+
+    for entry in entries:
+        if entry["expr"] is None:
+            continue
+        yield entry["name"] or f"<unnamed rule in {path.name}>", entry["expr"]
 
 
 def referenced_metrics() -> dict[str, list[tuple[str, str]]]:

@@ -27,6 +27,25 @@ BACKEND_DOCKERFILE = ROOT / "backend-api" / "Dockerfile"
 POWERSHELL_DOCKERFILE = ROOT / "engine" / "powershell" / "Dockerfile"
 
 
+def _all_dockerfiles() -> list[Path]:
+    """Every Dockerfile in the repository, derived rather than listed.
+
+    Listing them is how `engine/docker/powershell/Dockerfile` sat in the tree
+    for ten phases with an unpinned base and unpinned PowerShell modules: it was
+    a stale duplicate nothing built, so no gate named it and nobody removed it.
+    """
+    found = sorted(
+        path
+        for path in ROOT.rglob("Dockerfile")
+        if "node_modules" not in path.parts and ".git" not in path.parts
+    )
+    assert found, "no Dockerfiles found; the glob above is wrong"
+    return found
+
+
+ALL_DOCKERFILES = _all_dockerfiles()
+
+
 def _read(path: Path) -> str:
     return path.read_text()
 
@@ -68,11 +87,64 @@ def test_the_engine_image_does_not_pip_install_the_project():
 # ---------------------------------------------------------------------------
 
 
-def test_engine_base_images_are_digest_pinned():
-    """A floating tag is a different image tomorrow."""
-    for line in _read(ENGINE_DOCKERFILE).splitlines():
-        if line.startswith("FROM ") and "python:3.11-slim" not in line:
-            assert "@sha256:" in line, line
+@pytest.mark.parametrize(
+    "dockerfile", ALL_DOCKERFILES, ids=lambda p: str(p.relative_to(ROOT))
+)
+def test_every_base_image_is_digest_pinned(dockerfile):
+    """A floating tag is a different image tomorrow.
+
+    This used to exempt any FROM containing `python:3.11-slim` -- the one base
+    both application services actually run on -- and to inspect only the engine
+    Dockerfile. So the gate passed while the two bases that matter floated, and
+    the PowerShell image, the one that authenticates to a customer tenant, was
+    not looked at at all: POWERSHELL_DOCKERFILE was declared at the top of this
+    file and never used.
+    """
+    froms = [
+        line
+        for line in _read(dockerfile).splitlines()
+        if line.startswith("FROM ") or line.startswith("FROM --platform")
+    ]
+    assert froms, f"{dockerfile.relative_to(ROOT)} declares no base image"
+    for line in froms:
+        assert (
+            "@sha256:" in line
+        ), f"{dockerfile.relative_to(ROOT)}: {line.strip()} is not digest-pinned"
+
+
+def test_no_dockerfile_pipes_a_remote_script_into_a_shell():
+    """The PowerShell image installed uv with `curl ... | sh`.
+
+    An unpinned installer, fetched over the network at build time and executed
+    as root, in the image that holds the tenant's Exchange and Teams session.
+    """
+    for dockerfile in ALL_DOCKERFILES:
+        content = _read(dockerfile)
+        assert not re.search(
+            r"curl[^\n]*\|\s*(?:ba)?sh", content
+        ), f"{dockerfile.relative_to(ROOT)} pipes a downloaded script into a shell"
+
+
+def test_the_powershell_modules_are_version_pinned():
+    """Unpinned modules are resolved from the gallery on every build.
+
+    ExchangeOnlineManagement and MicrosoftTeams were installed with no
+    RequiredVersion, so the image that authenticates to a customer tenant took
+    whatever the gallery published that morning.
+    """
+    content = _read(POWERSHELL_DOCKERFILE)
+    installs = re.findall(r"Install-Module -Name (\S+)([^;\"]*)", content)
+    assert installs, "no Install-Module invocations found"
+    for name, rest in installs:
+        assert "-RequiredVersion" in rest, f"{name} is installed without a version"
+
+
+def test_no_image_installs_uv_with_pip():
+    """`pip install uv` resolves a different installer on every build."""
+    for dockerfile in (ENGINE_DOCKERFILE, BACKEND_DOCKERFILE, POWERSHELL_DOCKERFILE):
+        assert not re.search(
+            r"^RUN\s+pip install\s+uv", _read(dockerfile), re.M
+        ), f"{dockerfile.relative_to(ROOT)} must copy uv from the pinned image"
 
 
 def test_the_opa_binary_in_the_worker_image_matches_the_pinned_ci_version():

@@ -381,3 +381,89 @@ def test_the_restore_is_atomic(backup_module):
     source = (ROOT / "tools" / "ops" / "backup.py").read_text()
     assert "--single-transaction" in source
     assert "--exit-on-error" in source
+
+
+# ---------------------------------------------------------------------------
+# The connection password never reaches a command line.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "url,expected_argv,expected_password",
+    [
+        (
+            "postgresql+asyncpg://autoaudit:s3cr3t%40pass@db:5432/autoaudit",  # pragma: allowlist secret - synthetic fixture, never used to connect
+            "postgresql://autoaudit@db:5432/autoaudit",
+            "s3cr3t@pass",
+        ),
+        (
+            "postgresql://autoaudit:pw@db/autoaudit",  # pragma: allowlist secret - synthetic fixture, never used to connect
+            "postgresql://autoaudit@db/autoaudit",
+            "pw",
+        ),
+        (
+            "postgresql://autoaudit@127.0.0.1:5432/autoaudit",
+            "postgresql://autoaudit@127.0.0.1:5432/autoaudit",
+            None,
+        ),
+    ],
+)
+def test_the_database_password_travels_in_the_environment(
+    backup_module, url, expected_argv, expected_password
+):
+    """A connection URL in argv is readable by every other process on the host.
+
+    `ps` and /proc/<pid>/cmdline expose it for as long as pg_dump runs, which on
+    a real database is minutes. The environment of another process is not
+    readable that way. Percent-encoding has to survive the move, or a password
+    containing an `@` or a `/` would authenticate as something else.
+    """
+    argv, environment = backup_module.libpq_invocation(url)
+    assert argv == expected_argv
+    assert expected_password is None or "@" not in argv.split("@")[0]
+    if expected_password is None:
+        assert "PGPASSWORD" not in environment
+    else:
+        assert environment["PGPASSWORD"] == expected_password
+    assert expected_password is None or expected_password not in argv
+
+
+def test_a_stale_pgpassword_is_not_inherited(backup_module, monkeypatch):
+    """Inheriting someone else's PGPASSWORD authenticates as them."""
+    monkeypatch.setenv("PGPASSWORD", "left-over-from-another-command")
+    _, environment = backup_module.libpq_invocation(
+        "postgresql://autoaudit@127.0.0.1:5432/autoaudit"
+    )
+    assert "PGPASSWORD" not in environment
+
+
+def test_no_libpq_invocation_puts_a_password_in_argv():
+    """Every psql/pg_dump/pg_restore call site must pass the environment.
+
+    Checked structurally rather than by grep: a call that forgets `env=` is the
+    exact way the password goes back into argv, and a comment mentioning psql
+    should not be able to satisfy or break this.
+    """
+    import ast
+
+    source = (ROOT / "tools" / "ops" / "backup.py").read_text()
+    tree = ast.parse(source)
+    tools = {"psql", "pg_dump", "pg_restore"}
+    checked = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        if not (isinstance(node.func, ast.Name) and node.func.id == "_run"):
+            continue
+        argv = node.args[0] if node.args else None
+        if not isinstance(argv, (ast.List, ast.Tuple)) or not argv.elts:
+            continue
+        first = argv.elts[0]
+        if not (isinstance(first, ast.Constant) and first.value in tools):
+            continue
+        checked.add(first.value)
+        assert any(keyword.arg == "env" for keyword in node.keywords), (
+            f"backup.py:{node.lineno} runs {first.value} without passing the "
+            "environment that carries PGPASSWORD"
+        )
+    assert checked == tools, f"call sites not found for {sorted(tools - checked)}"

@@ -57,7 +57,7 @@ import subprocess  # nosec B404 # controlled pg_dump/pg_restore invocations
 import sys
 import tarfile
 from pathlib import Path
-from urllib.parse import urlsplit
+from urllib.parse import quote, unquote, urlsplit, urlunsplit
 
 MANIFEST_NAME = "manifest.json"
 DATABASE_ARTIFACT = "database.dump"
@@ -70,8 +70,46 @@ class BackupError(RuntimeError):
 
 
 def libpq_url(url: str) -> str:
-    """Strip the SQLAlchemy driver so libpq tools accept the URL."""
-    return url.replace("postgresql+asyncpg://", "postgresql://", 1)
+    """Strip the SQLAlchemy driver so libpq tools accept the URL.
+
+    The password is stripped too. It travels in the environment instead; see
+    libpq_invocation.
+    """
+    return _split_password(url)[0]
+
+
+def _split_password(url: str) -> tuple[str, str | None]:
+    """(connection URL with no password, password) for a SQLAlchemy or libpq URL.
+
+    A connection URL passed as a command-line argument is readable by every
+    other process on the host, through `ps` and through /proc/<pid>/cmdline,
+    for as long as pg_dump runs -- which on a real database is minutes. The
+    environment of another process is not: on Linux /proc/<pid>/environ is
+    readable only by the owning user, and macOS does not expose it at all.
+    """
+    url = url.replace("postgresql+asyncpg://", "postgresql://", 1)
+    parts = urlsplit(url)
+    if not parts.password:
+        return url, None
+    userinfo = quote(unquote(parts.username or ""), safe="")
+    host = parts.hostname or ""
+    if parts.port:
+        host = f"{host}:{parts.port}"
+    netloc = f"{userinfo}@{host}" if userinfo else host
+    return urlunsplit(parts._replace(netloc=netloc)), unquote(parts.password)
+
+
+def libpq_invocation(url: str) -> tuple[str, dict[str, str]]:
+    """The URL to pass on the command line, and the environment to pass with it."""
+    sanitised, password = _split_password(url)
+    environment = dict(os.environ)
+    if password is not None:
+        environment["PGPASSWORD"] = password
+    else:
+        # Inheriting a stale PGPASSWORD would silently authenticate as someone
+        # else, which is worse than failing.
+        environment.pop("PGPASSWORD", None)
+    return sanitised, environment
 
 
 def file_digest(path: Path) -> str:
@@ -89,7 +127,8 @@ def _run(command: list[str], **kwargs) -> subprocess.CompletedProcess:
 
 
 def server_version(url: str) -> str:
-    result = _run(["psql", libpq_url(url), "-tAc", "SHOW server_version"])
+    connection, environment = libpq_invocation(url)
+    result = _run(["psql", connection, "-tAc", "SHOW server_version"], env=environment)
     if result.returncode != 0:
         raise BackupError(f"could not read server version: {_redact(result.stderr)}")
     return result.stdout.strip()
@@ -102,8 +141,10 @@ def alembic_revision(url: str) -> str | None:
     situation where a backup is least useful and most dangerous: the row shapes
     would not match what the application expects.
     """
+    connection, environment = libpq_invocation(url)
     result = _run(
-        ["psql", libpq_url(url), "-tAc", "SELECT version_num FROM alembic_version"]
+        ["psql", connection, "-tAc", "SELECT version_num FROM alembic_version"],
+        env=environment,
     )
     return result.stdout.strip() or None if result.returncode == 0 else None
 
@@ -121,16 +162,18 @@ def create(
     dump_path = into / DATABASE_ARTIFACT
     # --format=custom so pg_restore can be selective, and so the dump is
     # compressed without a separate step.
+    connection, environment = libpq_invocation(database_url)
     result = _run(
         [
             "pg_dump",
-            libpq_url(database_url),
+            connection,
             "--format=custom",
             "--no-owner",
             "--no-privileges",
             "--file",
             str(dump_path),
-        ]
+        ],
+        env=environment,
     )
     if result.returncode != 0:
         raise BackupError(f"pg_dump failed: {_redact(result.stderr)}")
@@ -244,14 +287,16 @@ def _redact(text: str) -> str:
 
 
 def _target_is_empty(url: str) -> bool:
+    connection, environment = libpq_invocation(url)
     result = _run(
         [
             "psql",
-            libpq_url(url),
+            connection,
             "-tAc",
             "SELECT count(*) FROM information_schema.tables "
             "WHERE table_schema NOT IN ('pg_catalog', 'information_schema')",
-        ]
+        ],
+        env=environment,
     )
     if result.returncode != 0:
         raise BackupError(f"could not inspect the target: {_redact(result.stderr)}")
@@ -288,11 +333,12 @@ def restore(
             "fresh database, or pass --allow-nonempty deliberately."
         )
 
+    connection, environment = libpq_invocation(target_url)
     result = _run(
         [
             "pg_restore",
             "--dbname",
-            libpq_url(target_url),
+            connection,
             "--no-owner",
             "--no-privileges",
             # Atomic. Without these, pg_restore continues past errors and exits
@@ -301,7 +347,8 @@ def restore(
             "--single-transaction",
             "--exit-on-error",
             str(source / DATABASE_ARTIFACT),
-        ]
+        ],
+        env=environment,
     )
     if result.returncode != 0:
         raise BackupError(f"pg_restore failed: {_redact(result.stderr)}")

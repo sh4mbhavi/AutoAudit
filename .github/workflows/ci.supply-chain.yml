@@ -57,6 +57,16 @@ jobs:
       - name: Build the API image
         run: docker build -f backend-api/Dockerfile -t autoaudit-api:${{ github.sha }} .
 
+      - name: Build the PowerShell service image
+        # The third production image, and the only one that authenticates to a
+        # customer tenant. Nothing built, SBOM'd or scanned it until now, which
+        # is how it came to ship an unpinned base, unpinned gallery modules, a
+        # `curl | sh` installer and a Python floor no test knew about.
+        run: |
+          docker build --platform linux/amd64 \
+            -t autoaudit-powershell:${{ github.sha }} \
+            engine/powershell
+
       - name: Verify the worker image matches engine/uv.lock
         # The assertion that would have caught the pre-Phase-10 defect directly.
         run: |
@@ -97,6 +107,14 @@ jobs:
           artifact-name: sbom-api.cyclonedx.json
           output-file: sbom-api.cyclonedx.json
 
+      - name: Generate PowerShell service SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: autoaudit-powershell:${{ github.sha }}
+          format: cyclonedx-json
+          artifact-name: sbom-powershell.cyclonedx.json
+          output-file: sbom-powershell.cyclonedx.json
+
       - name: Record the release manifest
         run: |
           python tools/ops/release_manifest.py \
@@ -124,12 +142,54 @@ jobs:
           output-format: sarif
           output-file: grype-worker-image.sarif
 
-      - name: Upload image vulnerability report
+      - name: Upload worker image vulnerability report
         if: always() && steps.image_scan.outputs.sarif != ''
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: ${{ steps.image_scan.outputs.sarif }}
           category: worker-image
+
+      - name: Scan the API IMAGE for vulnerabilities
+        # This step did not exist. Both images were built and both were SBOM'd,
+        # and only the worker was ever scanned -- so the API image's Debian
+        # layer, its apt packages (curl, tesseract-ocr, libtesseract-dev) and
+        # everything opencv pulls in were unexamined. Reported on the same terms
+        # as the worker: the backlog predates this change and gating on it now
+        # would block every PR on debt this phase did not create.
+        id: api_image_scan
+        uses: anchore/scan-action@v6
+        with:
+          image: autoaudit-api:${{ github.sha }}
+          grype-version: v0.118.0
+          fail-build: false
+          severity-cutoff: critical
+          output-format: sarif
+          output-file: grype-api-image.sarif
+
+      - name: Upload API image vulnerability report
+        if: always() && steps.api_image_scan.outputs.sarif != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.api_image_scan.outputs.sarif }}
+          category: api-image
+
+      - name: Scan the PowerShell service IMAGE for vulnerabilities
+        id: powershell_image_scan
+        uses: anchore/scan-action@v6
+        with:
+          image: autoaudit-powershell:${{ github.sha }}
+          grype-version: v0.118.0
+          fail-build: false
+          severity-cutoff: critical
+          output-format: sarif
+          output-file: grype-powershell-image.sarif
+
+      - name: Upload PowerShell image vulnerability report
+        if: always() && steps.powershell_image_scan.outputs.sarif != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.powershell_image_scan.outputs.sarif }}
+          category: powershell-image
 
       - name: Upload SBOMs and release manifest
         if: always()
@@ -139,11 +199,65 @@ jobs:
           path: |
             sbom-worker.cyclonedx.json
             sbom-api.cyclonedx.json
+            sbom-powershell.cyclonedx.json
             release-manifest.json
             grype-worker-image.sarif
+            grype-api-image.sarif
+            grype-powershell-image.sarif
           if-no-files-found: warn
           # 90 days: long enough to answer "what was in the build that shipped
           # last quarter", which is the question an auditor asks.
+          retention-days: 90
+
+  iac:
+    name: Infrastructure-as-code misconfiguration
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      # No workflow in this repository scanned infrastructure-as-code by name.
+      # Six Dockerfiles and four Compose files defined the entire production
+      # topology and nothing checked any of them for misconfiguration.
+      #
+      # This one GATES from day one, unlike the image scans above, because the
+      # backlog it inherits is six LOW DS-0026 findings ("No HEALTHCHECK
+      # defined") and nothing else -- verified against the tree it is being
+      # added to. A gate installed at a level the repository already meets stays
+      # meaningful; one installed above it gets switched off.
+      - name: Scan Dockerfiles and Compose files for misconfiguration
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          scan-type: config
+          scan-ref: .
+          severity: 'CRITICAL,HIGH,MEDIUM'
+          exit-code: '1'
+          format: sarif
+          output: trivy-iac.sarif
+
+      - name: Report the LOW backlog without gating on it
+        if: always()
+        run: |
+          docker run --rm -v "$PWD:/src" -w /src \
+            aquasec/trivy:0.58.1 config --severity LOW --exit-code 0 . || true
+
+      - name: Upload IaC findings
+        if: always() && hashFiles('trivy-iac.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-iac.sarif
+          category: iac
+
+      - name: Upload the IaC report
+        if: always() && hashFiles('trivy-iac.sarif') != ''
+        uses: actions/upload-artifact@v4
+        with:
+          name: iac-${{ github.sha }}
+          path: trivy-iac.sarif
+          if-no-files-found: warn
           retention-days: 90
 
   hooks:

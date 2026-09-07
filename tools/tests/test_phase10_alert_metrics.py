@@ -286,3 +286,65 @@ def test_every_yaml_expression_form_is_read(
     )
     module = _load(monkeypatch, alerts_dir=rules)
     assert expected in module.referenced_metrics(), form
+
+
+@pytest.mark.parametrize(
+    "form,rule",
+    [
+        (
+            "expr-before-alert",
+            "  - expr: reordered_made_up_total > 0\n    alert: Reordered\n",
+        ),
+        (
+            "expr-before-alert-block-scalar",
+            "  - expr: |\n      reordered_made_up_total > 0\n    alert: Reordered\n",
+        ),
+        (
+            "recording-rule",
+            "  - expr: reordered_made_up_total > 0\n    record: job:reordered\n",
+        ),
+        (
+            "no-name-at-all",
+            "  - expr: reordered_made_up_total > 0\n",
+        ),
+    ],
+)
+def test_a_rule_whose_expr_precedes_its_name_is_still_read(
+    monkeypatch, tmp_path, form, rule
+):
+    """YAML mapping keys have no required order; this gate assumed one.
+
+    The checker only yielded an ``expr:`` once it had already seen an
+    ``alert:`` on a previous line, so a rule written expression-first had its
+    expression dropped and its metrics never checked -- a silent bypass of the
+    whole gate, and the second one found in it. It also never reset the alert
+    name between list items, so an expression could be attributed to the
+    preceding rule.
+    """
+    rules = tmp_path / "alerts"
+    rules.mkdir()
+    (rules / "probe.yaml").write_text(f"groups:\n- name: probe\n  rules:\n{rule}")
+    module = _load(monkeypatch, alerts_dir=rules)
+    assert "reordered_made_up_total" in module.referenced_metrics(), form
+
+    _, problems = module.analyse()
+    assert any("reordered_made_up_total" in problem for problem in problems), form
+
+
+def test_an_expression_is_attributed_to_its_own_rule(monkeypatch, tmp_path):
+    """Each expression must be reported against the rule that owns it."""
+    rules = tmp_path / "alerts"
+    rules.mkdir()
+    (rules / "probe.yaml").write_text(
+        "groups:\n"
+        "- name: probe\n"
+        "  rules:\n"
+        "  - alert: First\n"
+        "    expr: first_made_up_total > 0\n"
+        "  - expr: second_made_up_total > 0\n"
+        "    alert: Second\n"
+    )
+    module = _load(monkeypatch, alerts_dir=rules)
+    references = module.referenced_metrics()
+    assert references["first_made_up_total"] == [("probe.yaml", "First")]
+    assert references["second_made_up_total"] == [("probe.yaml", "Second")]

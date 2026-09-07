@@ -4,7 +4,10 @@ FROM openpolicyagent/opa:1.20.2@sha256:7b15f9d96345dfa639322ad97f65a0b38260f95ef
 # resolves a different installer on every build.
 FROM ghcr.io/astral-sh/uv:0.8.22@sha256:9874eb7afe5ca16c363fe80b294fe700e460df29a55532bbfea234a0f12eddb1 AS uv
 
-FROM python:3.11-slim
+# Digest-pinned like OPA and uv above, and for the same reason: `python:3.11-slim`
+# is a moving tag, so two builds of the same commit produced two different base
+# layers and the SBOM described whichever one happened to be current.
+FROM python:3.11-slim@sha256:9534e5a8e315485d4061ed659af0fd78a284c015f9b73661b41d6bab25604534
 
 COPY --from=opa /opa /usr/local/bin/opa
 

@@ -20,7 +20,8 @@
 #   docker run --rm -it -v "$PWD/security/evidence:/app/evidence" \
 #       autoaudit-evidence-cli
 
-FROM python:3.11-slim
+# Digest-pinned like every other base in this repository.
+FROM python:3.11-slim@sha256:9534e5a8e315485d4061ed659af0fd78a284c015f9b73661b41d6bab25604534
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
