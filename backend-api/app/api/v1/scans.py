@@ -27,6 +27,8 @@ from app.models.compliance import Scan
 from app.models.m365_connection import M365Connection
 from app.models.scan_result import ScanResult
 from app.models.scan_dispatch import ScanDispatch
+from app.models.evidence_artifact import EvidenceArtifact
+from app.services import evidence_audit
 from app.core.config import get_settings
 from app.models.user import User
 from app.schemas.provenance import publishable_provenance
@@ -873,11 +875,29 @@ async def cancel_scan(
 
 @router.delete("/{scan_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_scan(
+    request: Request,
     scan_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_session),
 ) -> None:
-    """Delete a scan (hard delete) and its results."""
+    """Delete a scan (hard delete) and its results.
+
+    Refuses while any evidence artifact is still bound to the scan.
+
+    Two Phase 7 mechanisms disagree about what should happen here, and the
+    disagreement was reaching callers as a 500. ``evidence_artifact.scan_id`` is
+    ``ON DELETE SET NULL``, so the FK wants to sever the link and keep the
+    object; the ``phase7_artifact_identity_immutable`` trigger freezes
+    ``scan_id`` on every UPDATE, so the severing raises
+    ``Phase 7 evidence artifact identity is immutable`` and the whole delete
+    aborts with an unhandled IntegrityError.
+
+    The trigger is right and the FK is the mistake. Evidence that proved control
+    1.1.1 for a particular scan must not silently become evidence that proved
+    1.1.1 for no scan -- that is the traceability the artifact exists to carry.
+    So the refusal is made explicit and actionable: delete the evidence first
+    (which is audited, and which a legal hold can block), then the scan.
+    """
     result = await db.execute(
         select(Scan)
         .where(Scan.id == scan_id, Scan.user_id == current_user.id)
@@ -888,6 +908,48 @@ async def delete_scan(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Scan {scan_id} not found",
+        )
+
+    # FOR UPDATE for the same reason delete_artifact takes it: a hold being
+    # applied concurrently must not be read stale by the side doing the damage.
+    linked = (
+        (
+            await db.execute(
+                select(EvidenceArtifact)
+                .where(EvidenceArtifact.scan_id == scan_id)
+                .with_for_update()
+            )
+        )
+        .scalars()
+        .all()
+    )
+    if linked:
+        request_id = getattr(request.state, "request_id", None)
+        held = [artifact for artifact in linked if artifact.legal_hold]
+        for artifact in linked:
+            await evidence_audit.record_event(
+                db,
+                artifact=artifact,
+                actor=current_user,
+                action=evidence_audit.ACTION_REJECTED,
+                outcome=evidence_audit.OUTCOME_DENIED,
+                request_id=request_id,
+                detail={
+                    "code": "evidence_legal_hold"
+                    if artifact.legal_hold
+                    else "evidence_still_linked",
+                    "operation": "delete_scan",
+                    "scan_id": scan_id,
+                },
+            )
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={
+                "code": "evidence_legal_hold" if held else "evidence_still_linked",
+                "linked_artifacts": len(linked),
+                "held_artifacts": len(held),
+            },
         )
 
     # Delete dependent results first (FK is not ON DELETE CASCADE).

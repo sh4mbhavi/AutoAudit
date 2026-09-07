@@ -26,16 +26,32 @@ cd AutoAudit
 
 The fastest way to get everything running is with Docker Compose. This will start the full stack including the database, Redis, OPA, and all application services.
 
-If you want to test **Google SSO** locally, create a `.env` file (gitignored) and set:
-
-- `GOOGLE_OAUTH_CLIENT_ID`
-- `GOOGLE_OAUTH_CLIENT_SECRET`
-
-You can start from the template:
+**A `.env` file is required, not optional.** `docker-compose.yml` declares
+`${POSTGRES_PASSWORD:?required}`, `${SECRET_KEY:?required}`,
+`${ENCRYPTION_KEY:?required}` and `${POWERSHELL_SERVICE_SECRET:?required}`, so
+Compose refuses to start anything at all without them. There are no defaults on
+purpose: a development password that ships in a repository is a production
+password somewhere.
 
 ```bash
 cp env.example .env
 ```
+
+Then generate a fresh value for each secret and put it in `.env`:
+
+```bash
+python - <<'EOF'
+import secrets
+from cryptography.fernet import Fernet
+print("POSTGRES_PASSWORD=" + secrets.token_hex(32))
+print("SECRET_KEY=" + secrets.token_hex(32))
+print("POWERSHELL_SERVICE_SECRET=" + secrets.token_hex(32))
+print("ENCRYPTION_KEY=" + Fernet.generate_key().decode())
+EOF
+```
+
+If you also want to test **Google SSO** locally, set `GOOGLE_OAUTH_CLIENT_ID`
+and `GOOGLE_OAUTH_CLIENT_SECRET` in the same file.
 
 ```bash
 docker compose --profile all up --build -d
@@ -160,7 +176,7 @@ SharePoint scans: [SharePoint local runtime](./engine/sharepoint-local-runtime.m
 
 Here's how to confirm everything is working:
 
-1. **Database**: Connect to PostgreSQL at `localhost:5432` (user: `autoaudit`, password: `autoaudit_dev_password`, database: `autoaudit`)
+1. **Database**: Connect to PostgreSQL at `127.0.0.1:5432` (user: `autoaudit`, database: `autoaudit`). The password is the `POSTGRES_PASSWORD` you generated in your `.env`; there is no shared default.
 
 2. **Backend API**: Visit http://localhost:8000/docs - you should see the Swagger UI
 

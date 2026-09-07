@@ -57,7 +57,7 @@ from fastapi import (
 )
 from fastapi import Path as PathParam
 from fastapi.responses import StreamingResponse
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from starlette.datastructures import FormData, UploadFile
 from starlette.formparsers import MultiPartException, MultiPartParser
@@ -69,6 +69,7 @@ from app.models.compliance import Scan
 from app.models.evidence_artifact import EvidenceArtifact
 from app.models.evidence_audit_event import EvidenceAuditEvent
 from app.models.evidence_validation import EvidenceValidation
+from app.models.manual_evidence import ManualEvidenceRecord, ManualEvidenceRevision
 from app.models.scan_result import ScanResult
 from app.models.user import User
 from pydantic import ValidationError
@@ -435,15 +436,23 @@ async def _resolve_parent(
 
 
 async def _owned_artifact(
-    db: AsyncSession, user: User, object_id: str
+    db: AsyncSession, user: User, object_id: str, *, for_update: bool = False
 ) -> EvidenceArtifact | None:
-    """One query, both predicates. Ownership is part of the lookup itself."""
-    result = await db.execute(
-        select(EvidenceArtifact).where(
-            EvidenceArtifact.object_id == object_id,
-            EvidenceArtifact.user_id == user.id,
-        )
+    """One query, both predicates. Ownership is part of the lookup itself.
+
+    ``for_update`` is for the paths that go on to change the row. A plain
+    SELECT does not block on a row lock in PostgreSQL -- readers never wait --
+    so the ``SELECT ... FOR UPDATE`` in ``set_legal_hold`` could not serialise
+    against a delete that read the row without one. The lock has to be taken by
+    the side performing the irreversible act.
+    """
+    statement = select(EvidenceArtifact).where(
+        EvidenceArtifact.object_id == object_id,
+        EvidenceArtifact.user_id == user.id,
     )
+    if for_update:
+        statement = statement.with_for_update()
+    result = await db.execute(statement)
     return result.scalar_one_or_none()
 
 
@@ -1060,6 +1069,58 @@ async def _download(
     )
 
 
+async def _attached_to_approved_record(db: AsyncSession, object_id: str) -> bool:
+    """Is this object an attachment on any revision of an approved record?
+
+    Attachments are opaque object ids in a JSONB array on the revision, so the
+    containment operator is the whole query. Any revision counts, not only the
+    latest: the approved bundle is the one that was reviewed, and an earlier
+    revision's attachment is still part of that history.
+    """
+    found = await db.scalar(
+        select(ManualEvidenceRevision.id)
+        .join(
+            ManualEvidenceRecord,
+            ManualEvidenceRecord.id == ManualEvidenceRevision.record_id,
+        )
+        .where(
+            ManualEvidenceRecord.status == "approved",
+            # jsonb_exists, not `@>`: the column is a JSONB array of opaque
+            # string ids, and `?` is the operator that asks whether one of them
+            # is this string. Containment coerces its right-hand side through
+            # the JSON serializer and did not match here.
+            func.jsonb_exists(ManualEvidenceRevision.attachment_object_ids, object_id),
+        )
+        .limit(1)
+    )
+    return found is not None
+
+
+async def _purge_validation_excerpt(
+    db: AsyncSession, artifact: EvidenceArtifact
+) -> bool:
+    """Clear the encrypted excerpt an artifact's validation row is holding.
+
+    The link is one-way -- ``artifact.provenance["evidence_validation_id"]`` --
+    so this is the only side that can find it. Returns whether a row was
+    actually cleared, which is recorded in the audit detail so a deletion that
+    left nothing behind can be told apart from one that had nothing to leave.
+    """
+    provenance = artifact.provenance or {}
+    validation_id = provenance.get("evidence_validation_id")
+    if not isinstance(validation_id, int) or isinstance(validation_id, bool):
+        return False
+    validation = await db.scalar(
+        select(EvidenceValidation)
+        .where(EvidenceValidation.id == validation_id)
+        .with_for_update()
+    )
+    if validation is None or validation.extracted_text_encrypted is None:
+        return False
+    validation.extracted_text_encrypted = None
+    return True
+
+
 @router.delete("/artifacts/{object_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_artifact(
     request: Request,
@@ -1072,7 +1133,11 @@ async def delete_artifact(
     storage = _storage(settings)
     request_id = _request_id(request)
 
-    artifact = await _owned_artifact(db, current_user, object_id)
+    # FOR UPDATE, because this is the side that destroys bytes. `set_legal_hold`
+    # already locked the row, but a lock only serialises against another lock:
+    # a plain SELECT here read `legal_hold = false` while a hold was in flight,
+    # the hold committed, and the delete removed the object anyway.
+    artifact = await _owned_artifact(db, current_user, object_id, for_update=True)
     if artifact is None:
         await evidence_audit.record_event(
             db,
@@ -1102,6 +1167,31 @@ async def delete_artifact(
             detail={"code": "evidence_legal_hold"},
         )
 
+    # An approved manual-evidence bundle is a reviewed set, and its revision
+    # carries an `evidence_sha256` over exactly that set so a later reader can
+    # prove the approved bundle is the bundle a reviewer saw. Destroying one of
+    # its attachments makes that digest unverifiable -- and the submitter, who
+    # is the only party this route authorises, is precisely the party the
+    # approval exists to bind. Nothing stopped them.
+    if await _attached_to_approved_record(db, object_id):
+        await evidence_audit.record_event(
+            db,
+            artifact=artifact,
+            actor=current_user,
+            action=evidence_audit.ACTION_REJECTED,
+            outcome=evidence_audit.OUTCOME_DENIED,
+            request_id=request_id,
+            detail={
+                "code": "evidence_attached_to_approved_record",
+                "operation": "delete",
+            },
+        )
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"code": "evidence_attached_to_approved_record"},
+        )
+
     if artifact.status == STATUS_DELETED:
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
@@ -1129,6 +1219,15 @@ async def delete_artifact(
             detail={"code": "evidence_delete_failed"},
         )
 
+    # The stored excerpt is the same bytes. `create_upload` writes an encrypted
+    # copy of the extracted text into evidence_validation and links it from
+    # artifact.provenance, and deleting the object left that copy behind: a
+    # decryptable excerpt of evidence the tenant was told had been deleted, with
+    # nothing pointing at it any more. The validator's own findings
+    # (`matches_json`, `text_hash`) are the assessment and are retained; the
+    # excerpt is the evidence and goes with it.
+    excerpt_purged = await _purge_validation_excerpt(db, artifact)
+
     # The CHECK constraint couples these two: status 'deleted' exists if and
     # only if deleted_at is set.
     artifact.status = STATUS_DELETED
@@ -1140,7 +1239,11 @@ async def delete_artifact(
         action=evidence_audit.ACTION_DELETED,
         outcome=evidence_audit.OUTCOME_ALLOWED,
         request_id=request_id,
-        detail={"kind": artifact.kind, "byte_size": artifact.byte_size},
+        detail={
+            "kind": artifact.kind,
+            "byte_size": artifact.byte_size,
+            "excerpt_purged": excerpt_purged,
+        },
     )
     await db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -1720,6 +1823,31 @@ async def set_legal_hold(
         )
         await db.commit()
         raise _not_found()
+
+    # Separation of duties, which the docstring above has claimed since Phase 10
+    # and nothing implemented. `require_auditor_or_above` keeps an ordinary
+    # viewer out, but an auditor or admin is also the owner of their own
+    # uploads, and releasing a hold on your own evidence is precisely the act a
+    # hold exists to prevent. Applying one to your own artifact is not: it only
+    # adds an obligation, so it stays allowed.
+    if not payload.hold and artifact.user_id == current_user.id:
+        await evidence_audit.record_event(
+            db,
+            artifact=artifact,
+            actor=current_user,
+            action=evidence_audit.ACTION_REJECTED,
+            outcome=evidence_audit.OUTCOME_DENIED,
+            request_id=request_id,
+            detail={
+                "code": "evidence_legal_hold_self_release",
+                "operation": "legal_hold",
+            },
+        )
+        await db.commit()
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail={"code": "evidence_legal_hold_self_release"},
+        )
 
     already = artifact.legal_hold
     artifact.legal_hold = payload.hold

@@ -8,7 +8,7 @@ from app.api.v1.router import api_router
 from app.core.config import get_settings
 from app.core.health import readiness_report
 from app.core.metrics import exposition
-from app.core.middleware import RequestLoggingMiddleware
+from app.core.middleware import LoginRateLimitMiddleware, RequestLoggingMiddleware
 from app.core.errors import not_found_handler, NotFound
 
 settings = get_settings()
@@ -22,6 +22,15 @@ def create_app() -> FastAPI:
     # (middleware executes in reverse order - last added runs first)
     app.add_middleware(RequestLoggingMiddleware)
     app.add_middleware(CSRFMiddleware)
+    # Added after CSRF so it runs before it: an attempt refused for rate is not
+    # a CSRF decision, and burning a hash on a request that is about to be
+    # rejected anyway is the cost this exists to avoid.
+    app.add_middleware(
+        LoginRateLimitMiddleware,
+        path_suffix=f"{settings.API_PREFIX}/auth/login",
+        max_failures=settings.LOGIN_MAX_FAILURES,
+        window_seconds=settings.LOGIN_FAILURE_WINDOW_SECONDS,
+    )
 
     # Allow frontend (localhost:3000 and others) to call the API during development.
     # CORS must be added last so it runs first and wraps all responses including errors.

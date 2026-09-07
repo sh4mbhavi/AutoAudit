@@ -30,6 +30,12 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     SESSION_ABSOLUTE_SECONDS: int = 8 * 60 * 60
 
+    # Failed sign-in attempts allowed from one source address before the login
+    # endpoint starts answering 429. Only failures count and a success clears
+    # the window; see LoginRateLimitMiddleware for why this is per-process.
+    LOGIN_MAX_FAILURES: int = 10
+    LOGIN_FAILURE_WINDOW_SECONDS: int = 300
+
     # Public URLs (used for OAuth redirects)
     # These must be the externally reachable URLs (e.g. localhost from the browser).
     BACKEND_PUBLIC_URL: str = "http://localhost:8000"
