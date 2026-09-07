@@ -1,0 +1,257 @@
+{
+ "phase": 11,
+ "date": "2026-09-07",
+ "codex": {
+  "available": true,
+  "note": "AVAILABLE for the first time in five phases. Phases 7, 8, 9 and 10 each recorded it rate-limited and substituted Gemini; Phase 10's handoff stated that four consecutive phases was not an accident and that this stack should get an independent human or Codex review before merge.",
+  "method": "Three batches of Phase 11's own claims, each prompted to REFUTE by default and to correct any claim that was real but overstated. Codex ran read-only in the worktree and reproduced results independently rather than reading alone.",
+  "refuted_as_written": [
+   {
+    "claim": "P11-OWN-02 - 'nothing declares or asserts' the engine-identity precondition",
+    "correction": "False. engine/worker_entrypoint.sh:6 calls engine_identity() before starting Celery and docs/compliance/phase-3/README.md:121 documents the identity sources. Verified. The accurate finding is that the TEST suites lack an identity fixture or preflight for a source export. Severity reduced high -> medium. Codex also corrected the failure attribution: the two non-engine failures span backend-api/tests and tools/tests, not two backend tests."
+   },
+   {
+    "claim": "P11-OWN-21 - 'no phase of this programme has verified' v3.1.0, v4.0.0 or essential-eight",
+    "correction": "False. engine/tests/test_wiring.py:66 enumerates all metadata structurally, the Essential Eight family has semantic Rego tests (e.g. test_e8_priv_1_1_restrict_admin_privileges.rego), and backend-api/tests/test_phase7_soc2.py:386 exercises v3.1.0 scan behaviour. The accurate finding is incomplete semantic coverage, not zero verification. Severity reduced high -> medium. The 22-of-69 count was independently reproduced."
+   },
+   {
+    "claim": "P11-OWN-10 - CodeQL is not a pull-request gate for anything outside security/",
+    "correction": "FALSE, and the finding is WITHDRAWN IN FULL. ci.backend-api.yml:36-43, ci.engine.yml:31-37 and ci.frontend.yml:31-38 each run codeql-action/init and analyze on `pull_request: branches: [main]` with no path filter. Verified directly. ci.security.yml's filter is exactly what its comment says: that workflow exists only to scan the unmaintained security/ TPRM module."
+   },
+   {
+    "claim": "P11-OWN-18 - the product implements neither NIST nor ISO 27001",
+    "correction": "Overstated as a blanket claim. security/strategies/custom_benchmarks.py:83 NISTComplianceChecker and :91 ISO27001Checker are registered at :143/:150 and reachable through evidence.py's strategy resolver. They are keyword checkers over an uploaded document carrying one rule each, in the unmaintained TPRM module - not a benchmark. The finding is restated to say exactly that and its severity reduced from high to medium."
+   },
+   {
+    "claim": "P11-OWN-03 - merged, Alembic refuses to load the versions directory at all",
+    "correction": "Wrong mechanism. alembic/script/revision.py:212 WARNS on a duplicate revision id and loads anyway; the failure is at head resolution on the combined graph, which Codex reproduced in memory. `alembic upgrade head` still fails, and with it entrypoint.sh:5. Explicit revision targets remain resolvable. Corrected."
+   }
+  ],
+  "corrected": [
+   {
+    "claim": "P11-OWN-16 - the CIS 1.2.2 mechanism",
+    "correction": "Rego produces ZERO bindings for string membership; it does not iterate the string's four characters. The fabricated 4 comes from count(shared_mailboxes) over the string's length on a different line. The observed false pass is unchanged and Codex reproduced it, including under the worker's --strict-builtin-errors."
+   },
+   {
+    "claim": "P11-OWN-14 - 'on any input'",
+    "correction": "Overstated. A collection failure or non-object evidence (tasks.py:894) fails those controls earlier, for a different reason, without reaching the policy. The accurate statement is 'whenever evaluation is reached'."
+   },
+   {
+    "claim": "P11-OWN-01 - '19 errors that have no auto-fix'",
+    "correction": "No SAFE auto-fix; six carry unsafe fixes ruff will not apply without --unsafe-fixes. Codex independently reproduced the same 19 errors and distribution under ruff 0.8.0. Its read-only replay predicted 223 modified files against the 221 observed by actually running the hooks."
+   }
+  ],
+  "confirmed": [
+   "P11-OWN-00 - reproduced the TypeError on Python 3.9 and confirmed compose:157 blocks worker startup on powershell-service health.",
+   "P11-OWN-14 - reproduced all nine OPAResult validation failures under OPA 1.20.2 and cited the omitting line in each policy.",
+   "P11-OWN-20 - the hold's lock at evidence.py:1709 cannot serialise the deletion's plain read at :442; bytes are removed at :1112 before any update blocking.",
+   "P11-OWN-06 - test_phase10_supply_chain.py:71 excludes python:3.11-slim and inspects only the engine Dockerfile; both runtime bases float; backend-api/Dockerfile:18's uv install has no pinning assertion.",
+   "P11-OWN-17 - the PowerShell image's floating base, remote installer and unpinned modules, covered by no supply-chain test, SBOM step or scan.",
+   "P11-OWN-04 - and added two refinements: keeping both /readiness decorators makes the first-registered handler win deterministically by registration order (starlette/routing.py:730) with the second shadowed, and this stack's timeout branch reports the literal string 'timeout' rather than an exception type.",
+   "P11-OWN-19 - the export promise is unsupported: the API generates bounded plain-text reports (evidence.py:1234, :1575) and no PDF/Excel/CSV report generator exists under backend-api/app.",
+   "P11-OWN-08 - all three Phase 0 paths are absent from the worktree, from HEAD and from upstream/main, checked by filesystem and by `git cat-file -e`. Codex counted 82 D01-D10 occurrences across docs/compliance/phase-*/ including Phase 11's own 20, i.e. 62 across the Phase 1-10 handoffs, which is the figure recorded."
+  ],
+  "found_independently": [
+   "tools/tests/test_phase10_supply_chain.py:27 declares POWERSHELL_DOCKERFILE as a constant and no test in the file ever uses it."
+  ],
+  "caveat_raised": "Codex noted that keyword absence cannot prove no IaC scanner runs: Super-Linter is invoked in ci.backend-api.yml and its bundled linters were not verified from here. P11-OWN-09 is therefore stated as the absence of an EXPLICIT IaC gate. It also could not verify plan item 19.1.13's exact wording, because the execution plan is not in this branch - which is P11-OWN-08 demonstrating itself.",
+  "scorecard": {
+   "claims_put_to_it": 14,
+   "confirmed": 8,
+   "refuted_as_written": 5,
+   "withdrawn_outright": 1,
+   "note": "Three rounds. Five of Phase 11's own claims did not survive review as written, and one was withdrawn entirely."
+  }
+ },
+ "gemini": {
+  "note": "Reviewed the headline claims in parallel, also prompted to refute by default.",
+  "confirmed": [
+   "The PEP 604 / Python 3.9 mechanism at engine/powershell/service/main.py:63.",
+   "The OPAResult contract path, with no normalisation or default-filling anywhere between the OPA output and model_validate; traced the trap to tasks.py:941-954.",
+   "ci.supply-chain.yml:53-64 builds both images, :87-101 SBOMs both, :112-127 scans only the worker.",
+   "test_phase10_supply_chain.py:67-71 inspects only ENGINE_DOCKERFILE and skips python:3.11-slim by name."
+  ],
+  "note_on_failures": "Two of five Gemini calls failed with an agy transcript-extraction error and were not retried; the claims they covered were settled directly or by Codex."
+ },
+ "adversarial_pass": {
+  "method": "Fourteen independent verification dimensions ran in parallel over the integrated stack. Every candidate finding then faced three refuters with distinct lenses - code truth, test-and-config truth, and scenario reachability - each defaulting to REFUTED. A finding survives only if fewer than two of its three refuters refute it.",
+  "dimensions": 15,
+  "candidate_findings": 93,
+  "refuter_verdicts": 279,
+  "survived": 71,
+  "refuted": 22,
+  "dimension_summaries": [
+   {
+    "dimension": "Plan item 19.1.3 \u2014 verify the mapping against Appendix A and Appendix B of SOC2_EXECUTION_PLAN.md",
+    "checked_and_held": 24,
+    "blocked": 2,
+    "candidate_findings": 0
+   },
+   {
+    "dimension": "Plan item 19.1.14 \u2014 public documentation and claims vs. actual status; anti-pattern guard \"do not describe technical readiness as a completed SOC 2 examination\"",
+    "checked_and_held": 11,
+    "blocked": 4,
+    "candidate_findings": 13
+   },
+   {
+    "dimension": "19.1.1 - Phase 0 authoritative sources: does the implementation still match the documented APIs and contracts?",
+    "checked_and_held": 14,
+    "blocked": 3,
+    "candidate_findings": 7
+   },
+   {
+    "dimension": "Plan item 19.1.9 \u2014 a complete scan can be reproduced from stored provenance",
+    "checked_and_held": 10,
+    "blocked": 3,
+    "candidate_findings": 7
+   },
+   {
+    "dimension": "Acceptance criterion \"no known credential, generic PowerShell execution, default admin, plaintext token log, or broker-secret serialization remains\", plus a general residual-security sweep (authn/authz, IDOR, SSRF, SQLi, deserialization, path traversal, TLS)",
+    "checked_and_held": 30,
+    "blocked": 4,
+    "candidate_findings": 4
+   },
+   {
+    "dimension": "CI gates: do they actually run, and do they actually gate?",
+    "checked_and_held": 16,
+    "blocked": 4,
+    "candidate_findings": 7
+   },
+   {
+    "dimension": "Plan item 19.1.11 \u2014 evidence ownership, approval, retention, expiry, deletion, and report access",
+    "checked_and_held": 13,
+    "blocked": 3,
+    "candidate_findings": 10
+   },
+   {
+    "dimension": "Factual audit of the Phase 6-10 handoff claims against the integrated Phase 11 worktree",
+    "checked_and_held": 28,
+    "blocked": 5,
+    "candidate_findings": 5
+   },
+   {
+    "dimension": "Plan item 19.1.12 \u2014 GRC traceability chain (report \u2192 mapping \u2192 result \u2192 policy \u2192 collector \u2192 normalized evidence \u2192 source/provenance) and existence of a SOC 2 evidence-pack generator",
+    "checked_and_held": 12,
+    "blocked": 5,
+    "candidate_findings": 8
+   },
+   {
+    "dimension": "Phase 11 release acceptance criteria (SOC2_EXECUTION_PLAN.md section 19.3, thirteen checkboxes)",
+    "checked_and_held": 15,
+    "blocked": 5,
+    "candidate_findings": 7
+   },
+   {
+    "dimension": "Plan item 19.1.8 / acceptance criterion \"unknown/error results cannot appear as pass or ordinary noncompliance\"",
+    "checked_and_held": 12,
+    "blocked": 4,
+    "candidate_findings": 10
+   },
+   {
+    "dimension": "Plan item 19.1.10 \u2014 broker failure, task redelivery, concurrent finalization, cancellation, tenant mismatch, throttling, PowerShell rejection",
+    "checked_and_held": 19,
+    "blocked": 5,
+    "candidate_findings": 3
+   },
+   {
+    "dimension": "Factual audit of Phase 1\u20135 handoff claims against the integrated Phase 1\u201310 tree",
+    "checked_and_held": 34,
+    "blocked": 4,
+    "candidate_findings": 5
+   },
+   {
+    "dimension": "cross-phase consistency and integration coherence",
+    "checked_and_held": 15,
+    "blocked": 4,
+    "candidate_findings": 7
+   },
+   {
+    "dimension": null,
+    "checked_and_held": 0,
+    "blocked": 0,
+    "candidate_findings": 2
+   }
+  ],
+  "agents": 293,
+  "agent_errors": 0,
+  "empty_results": 0,
+  "duration_minutes": 63,
+  "notable_refutations": [
+   {
+    "finding": "P11-06 - criterion 12 (GRC approval) not met",
+    "refuted_by": "3 of 3",
+    "reason": "All three refuters confirmed every fact and rejected the finding as an externally blocked human decision already recorded as blocked. Correct as a DEFECT classification. It is still carried in acceptance-criteria.json as criterion 12 NOT MET, because for a release decision an unapproved crosswalk is an unmet criterion whatever its cause."
+   },
+   {
+    "finding": "P11-07 - criterion 13 (owned risks) not met",
+    "refuted_by": "3 of 3",
+    "reason": "Same reasoning, same resolution: not a defect, still an unmet criterion."
+   },
+   {
+    "finding": "REPRO-1 - collector output is never stored, so no scan is re-derivable",
+    "refuted_by": "2 of 3",
+    "reason": "Refuted as a deliberate, D05-permitted refusal, and as overstating what the stored provenance supports. Accepted. traceability-trace.md records the break in the chain without calling it a defect."
+   },
+   {
+    "finding": "T-01 - no SOC 2 evidence pack generator exists",
+    "refuted_by": "2 of 3",
+    "reason": "Refuted: GET /v1/scans/{scan_id}/soc2-report does exist. The accurate residue - that nothing in the product calls it - is P11-OWN-22."
+   },
+   {
+    "finding": "DOC-01 - the About page advertises NIST and ISO 27001",
+    "refuted_by": "2 of 3",
+    "reason": "Refuted on its causal mechanism and its 'the site contradicts itself' hook, NOT on its facts: both refuters confirmed the page lists NIST and ISO 27001 and that neither is implemented. Phase 11 verified that directly and carries the fact alone as P11-OWN-18."
+   }
+  ],
+  "counts_the_pass_got_wrong": "Two survivors disagreed on how many ready policies violate the affected_resources contract - one said 20, another said 12. Phase 11 counted it directly: NINE never emit the field, and NINE MORE omit it only from their `default result`, giving 18 that can emit a contract-invalid result. Codex reproduced the first nine independently. The register carries the verified figure and folds both survivors into P11-OWN-14."
+ },
+ "phase_11_own_findings": {
+  "count": 22,
+  "method": "Verified directly rather than by reading: starting the containers, evaluating the policies with the digest-verified OPA 1.20.2 binary, running the CI gate the way CI runs it, exporting a checkout with no .git, scanning the built images, and querying the GitHub API."
+ },
+ "folded_duplicates": [
+  {
+   "adversarial_id": "P1-5-CLAIM-01",
+   "folded_into": "P11-OWN-14"
+  },
+  {
+   "adversarial_id": "P11-02",
+   "folded_into": "P11-OWN-11"
+  },
+  {
+   "adversarial_id": "P11-03",
+   "folded_into": "P11-OWN-03"
+  },
+  {
+   "adversarial_id": "F6",
+   "folded_into": "P11-OWN-16"
+  },
+  {
+   "adversarial_id": "F8",
+   "folded_into": "P11-OWN-14"
+  },
+  {
+   "adversarial_id": "F10",
+   "folded_into": "P11-OWN-15"
+  },
+  {
+   "adversarial_id": "F-01",
+   "folded_into": "P11-OWN-20"
+  },
+  {
+   "adversarial_id": "DOC-02",
+   "folded_into": "P11-OWN-19"
+  }
+ ],
+ "register": {
+  "total_open_risks": 85,
+  "counts": {
+   "blocking": 7,
+   "high": 27,
+   "medium": 27,
+   "low": 24
+  },
+  "withdrawn": 1,
+  "note": "Every row is open: owner null, due_date null, accepted false."
+ }
+}

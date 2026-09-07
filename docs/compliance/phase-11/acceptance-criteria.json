@@ -1,0 +1,161 @@
+{
+ "phase": 11,
+ "date": "2026-09-07",
+ "source": "SOC2_EXECUTION_PLAN.md section 19.3",
+ "criteria": [
+  {
+   "n": 1,
+   "criterion": "Worktree and generated artifacts are controlled and reproducible.",
+   "verdict": "met with qualifications",
+   "evidence": [
+    "The Phase 10 working source overlaid byte-identically: 1004 files, 0 digest mismatches, 0 extra files, and `git status` identical entry-for-entry but for docs/compliance/phase-11/.",
+    "No build artefact, virtualenv, node_modules or __pycache__ is tracked. The only tracked artefact in the base commit was .DS_Store and this stack removes it.",
+    "Three generated files are tracked and gated: the generated API types (tools/frontend/generate_api_types.py --check), the control status documents (tools/docs/generate_control_status.py --check) and the candidate-policy promotion state (tools/policies/promote_candidate.py --check). All three pass."
+   ],
+   "qualifications": [
+    "git does not track directories, so a file-level reproduction of this uncommitted stack leaves engine/collectors/_pending/compliance/ behind as an empty directory and one test correctly fails on it. Phase 10 hit the identical artefact overlaying Phase 9. A stack delivered as eleven uncommitted worktrees is reproducible only with that step written down.",
+    "P11-OWN-02: reproducing the tree is not sufficient to reproduce the test result. 21 tests additionally require the checkout to be a git repository, or ENGINE_GIT_SHA to be set. The RUNTIME declares this - engine/worker_entrypoint.sh:6 asserts engine_identity() before starting Celery, and Phase 3's handoff documents the identity sources - so the gap is in the test environment, where no fixture or preflight establishes it."
+   ]
+  },
+  {
+   "n": 2,
+   "criterion": "All required checks are enforced and green.",
+   "verdict": "NOT MET",
+   "evidence": [
+    "Enforcement is unverifiable from the available account: branches/main reports protected:true, branches/main/protection returns 404, /rulesets and /rules/branches/main are both empty, and the account holds pull/push/triage but neither admin nor maintain. Which checks are required is unknowable without a repository administrator.",
+    "Green is disproved independently of enforcement. ci.supply-chain.yml's `hooks` job runs `pre-commit run --all-files --show-diff-on-failure`; on a pristine copy of this stack the first pass modifies 221 files and a second pass still fails ruff with 19 unfixable errors (P11-OWN-01).",
+    "Every phase since Phase 4 has recorded that the proposed required-check set was never applied; Phase 11 can neither confirm nor refute that."
+   ],
+   "blocking": true
+  },
+  {
+   "n": 3,
+   "criterion": "Exactly one Alembic head exists.",
+   "verdict": "met for this stack; fails on integration",
+   "evidence": [
+    "`alembic heads` returns b9d4e17c6a52 (head) - exactly one. `alembic upgrade head` on an empty database applies the full chain and creates 27 public tables; re-running is a no-op that exits 0.",
+    "backend-api/tests/test_migrations.py::test_migration_graph_has_one_head asserts it, and the prior-head upgrade test covers ccf7645372fc and d87c3bb49953."
+   ],
+   "qualifications": [
+    "P11-OWN-03: merged with upstream/main the revision id 2899a0e678b6 exists under two filenames and Alembic refuses to load the versions directory at all. Once the duplicate is removed the graph has two heads, b9d4e17c6a52 and upstream's new 8a7b91ea95d9, and needs a new merge revision."
+   ]
+  },
+  {
+   "n": 4,
+   "criterion": "Strict OPA check and every policy test pass.",
+   "verdict": "met",
+   "evidence": [
+    "`opa check --strict engine/policies` exits 0 with no output, using the digest-verified OPA 1.20.2 the CI installer pins.",
+    "`opa test engine/policies engine/tests` reports PASS: 582/582.",
+    "Both reproduced in the clean checkout as well as the worktree."
+   ]
+  },
+  {
+   "n": 5,
+   "criterion": "Every Appendix B policy has semantic and collector contract coverage.",
+   "verdict": "met as written",
+   "evidence": [
+    "mapping.json carries 47 points of focus referencing 44 distinct CIS control ids. engine/tests/test_crosswalk_semantic_coverage.py::test_crosswalk_population_is_exactly_appendix_b pins the population, test_crosswalk_wiring_and_direct_assertions and test_every_crosswalk_case_executes_and_passes are parametrised over it, and test_real_collector_output_is_assessed_by_captured_policy supplies the collector contract half. All pass."
+   ],
+   "qualifications": [
+    "P11-OWN-15: the criterion asks only about Appendix B. metadata.json marks 69 controls `ready`; 44 are crosswalked and 25 are not. The 25 are selectable in the product and counted in the advertised ready total, and nine of them are provably unassessable (P11-OWN-14). The criterion as written cannot see them.",
+    "22 of the 69 ready controls additionally have no Rego unit test at all referencing their package; the 582 passing opa tests are concentrated in 47 policies (P11-OWN-21)."
+   ]
+  },
+  {
+   "n": 6,
+   "criterion": "No known credential, generic PowerShell execution, default admin, plaintext token log, or broker-secret serialization remains.",
+   "verdict": "NOT MET on one of the five classes",
+   "evidence": [
+    "Generic PowerShell execution: MET. tools/ci/runtime_powershell_smoke.py PASSES against the real local PowerShell transport - a generated script returns clean JSON, normal and timed-out containers are removed, and no token appears in argv. The residual-security sweep traced every path from an HTTP request or task payload to a cmdlet and found no caller-controlled surface.",
+    "Default admin: MET. backend-api/app/db/init_db.py requires APP_ENV=dev AND DEV_ADMIN_SEED_ENABLED, requires caller-supplied DEV_ADMIN_EMAIL and a DEV_ADMIN_PASSWORD of at least 16 characters, returns early if the account exists rather than resetting or promoting it, and logs no credential. backend-api/entrypoint.sh runs only `alembic upgrade head` then uvicorn; it seeds nothing.",
+    "Plaintext token log: MET. backend-api/app/core/users.py logs user.id only in on_after_register, on_after_forgot_password and on_after_request_verify; the token parameter is never interpolated.",
+    "Broker secret serialization: MET. Celery messages carry identifiers only; the API does not publish to the broker directly - Phase 6 made the outbox the only authorisation to publish.",
+    "KNOWN CREDENTIAL: NOT MET. `autoaudit:autoaudit_dev_password` is still present in tracked files - .github/workflows/pr.preview-deploy.yml lines 273 and 322, and docs/GETTING_STARTED.md:163, which presents it to a developer as the password of a stack they have just started."
+   ],
+   "qualifications": [
+    "The residual credential is not an exploitable exposure today, and the reason is itself a finding: the preview-deploy workflow cannot run. It sets APP_ENV=preview, and backend-api/app/core/config.py:125 returns early only for APP_ENV=='dev', so the full validator runs, `autoaudit_dev_password` fails the strength check and `redis://redis:6379` fails the rediss requirement. Settings() raises at import, alembic/env.py fails, and entrypoint.sh exits under `set -e` before uvicorn is reached. The workflow has been dead since Phase 5 and is byte-identical across every phase snapshot since Phase 7.",
+    "GETTING_STARTED.md:163 is simply wrong: docker-compose.yml:39 now requires an operator-generated POSTGRES_PASSWORD, so the documented verification step cannot succeed with the password the document publishes.",
+    "Adjacent to the criterion but outside its five classes, and carried in the register: tools/ops/backup.py passes the database password in subprocess argv, where any local user can read it from `ps` or /proc/<pid>/cmdline; and POST /v1/auth/login has no rate limiting, throttling, per-account backoff or lockout anywhere in the tree."
+   ],
+   "blocking": false
+  },
+  {
+   "n": 7,
+   "criterion": "Unknown/error results cannot appear as pass or ordinary noncompliance.",
+   "verdict": "NOT MET",
+   "evidence": [
+    "P11-OWN-16, demonstrated with the pinned OPA 1.20.2 against CIS 1.2.2: input {\"shared_mailboxes\": \"oops\"} returns compliant=true with the message 'Sign-in is blocked for all 4 shared mailbox(es)' - a confident pass over a malformed payload, carrying a fabricated resource count into the audit record. Input {} returns compliant=true, 'No shared mailboxes found.' Input {\"shared_mailboxes\": null} returns compliant=false with 'Evaluation failed: unable to verify shared mailbox sign-in status' - an evaluation failure recorded as ordinary tenant non-compliance.",
+    "The engine's own handling is sound where it applies: a policy that raises is trapped as EvaluationFailure('evaluation_error') with provenance_status='incomplete' (tasks.py:941-953) and is never flattened into pass or fail. The failure is at the policy layer, in a control the crosswalk suite does not cover."
+   ],
+   "blocking": true
+  },
+  {
+   "n": 8,
+   "criterion": "Compliance and coverage are both displayed.",
+   "verdict": "met",
+   "evidence": [
+    "frontend/src/components/AssessmentSummary.tsx renders 'Compliance among assessed' and 'Automated coverage' together, with explicit Unavailable states for a legacy scan and for a null coverage.",
+    "It is the only component that reads a compliance score, and it is used in all four places a scan is displayed: Dashboard.tsx:726 and :859, ScanDetailPage.tsx:604, ScansPage.tsx:856. No view shows compliance without coverage.",
+    "frontend/src/utils/scanAssessment.ts is the single reader of scan.compliance_score; 262 frontend tests pass, including AssessmentSummary.test.tsx and scanAssessment.test.ts."
+   ]
+  },
+  {
+   "n": 9,
+   "criterion": "Scan lifecycle failure and redelivery tests pass.",
+   "verdict": "met",
+   "evidence": [
+    "engine/tests/test_phase6_lifecycle.py covers late results against a terminal scan, terminal scans that cannot reopen, atomic outbox construction under duplicate orchestration, dispatcher recovery from a broker outage, deadline expiry, reconciliation of a missing child dispatch, delivery exhaustion, orchestrator rollback leaving no partial children, orphan and stale child recovery, parent-lock serialisation of cancellation against a late write, terminal outbox cleanup, corrupt metadata, and credential drift failing before decryption. All pass.",
+    "tools/ci/container_smoke.py additionally proves it against real containers: PASS on API migration/startup, worker ping, a real broker outage, durable dispatcher recovery and a terminal scan."
+   ]
+  },
+  {
+   "n": 10,
+   "criterion": "Cross-tenant SharePoint execution is impossible.",
+   "verdict": "met at the test level",
+   "evidence": [
+    "engine/tests/test_phase6_tenant.py::test_unproven_sharepoint_never_executes_or_evaluates is parametrised over missing, tenant, host, unproven and forbidden and asserts the collection neither executes nor evaluates; test_matching_identity_uses_connection_bound_url_and_alias asserts the connection-bound URL and alias are used. Both pass."
+   ],
+   "qualifications": [
+    "'Impossible' is asserted by tests over the code path, not by an executed non-production tenant scan. Plan item 19.1.7 - the full approved M365 scan that would exercise it against a real tenant - is externally blocked; no tenant credentials exist anywhere in this environment."
+   ]
+  },
+  {
+   "n": 11,
+   "criterion": "Evidence is owner-authorized, immutable after approval, retained, and reproducible.",
+   "verdict": "NOT MET",
+   "evidence": [
+    "IMMUTABLE AFTER APPROVAL: MET, and enforced by the database rather than by application code. Phase 3's c4e91a73b620 creates protect_phase3_terminal_result and protect_phase3_scan_inputs; Phase 7's f7d2c48b1a03 creates phase7_evidence_audit_append_only, phase7_manual_revision_append_only, phase7_artifact_identity_immutable and the manual-evidence identity/history/decision triggers; Phase 8's a3f5c1d90b47 adds four append-only drift triggers and a pinned-baseline immutability trigger.",
+    "OWNER-AUTHORIZED: NOT MET in both directions. The legal-hold/delete race Phase 10 records as fixed is still open - set_legal_hold takes SELECT ... FOR UPDATE (evidence.py:1698) while delete_artifact reads through _owned_artifact (evidence.py:437), a plain SELECT that the lock cannot block (P11-OWN-20, confirmed by Codex). The hold endpoint's own docstring claims 'the owner cannot lift their own'; no separation of duties is implemented, so an owner holding the auditor role can. And an approved manual-evidence bundle's attachments can be destroyed unilaterally by the submitter, because approval places no retention protection on the artifacts it digests.",
+    "RETAINED: NOT MET. Deleting an artifact leaves an encrypted excerpt of the same evidence behind in evidence_validation; delete_scan severs evidence from the control it proves, unaudited, without consulting legal_hold. Phase 10's own recorded legal_hold bypass list is inaccurate about two of the three paths it names.",
+    "REPRODUCIBLE: NOT MET at the evidence link. Only provenance.input_digest is stored; the collector output itself is stored nowhere, so a completed scan's result cannot be re-derived without re-collecting from the live tenant. Deliberate and D05-permitted - recorded in traceability-trace.md as a break in the chain, not as a defect.",
+    "REPORT ACCESS: the SOC 2 report is owner-scoped only, so the auditor role that gates cross-owner review elsewhere in the evidence surface does not apply to it; and the report carries no identifier for the M365 connection or tenant it describes.",
+    "Phase 10's two new evidence-lifecycle endpoints - setting a legal hold and reading the access log - have no tests anywhere in the repository."
+   ],
+   "blocking": true
+  },
+  {
+   "n": 12,
+   "criterion": "GRC approves the crosswalk version, limitations, and public wording.",
+   "verdict": "NOT MET - externally blocked",
+   "evidence": [
+    "engine/mappings/soc2/common-criteria/v1.0.0/mapping.json carries status 'proposed_pending_grc_approval' and approval.approved = false with reviewer_name, reviewer_role, approved_at and decision_reference all null.",
+    "The organizational register reports 9 criteria, 5 partly designed, 0 operating, 9 without an owner.",
+    "D08 governs public SOC 2 wording and, with D01-D10, is an unapproved draft with no named owner - and is not present in any branch that would be merged (P11-OWN-08).",
+    "Separately, the report the criterion is about is unreachable: nothing in the frontend calls GET /v1/scans/{scan_id}/soc2-report (P11-OWN-22)."
+   ],
+   "blocking": true
+  },
+  {
+   "n": 13,
+   "criterion": "Remaining risks have named owners, due dates, and documented acceptance.",
+   "verdict": "NOT MET",
+   "evidence": [
+    "docs/compliance/phase-11/risk-register.json is the first risk register this programme has had. Every entry carries owner: null, due_date: null and accepted: false.",
+    "No risk in this repository has a named owner. The CC1-CC9 register carries owner: null on all nine rows by design and its validator refuses to write one. Phase 0 decisions D01-D10 are unapproved with no named owners, recorded identically in the Phase 7, 8, 9 and 10 handoffs.",
+    "Section 19.4 states: 'Do not mark the program complete with an unowned accepted risk.' Phase 11 does not mark it complete."
+   ],
+   "blocking": true
+  }
+ ]
+}

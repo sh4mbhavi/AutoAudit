@@ -1,0 +1,143 @@
+{
+  "date": "2026-09-06",
+  "timezone": "Australia/Melbourne",
+  "status": "local_engineering_verified_external_acceptance_pending",
+  "base_commit": "8736fcb93565dcc1e1a60a06392a879f5a585335",
+  "upstream_main": "bba14810f558190ee5221017c11864d300f8078a",
+  "branch": "fix/soc2-phase-6-reliable-scans",
+  "environment": {
+    "OPA_BINARY": "/tmp/autoaudit-phase5-tools/opa",
+    "MIGRATION_TEST_ADMIN_URL": "postgresql://postgres@127.0.0.1:55436/postgres",
+    "AUTOAUDIT_REQUIRE_INTEGRATION": "1",
+    "frontend_node": "24"
+  },
+  "checks": [
+    {
+      "command": "uv run --frozen --project engine --extra dev python -m pytest engine/tests -q",
+      "exit_code": 0,
+      "passed": 1234,
+      "skipped": 1,
+      "skip": "Existing structural wiring case",
+      "log": "verification/engine.log"
+    },
+    {
+      "command": "uv run --frozen --project backend-api --extra dev --extra evidence python -m pytest backend-api/tests tools/tests -q",
+      "exit_code": 0,
+      "passed": 159,
+      "log": "verification/backend_tools.log"
+    },
+    {
+      "command": "$OPA_BINARY check --strict engine/policies",
+      "exit_code": 0
+    },
+    {
+      "command": "$OPA_BINARY test engine/policies engine/tests",
+      "exit_code": 0,
+      "passed": 550
+    },
+    {
+      "command": "npm exec --yes --package=node@24 -- npm --prefix frontend test",
+      "exit_code": 0,
+      "passed": 243,
+      "files": 26,
+      "log": "verification/frontend.log"
+    },
+    {
+      "command": "npm exec --yes --package=node@24 -- npm --prefix frontend run typecheck",
+      "exit_code": 0,
+      "log": "verification/frontend_typecheck.log"
+    },
+    {
+      "command": "npm exec --yes --package=node@24 -- npm --prefix frontend run lint",
+      "exit_code": 0,
+      "warnings": 9,
+      "note": "Existing warnings",
+      "log": "verification/frontend_lint.log"
+    },
+    {
+      "command": "npm exec --yes --package=node@24 -- npm --prefix frontend run build",
+      "exit_code": 0,
+      "note": "Existing large chunk advisory",
+      "log": "verification/frontend_build.log"
+    },
+    {
+      "command": "python3 tools/ci/container_smoke.py",
+      "exit_code": 0,
+      "note": "Actual rebuilt API/worker images, migration/startup, real Redis outage after committed intent, redacted persisted failure, restart and supervised dispatcher/Celery terminal completion",
+      "log": "verification/containers.log"
+    },
+    {
+      "command": "uvx pre-commit run --files <Phase6 changed code/config files>",
+      "exit_code": 0,
+      "hooks_passed": 8,
+      "note": "Temporary Git index; real index remains unstaged. Synthetic fixture/migration false positives narrowly annotated. Removed only superseded d5f02b84c731 synthetic migration-head baseline entry; no historical credential baseline entry removed.",
+      "log": "verification/precommit.log"
+    },
+    {
+      "command": "uvx --from bandit==1.8.6 bandit -q -r backend-api/app",
+      "exit_code": 0,
+      "log": "verification/bandit_backend_app.log"
+    },
+    {
+      "command": "uvx --from bandit==1.8.6 bandit -q -r backend-api/tests -s B101",
+      "exit_code": 0,
+      "note": "Synthetic schema-validation input has narrow B106 annotation; ordinary test assertions excluded. Existing nosec-location warnings remain.",
+      "log": "verification/bandit_backend_tests.log"
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "supplementary_engine_bandit": {
+    "status": "existing_findings_retained",
+    "low": 20,
+    "medium": 2,
+    "high": 0,
+    "comparison": "Phase5 and Phase6 counts identical by file, check ID and severity; subprocess and closed SQL-construction heuristics. Not claimed clean or silently suppressed."
+  },
+  "acceptance_evidence": {
+    "broker_outage_after_commit": [
+      "backend-api/tests/test_phase6_lifecycle.py",
+      "tools/ci/container_smoke.py"
+    ],
+    "idempotent_redelivery_and_concurrent_last_results": [
+      "engine/tests/test_phase3_persistence.py",
+      "engine/tests/test_phase3_migrated_integration.py"
+    ],
+    "partial_dispatch_crash_stall_and_legacy_recovery": [
+      "engine/tests/test_phase6_lifecycle.py",
+      "engine/tests/test_phase6_dispatch_fairness.py"
+    ],
+    "cancel_delete_ownership_and_races": [
+      "backend-api/tests/test_phase6_lifecycle.py",
+      "engine/tests/test_phase6_lifecycle.py",
+      "frontend/src/pages/Scans/ScanDetailPage.test.tsx"
+    ],
+    "selected_tenant_binding": [
+      "engine/tests/test_phase6_tenant.py",
+      "engine/tests/test_phase6_lifecycle.py",
+      "backend-api/tests/test_phase6_lifecycle.py"
+    ],
+    "correlation": [
+      "engine/tests/test_phase6_correlation.py",
+      "backend-api/tests/test_phase4_worker_contract.py",
+      "backend-api/tests/test_phase6_lifecycle.py"
+    ],
+    "migration_preservation": [
+      "backend-api/tests/test_phase6_lifecycle.py",
+      "engine/tests/test_phase6_lifecycle.py"
+    ]
+  },
+  "reviews": {
+    "spec_review": "corrected provenance, legacy NULL-selection recovery, fairness, alias validation",
+    "final_review": "residual retry no-op and slow-poll fixes approved; no new obvious regressions"
+  },
+  "external_acceptance": [
+    "Review and integrate prerequisite stack with upstream",
+    "Publish and verify hosted required gates",
+    "Deploy dispatcher and matching API/worker/frontend versions",
+    "Provision and validate real Microsoft tenant/certificate/module bindings",
+    "Resolve prior Phase0 GRC and incident owner decisions"
+  ]
+}

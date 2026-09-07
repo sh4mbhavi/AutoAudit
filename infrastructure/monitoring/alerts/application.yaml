@@ -1,0 +1,85 @@
+# AutoAudit API alerts.
+#
+# Every expression here reads a series the API actually emits from
+# backend-api/app/core/metrics.py, scraped at GET /metrics. tools/ci/check_alert_metrics.py
+# fails the build if that stops being true.
+#
+# Replaces the pre-Phase-10 application_errors.yaml, which alerted on
+# api_errors_total, scan_engine_errors_total and batch_job_failures_total --
+# three names nothing in the repository has ever produced.
+
+groups:
+  - name: autoaudit.api
+    interval: 30s
+    rules:
+      - alert: APIServerErrorRateHigh
+        # 5xx only. The pre-Phase-10 rule counted every error, so a burst of
+        # 401s from an expired browser session -- entirely normal -- read the
+        # same as the API failing.
+        expr: |
+          sum(increase(autoaudit_api_errors_total{class="5xx"}[5m])) > 20
+        for: 5m
+        labels:
+          severity: high
+          team: backend
+          service: backend-api
+        annotations:
+          summary: "High: the API is returning server errors"
+          description: |
+            More than 20 5xx responses in five minutes. Client errors are excluded,
+            so this is the API failing rather than callers being refused.
+          runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#apiapiservererrorratehigh"
+
+      - alert: APIClientErrorRateHigh
+        expr: |
+          sum(increase(autoaudit_api_errors_total{class="4xx"}[5m])) > 200
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+          service: backend-api
+        annotations:
+          summary: "Warning: sustained client-error rate"
+          description: |
+            A sustained 4xx rate is usually a broken client build or a credential
+            problem rather than a server fault, but it is worth a look.
+          runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#apiapiclienterrorratehigh"
+
+      - alert: APILatencyHigh
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le, route) (rate(autoaudit_api_request_duration_seconds_bucket[5m]))
+          ) > 5
+        for: 10m
+        labels:
+          severity: warning
+          team: backend
+          service: backend-api
+        annotations:
+          summary: "Warning: p95 latency above 5s on {{ $labels.route }}"
+          description: |
+            The 95th percentile for this route has been above five seconds for ten
+            minutes. Evidence upload is bounded at EVIDENCE_PROCESSING_TIMEOUT_SECONDS
+            and is expected to be slow; the scan poll routes are not.
+          runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#apiapilatencyhigh"
+
+      - alert: StoredCredentialUnreadable
+        # The key-rotation failure signal. A retired key dropped from
+        # ENCRYPTION_KEY_DECRYPT_ONLY before the rewrite pass finished shows up
+        # here first, and every increment is a tenant that cannot be scanned.
+        expr: |
+          increase(autoaudit_decryption_failures_total[15m]) > 0
+        for: 0m
+        labels:
+          severity: critical
+          team: backend
+          service: backend-api
+        annotations:
+          summary: "Critical: stored ciphertext no key in the ring can read"
+          description: |
+            A stored secret could not be decrypted. Almost always this means the
+            deployment is carrying the wrong encryption key ring -- most often a
+            retired key removed before tools/ops/rotate_encryption_key.py --check
+            reported clean. Restore the key before anything else.
+          runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#apistoredcredentialunreadable"

@@ -1,0 +1,236 @@
+{
+ "phase": 11,
+ "date": "2026-09-07",
+ "timezone": "Australia/Melbourne",
+ "status": "Final verification complete. Release decision: DO NOT RELEASE. No repository code was changed - plan section 19.5 forbids implementing fixes during final verification, and every defect found is recorded in risk-register.json rather than repaired.",
+ "base_commit": "8736fcb93565dcc1e1a60a06392a879f5a585335",
+ "prerequisite": "the complete Phase 10 working source, 1004 files, SHA-256 recorded in phase-10-snapshot.json; the overlay was verified byte-identical (0 mismatches, 0 extra files) and `git status` compared entry-for-entry against the Phase 10 worktree before any Phase 11 work",
+ "branch": "fix/soc2-phase-11-final-verification (uncommitted, unpushed, no PR)",
+ "upstream_main": "75b919d00b7f7b8743425740b21d79ec7b09cd6f",
+ "upstream_main_at_phase_10": "0a074cc9255029e3c337c6fba6db5964ba89e7c9",
+ "upstream_main_at_phase_9": "bfb8edd44414683ac4adcde3ab79d4520a0a00a3",
+ "commits_upstream_ahead_of_base": 96,
+ "migration_head": "b9d4e17c6a52",
+ "environment": {
+  "OPA_BINARY": "<scratchpad>/opa - 1.20.2, installed and SHA-256-verified by tools/ci/install_opa.py",
+  "PROMTOOL": "<scratchpad>/promtool - 3.7.3, installed and SHA-256-verified by tools/ci/install_promtool.py",
+  "MIGRATION_TEST_ADMIN_URL": "postgresql://postgres@127.0.0.1:55441/postgres (UTC cluster)",
+  "non_utc_cluster": "postgresql://postgres@127.0.0.1:55442/postgres (timezone=Australia/Melbourne)",
+  "AUTOAUDIT_REQUIRE_INTEGRATION": "1",
+  "postgresql": "16.14, two disposable local clusters",
+  "docker": "29.3.1",
+  "frontend_node": "24.20.0 via npm exec --package=node@24 (the .nvmrc version CI uses)",
+  "scanners": "anchore/syft and anchore/grype (grype db v0.118.0-compatible) and aquasec/trivy, all as pinned-name container images",
+  "bandit": "1.8.6 via uvx",
+  "pre-commit": "via uvx, hooks as declared in .pre-commit-config.yaml"
+ },
+ "baseline_reproduced": {
+  "note": "Phase 10's recorded results were reproduced before any Phase 11 work. One step was required first, identical to the one Phase 10 recorded when overlaying Phase 9: git does not track directories, so a file-level overlay left engine/collectors/_pending/compliance/ behind as an empty directory and engine/tests/test_phase8_compliance_collectors.py::test_registered_ids correctly failed on it. Removing the empty directory reproduced the Phase 10 result exactly.",
+  "engine": "1938 passed, 1 skipped, 11 xfailed",
+  "backend_and_tools": "803 passed",
+  "opa_test": "582/582",
+  "opa_check_strict": "clean"
+ },
+ "checks": [
+  {
+   "item": "19.1.4",
+   "command": "uv run --frozen --project engine --extra dev python -m pytest engine/tests -q",
+   "result": "1938 passed, 1 skipped, 11 xfailed",
+   "verdict": "pass"
+  },
+  {
+   "item": "19.1.4",
+   "command": "uv run --frozen --project backend-api --extra dev --extra evidence python -m pytest backend-api/tests tools/tests -q",
+   "result": "803 passed",
+   "verdict": "pass"
+  },
+  {
+   "item": "19.1.4",
+   "command": "$OPA_BINARY check --strict engine/policies",
+   "result": "clean, exit 0",
+   "verdict": "pass"
+  },
+  {
+   "item": "19.1.4",
+   "command": "$OPA_BINARY test engine/policies engine/tests",
+   "result": "PASS: 582/582",
+   "verdict": "pass"
+  },
+  {
+   "item": "19.1.4",
+   "command": "$PROMTOOL check rules infrastructure/monitoring/alerts/{application,scan_lifecycle,platform}.yaml",
+   "result": "SUCCESS: 4, 6 and 7 rules found",
+   "verdict": "pass"
+  },
+  {
+   "item": "19.1.4",
+   "command": "$PROMTOOL test rules infrastructure/monitoring/alerts/tests/rule_tests.yaml",
+   "result": "SUCCESS",
+   "verdict": "pass"
+  },
+  {
+   "item": "19.1.4",
+   "command": "python3 tools/ci/check_alert_metrics.py",
+   "result": "9 alert metric(s) emitted by the application, 9 declared external",
+   "verdict": "pass"
+  },
+  {
+   "item": "19.1.4",
+   "command": "python3 tools/ci/check_organizational_register.py",
+   "result": "9 organizational criteria validated; 5 partly designed, 0 operating, 9 without an owner",
+   "verdict": "pass"
+  },
+  {
+   "item": "19.1.4",
+   "command": "python3 tools/docs/generate_control_status.py --check",
+   "result": "4 control status document(s) match metadata",
+   "verdict": "pass"
+  },
+  {
+   "item": "19.1.4",
+   "command": "python3 tools/policies/promote_candidate.py --check",
+   "result": "3 candidate policy file(s) verified and unreachable by any scan",
+   "verdict": "pass"
+  },
+  {
+   "item": "19.1.4",
+   "command": "uv run ... python tools/frontend/generate_api_types.py --check",
+   "result": "frontend/src/api/generated/scans.ts matches the backend OpenAPI schema",
+   "verdict": "pass"
+  },
+  {
+   "item": "19.1.4",
+   "command": "cd backend-api && uv run alembic heads",
+   "result": "b9d4e17c6a52 (head) - exactly one",
+   "verdict": "pass"
+  },
+  {
+   "item": "19.1.4",
+   "command": "git diff --check",
+   "result": "clean",
+   "verdict": "pass"
+  },
+  {
+   "item": "19.1.4",
+   "command": "npm exec --package=node@24 -- npm --prefix frontend run typecheck | test | build | lint",
+   "result": "clean | 27 files 262 tests passed | built | 9 pre-existing warnings",
+   "verdict": "pass"
+  }
+ ],
+ "clean_checkout": {
+  "why": "Plan item 19.1.4 asks for all repository gates from a clean checkout. Every phase to date ran its gates inside a git worktree that already carried .venv directories, __pycache__ and node_modules. Phase 11 exported exactly the tracked plus untracked-non-ignored source set - 1006 files, digest-verified against the worktree, with no .git, no virtualenv, no node_modules and no build output - and ran every gate there from scratch.",
+  "method": "git ls-files -z plus git ls-files --others --exclude-standard -z, piped through tar into an empty directory; SHA-256 of all 1006 files compared against the worktree (0 mismatches)",
+  "results_without_declared_preconditions": {
+   "uv sync --frozen (engine)": "exit 0 - the lockfile resolves from clean",
+   "uv sync --frozen (backend-api)": "exit 0",
+   "engine pytest": "19 FAILED, 1919 passed, 1 skipped, 11 xfailed",
+   "backend + tools pytest": "2 FAILED, 801 passed (one in backend-api/tests, one in tools/tests)",
+   "opa check --strict / opa test": "clean / 582 of 582",
+   "alert-metric, register, control-status, promotion, api-types, promtool check, promtool test": "all exit 0",
+   "npm ci / typecheck / test / build / lint": "all exit 0; 27 files, 262 tests passed"
+  },
+  "root_cause": "A single cause, not 21 defects. engine/worker/provenance.py:68 engine_identity() uses settings.ENGINE_GIT_SHA, falls back to `git rev-parse HEAD`, and raises ValueError('ENGINE_GIT_SHA or ENGINE_IMAGE_DIGEST is required') when neither is available; engine/worker/tasks.py:1001 converts that into EvaluationFailure('provenance_unavailable'). tools/tests/test_secret_scanning.py:70 separately shells out to `git ls-files '*.example'`.",
+  "results_with_ENGINE_GIT_SHA_set": {
+   "engine pytest": "1938 passed, 1 skipped, 11 xfailed - identical to the worktree",
+   "backend + tools pytest": "802 passed, 1 failed (test_tracked_examples_pass, which needs a real `git ls-files`)"
+  },
+  "verdict": "The gates pass from a clean checkout provided the checkout is a git repository or ENGINE_GIT_SHA is supplied. CI's actions/checkout satisfies this, so no CI job is affected today. The runtime DOES declare the requirement - engine/worker_entrypoint.sh:6 calls engine_identity() before starting Celery, and Phase 3's handoff documents the identity sources - so the gap is narrower than it first appeared and lives in the TEST environment: no suite supplies an identity fixture or preflight, and ten phases of green runs all silently depended on being inside a git worktree. Recorded as P11-OWN-02 at medium severity after Codex refuted the broader claim."
+ },
+ "container_and_runtime": {
+  "19.1.5 container smoke": {
+   "command": "python3 tools/ci/container_smoke.py",
+   "result": "PASS: API migration/startup, worker ping, real broker outage, durable dispatcher recovery and terminal scan"
+  },
+  "19.1.5 production overlay smoke (as shipped)": {
+   "command": "python3 tools/ci/production_overlay_smoke.py",
+   "result": "PASS: db and redis healthy, no host port bindings, redis refuses plaintext and completes a TLS handshake enforcing its ACL, postgres reachable on the private network",
+   "note": "the shipped tool starts db and redis only, and says so"
+  },
+  "19.1.5 FULL production overlay (Phase 11 harness, all six services)": {
+   "command": "docker compose -f docker-compose.production.yml up -d db redis powershell-service backend-api worker dispatcher, with a complete set of synthetic material: a CA, per-host server certificates carrying SANs, a Redis ACL whose password is known to the client, a real Fernet ENCRYPTION_KEY, a well-formed 40-hex ENGINE_GIT_SHA and a rediss:// URL with ssl_cert_reqs=required and ssl_check_hostname=true",
+   "result": "FAIL - four of six services healthy",
+   "detail": {
+    "db": "running, healthy, 0 restarts",
+    "redis": "running, healthy, 0 restarts",
+    "backend-api": "running, healthy, 0 restarts",
+    "dispatcher": "running, healthy, 0 restarts",
+    "powershell-service": "restarting, unhealthy, 10 restarts - TypeError at import, see P11-OWN-00",
+    "worker": "created, never started - depends_on powershell-service: {condition: service_healthy}"
+   },
+   "host_port_bindings": "only backend-api publishes a port; db, redis, powershell-service and dispatcher publish none",
+   "readiness": "GET /readiness inside the container returned HTTP 200 {\"status\":\"ready\",\"checks\":{\"database\":{\"ok\":true,\"detail\":\"ok\"},\"broker\":{\"ok\":true,\"detail\":\"ok\"}}} against a production-configured PostgreSQL and a TLS-authenticated Redis",
+   "note": "the harness is a Phase 11 verification artifact and was NOT added to the repository's tool surface; it is preserved at docs/compliance/phase-11/full_overlay_smoke.py. On this machine host port 8000 was held by an unrelated container, so the API binding was remapped to 127.0.0.1:18000 through a Phase 11-only compose override; nothing else was changed."
+  },
+  "19.1.10 runtime TLS smoke": {
+   "command": "uv run --frozen --project backend-api python tools/ci/runtime_tls_smoke.py",
+   "result": "PASS: Redis verified TLS/auth; anonymous, wrong-password, untrusted-CA and plaintext connections all rejected; persistence disabled"
+  },
+  "19.1.10 runtime PowerShell smoke": {
+   "command": "uv run --frozen --project engine --extra dev python tools/ci/runtime_powershell_smoke.py",
+   "result": "PASS: real PowerShell generated script returns clean JSON; normal and timed-out local containers removed; no tokens in argv",
+   "note": "this exercises the LOCAL Docker transport in collectors/powershell_client.py, not the HTTP service in engine/powershell/service/ - which is why P11-OWN-00 was never caught"
+  }
+ },
+ "migrations": {
+  "item": "19.1.6",
+  "alembic heads": "b9d4e17c6a52 - exactly one",
+  "clean database": "CREATE DATABASE then `alembic upgrade head` on an empty database: applied the full chain to b9d4e17c6a52, 27 public tables; re-running `upgrade head` is a no-op and exits 0",
+  "supported prior states": "backend-api/tests/test_migrations.py parametrises the two prior heads ccf7645372fc and d87c3bb49953 and asserts existing data survives the merge; it ran as part of the 803 against the disposable cluster",
+  "rollback": "every phase migration (c4e91a73b620, d5f02b84c731, e6a13c95d842, f7d2c48b1a03, a3f5c1d90b47, b9d4e17c6a52) implements downgrade() as `raise RuntimeError(\"... is forward-only; restore from a verified backup instead\")`. Deliberate and consistent for an audit-evidence schema; the practical consequence is that there is no database rollback path and recovery depends entirely on Phase 10's tested restore.",
+  "integration": "see P11-OWN-03 - on merge with upstream/main the revision id 2899a0e678b6 exists twice under two filenames and Alembic refuses to load; once resolved the graph has two heads and needs a new merge revision"
+ },
+ "non_utc_verification": {
+  "why": "the convention Phase 8 established after the Phase 6 non-UTC dispatcher defect; every retention, expiry and deadline column in the Phase 7 schema is timezone-naive UTC",
+  "method": "a second disposable PostgreSQL 16.14 cluster initialised with timezone=Australia/Melbourne on port 55442, both suites re-run in full against it",
+  "engine": "1938 passed, 1 skipped, 11 xfailed - identical to the UTC result",
+  "backend_and_tools": "803 passed - identical to the UTC result"
+ },
+ "security_scans": {
+  "item": "19.1.13 - secret, dependency, SAST, container, SBOM and IaC scans",
+  "secret": {
+   "command": "uvx pre-commit run --all-files, on a pristine committed copy of the stack (1006 files)",
+   "result": "FAIL. The first pass modifies 221 files (+2812/-1547) through ruff-format, trailing-whitespace and end-of-file-fixer. A second pass leaves 0 files modified but still fails `ruff` with 19 errors that have no SAFE auto-fix (six carry unsafe fixes ruff will not apply without --unsafe-fixes): E402 x9, E741 x4, F841 x4, E731 x1, E712 x1, across security/ (11), engine/ (7) and backend-api/app/api/v1/platforms.py (1).",
+   "note": "This is the exact command ci.supply-chain.yml's `hooks` job runs (`pre-commit run --all-files --show-diff-on-failure`). Phase 10 verified the gate by running pre-commit against only the 63 files it changed. detect-secrets and detect-private-key both PASS. Recorded as P11-OWN-01."
+  },
+  "dependency": {
+   "command": "grype dir:<clean checkout>",
+   "result": "211 matches (1 Critical, 108 High, 83 Medium, 19 Low). The single Critical is CVE-2026-40962 ffmpeg 7.1.1 in four macOS .dylib files bundled inside opencv-python in a locally created .venv; ci.grype.yml scans a bare actions/checkout with no virtualenv and would not see it. Not a repository finding."
+  },
+  "SAST": {
+   "bandit backend-api/app": "clean at all severities, exit 0",
+   "bandit engine (excluding .venv, legacy, tests)": "0 High, 2 Medium, 23 Low over 11,532 lines. Both Mediums are B608 in engine/worker/db.py:320 and :437; verified false positives - the interpolated fragments are string literals and the module constant TERMINAL_STATES imported from worker.result_contract, and every value is a bound parameter. This is the FIRST time engine/ has been bandit-scanned in the programme; ci.backend-api.yml scopes bandit to backend-api/app and backend-api/tests.",
+   "bandit engine/legacy": "clean at Medium and above",
+   "CodeQL": "CORRECTED. ci.security.yml IS path-filtered to security/** on both push and pull_request, but it is NOT the repository's only CodeQL workflow: ci.backend-api.yml:36-43, ci.engine.yml:31-37 and ci.frontend.yml:31-38 each run codeql-action/init and codeql-action/analyze on `pull_request: branches: [main]` with no path filter. CodeQL therefore IS a pull-request gate for backend-api/, engine/ and frontend/. Phase 11's original finding to the contrary (P11-OWN-10) was refuted by Codex and is withdrawn in full. ci.security.yml's filter is what its own comment says: that workflow exists only to scan the unmaintained security/ TPRM module."
+  },
+  "container": {
+   "worker image": "grype autoaudit-worker: 874 matches - 24 Critical, 111 High, 117 Medium, 16 Low, 554 Negligible, 52 Unknown. All 24 Criticals are Debian base-image glibc and perl CVEs marked wont-fix upstream. Fixable Highs include cryptography 48.0.0 -> 48.0.1, urllib3 2.6.2 -> 2.6.3, pyjwt 2.10.1 -> 2.12.0 and python 3.11.15 -> 3.11.16.",
+   "API image": "grype autoaudit-api: 710 matches - 35 Critical, 199 High, 179 Medium. One Critical is fixable: CVE-2026-40962 ffmpeg 5.1.6 bundled inside opencv-python, fixed in 8.1. ci.supply-chain.yml builds this image and generates an SBOM for it and scans only the worker image. Recorded as P11-OWN-05.",
+   "note": "ci.supply-chain.yml's image-scan comment cites 'the pre-existing backlog recorded in earlier phases (0 critical, 51 high, 49 medium)'. That figure is Phase 4's and Phase 5's source-DIRECTORY scan; no phase has ever run an image scan. This is the first."
+  },
+  "SBOM": {
+   "command": "syft autoaudit-worker -o cyclonedx-json",
+   "result": "CycloneDX 1.7, 8908 components (354 library, 15 application, 1 operating-system, 8538 file). Preserved as sbom-worker.cyclonedx.json."
+  },
+  "IaC": {
+   "command": "trivy config <clean checkout>",
+   "result": "6 findings, all LOW, all DS-0026 'No HEALTHCHECK defined' on backend-api/Dockerfile, engine/Dockerfile, engine/docker/powershell/Dockerfile, engine/powershell/Dockerfile, frontend/Dockerfile and security/Dockerfile. No misconfiguration in any Compose file, including the production overlay.",
+   "note": "No IaC scanner is invoked BY NAME in any of the 18 workflow files - no checkov, tfsec, kics, terrascan or hadolint - which plan item 19.1.13 requires. Super-Linter runs in ci.backend-api.yml and what it bundles was not verified from here, so this is the absence of an explicit IaC gate rather than a proof that nothing scans the Dockerfiles. Recorded as P11-OWN-09. The healthchecks Phase 10 added are declared in Compose rather than in the Dockerfiles, which is what DS-0026 is reporting."
+  }
+ },
+ "plan_items_19_1": {
+  "1 - re-read Phase 0 sources, confirm the implementation still matches the documented APIs": "done; drift recorded in the register",
+  "2 - re-run the Git/PR/branch-protection inventory": "done; see coordination-review.md and collisions.json. Branch protection could not be read: the account is not a repository administrator.",
+  "3 - verify the mapping validator against Appendix A and Appendix B": "done; 24 assertions verified, no finding. 47 points of focus, 44 distinct CIS control ids, every rating transcribed unchanged.",
+  "4 - run all repository gates from a clean checkout": "done; see clean_checkout above",
+  "5 - build and start all production-target container images with non-development configuration": "done, and it is where the blocking defect was found. Four of six services healthy; powershell-service crash-loops and the worker never starts.",
+  "6 - run migrations from clean and supported prior database states": "done; see migrations above",
+  "7 - execute a full approved non-production M365 scan with Graph, Exchange, SharePoint, Defender/Purview as licensed": "EXTERNALLY BLOCKED. No M365 tenant, application registration or credential exists in this environment: there is no .env in the worktree or in any service directory, no AZURE/M365/TENANT/CLIENT_SECRET/GRAPH variable in the environment, and env.example carries only Google OAuth placeholders. This is the one plan item Phase 11 could not perform, and no substitute was manufactured for it.",
+  "8 - exercise pass, fail, indeterminate, error, skipped and not-assessable behavior": "done; two defects found (P11-OWN-14, P11-OWN-16)",
+  "9 - verify a complete scan can be reproduced from stored provenance": "done; the chain breaks at the evidence link - only the input digest is stored. See traceability-trace.md.",
+  "10 - exercise broker failure, task redelivery, concurrent finalization, cancellation, tenant mismatch, throttling and PowerShell rejection": "done; test_phase6_lifecycle.py and test_phase6_tenant.py cover them and pass, and container_smoke.py proves the broker-outage and dispatcher-recovery paths against real containers",
+  "11 - verify evidence ownership, approval, retention, expiry, deletion and report access": "done; immutability is enforced by database triggers, and the legal-hold/delete race Phase 10 recorded as fixed is still open (P11-OWN-20)",
+  "12 - generate a SOC 2 evidence pack and have GRC trace a sample end to end": "technically traced in traceability-trace.md; the GRC half is externally blocked and the mapping is unapproved. There is no durable evidence-pack artifact - the pack is an authenticated JSON endpoint response.",
+  "13 - run secret, dependency, SAST, container, SBOM and IaC scans": "done, all six; see security_scans above. The container and IaC scans are the first this programme has run.",
+  "14 - review public documentation and claims against actual status": "done; two false public claims found, and the SOC 2 wording itself is clean"
+ }
+}

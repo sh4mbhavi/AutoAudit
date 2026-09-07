@@ -1,0 +1,36 @@
+name: Runtime container CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  startup:
+    name: API and worker container startup
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Build and smoke test disposable containers
+        run: python tools/ci/container_smoke.py
+      # Phase 10: the reviewed production topology, actually started. Phases 7, 8
+      # and 9 each carried forward "the Compose overlay was not exercised
+      # against a running container" -- it had only ever been rendered with
+      # `docker compose config`, which cannot show that Redis enforces TLS or
+      # that the containers really have no host port binding.
+      - name: Start the production Compose overlay and check its boundaries
+        run: python tools/ci/production_overlay_smoke.py
+      - uses: astral-sh/setup-uv@v6
+      - name: Reject unsafe Redis transport and authentication
+        run: uv run --frozen --project backend-api python tools/ci/runtime_tls_smoke.py
+      - name: Verify real PowerShell transport and timeout cleanup
+        run: uv run --frozen --project engine --extra dev python tools/ci/runtime_powershell_smoke.py

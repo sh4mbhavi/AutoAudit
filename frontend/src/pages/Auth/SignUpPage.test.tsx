@@ -47,6 +47,7 @@ describe('SignUpPage', () => {
           organizationName: 'OrgCo',
           password: 'Password1!', // pragma: allowlist secret - synthetic form input
           confirmPassword: 'Password1!', // pragma: allowlist secret - synthetic form input
+          agreeTerms: true,
         })
       );
     });

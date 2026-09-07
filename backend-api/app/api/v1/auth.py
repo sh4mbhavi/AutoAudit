@@ -3,14 +3,24 @@ import logging
 from urllib.parse import urlencode
 
 import httpx
+from pydantic import BaseModel
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from fastapi_users import exceptions
 from fastapi.responses import RedirectResponse
 from httpx_oauth.clients.google import GoogleOAuth2
 
 from app.core.config import get_settings
-from app.core.users import auth_backend, fastapi_users, get_jwt_strategy, get_user_manager
-from app.schemas.user import UserRead, UserCreate, UserRegister, UserUpdate
+from app.core.users import auth_backend, fastapi_users, get_user_manager
+from app.core.sessions import (
+    SESSION_COOKIE,
+    csrf_response,
+    get_session_strategy,
+    session_transport,
+)
+from app.db.session import get_async_session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import delete
+from app.models.auth_session import AuthSession
+from app.schemas.user import UserRead, UserRegister, UserUpdate
 from app.core.auth import get_current_user
 from app.models.user import User
 
@@ -33,44 +43,37 @@ router.include_router(
 # User management endpoints
 users_router = APIRouter(prefix="/users", tags=["Users"])
 
+
 # Get current user info
 @users_router.get("/me", summary="Get my user information", response_model=UserRead)
 async def read_users_me(user: User = Depends(get_current_user)):
     """Get current authenticated user information."""
     return user
 
-#Update User
-@users_router.patch("/me", summary="Update my user information", response_model=UserRead)
+
+# Update User
+@users_router.patch(
+    "/me", summary="Update my user information", response_model=UserRead
+)
 async def update_users_me(
     user_update: UserUpdate,
     user: User = Depends(get_current_user),
+    user_session: AsyncSession = Depends(get_async_session),
 ):
     """Update current authenticated user's profile information."""
-    from app.db.session import get_async_session
-
-    async for session in get_async_session():
-        db_user = await session.get(User, user.id)
-
-        if db_user is None:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        if user_update.first_name is not None:
-            db_user.first_name = user_update.first_name
-
-        if user_update.last_name is not None:
-            db_user.last_name = user_update.last_name
-
-        if user_update.organization_name is not None:
-            db_user.organization_name = user_update.organization_name
-
-        await session.commit()
-        await session.refresh(db_user)
-
-        return db_user
+    if user_update.first_name is not None:
+        user.first_name = user_update.first_name
+    if user_update.last_name is not None:
+        user.last_name = user_update.last_name
+    if user_update.organization_name is not None:
+        user.organization_name = user_update.organization_name
+    await user_session.commit()
+    await user_session.refresh(user)
+    return user
 
 
 # Change password endpoint
-from pydantic import BaseModel
+
 
 class PasswordChange(BaseModel):
     current_password: str
@@ -81,36 +84,23 @@ class PasswordChange(BaseModel):
 async def change_password(
     password_data: PasswordChange,
     user: User = Depends(get_current_user),
+    user_session: AsyncSession = Depends(get_async_session),
+    user_manager=Depends(get_user_manager),
 ):
     """Change current user's password."""
-    from app.db.session import get_async_session
-    from app.core.users import get_user_manager
-
-    async for session in get_async_session():
-        db_user = await session.get(User, user.id)
-
-        if db_user is None:
-            raise HTTPException(status_code=404, detail="User not found")
-
-        async for user_manager in get_user_manager(session):
-            verified, _ = user_manager.password_helper.verify_and_update(
-                password_data.current_password,
-                db_user.hashed_password,
-            )
-
-            if not verified:
-                raise HTTPException(
-                    status_code=400,
-                    detail="Current password is incorrect",
-                )
-
-            db_user.hashed_password = user_manager.password_helper.hash(
-                password_data.new_password
-            )
-
-            await session.commit()
-
-            return {"message": "Password changed successfully"}
+    verified, _ = user_manager.password_helper.verify_and_update(
+        password_data.current_password, user.hashed_password
+    )
+    if not verified:
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
+    await user_manager.validate_password(password_data.new_password, user)
+    user.hashed_password = user_manager.password_helper.hash(password_data.new_password)
+    await user_session.execute(
+        delete(AuthSession).where(AuthSession.user_id == user.id)
+    )
+    await user_session.commit()
+    response = await session_transport().get_logout_response()
+    return response
 
 
 # Include users router
@@ -122,14 +112,14 @@ GOOGLE_OAUTH_STATE_COOKIE = "google_oauth_state"
 
 def _google_redirect_uri() -> str:
     settings = get_settings()
-    return f"{settings.BACKEND_PUBLIC_URL}{settings.API_PREFIX}/auth/google/callback"
+    return f"{settings.BACKEND_PUBLIC_URL.rstrip('/')}{settings.API_PREFIX}/auth/google/callback"
 
 
 def _frontend_google_callback_url(fragment_params: dict[str, str]) -> str:
     settings = get_settings()
     base = settings.FRONTEND_URL.rstrip("/")
     fragment = urlencode(fragment_params)
-    return f"{base}/auth/google/callback#{fragment}"
+    return f"{base}/auth/google/callback" + (f"#{fragment}" if fragment else "")
 
 
 def _google_oauth_client() -> GoogleOAuth2:
@@ -193,12 +183,17 @@ async def google_callback(
     code: str | None = None,
     state: str | None = None,
     user_manager=Depends(get_user_manager),
+    strategy=Depends(get_session_strategy),
 ) -> RedirectResponse:
     """Google OAuth callback: exchange code, link/create user, mint AutoAudit JWT, redirect to FE."""
     settings = get_settings()
 
     cookie_state = request.cookies.get(GOOGLE_OAUTH_STATE_COOKIE)
-    if not state or not cookie_state or state != cookie_state:
+    if (
+        not state
+        or not cookie_state
+        or not secrets.compare_digest(state.encode(), cookie_state.encode())
+    ):
         return RedirectResponse(
             _frontend_google_callback_url(
                 {
@@ -226,7 +221,7 @@ async def google_callback(
         token = await client.get_access_token(code, redirect_uri=_google_redirect_uri())
         google_access_token = token["access_token"]
     except Exception:
-        logger.exception("Google OAuth token exchange failed")
+        logger.error("Google OAuth token exchange failed")
         return RedirectResponse(
             _frontend_google_callback_url(
                 {
@@ -247,7 +242,7 @@ async def google_callback(
         resp.raise_for_status()
         profile = resp.json()
     except Exception:
-        logger.exception("Google OAuth userinfo fetch failed")
+        logger.error("Google OAuth userinfo fetch failed")
         return RedirectResponse(
             _frontend_google_callback_url(
                 {
@@ -286,19 +281,19 @@ async def google_callback(
         )
 
     try:
-        user = await user_manager.oauth_callback(
+        user = await user_manager.oauth_callback(  # nosec B106 # Deliberately discard provider credentials.
             oauth_name="google",
-            access_token=google_access_token,
+            access_token="",  # Google identity is linked; provider tokens are not retained.
             account_id=sub,
             account_email=email,
-            expires_at=token.get("expires_at"),
-            refresh_token=token.get("refresh_token"),
+            expires_at=None,
+            refresh_token=None,
             request=request,
             associate_by_email=True,
             is_verified_by_default=True,
         )
     except Exception:
-        logger.exception("Google OAuth account linking failed")
+        logger.error("Google OAuth account linking failed")
         return RedirectResponse(
             _frontend_google_callback_url(
                 {
@@ -309,15 +304,36 @@ async def google_callback(
             status_code=status.HTTP_302_FOUND,
         )
 
-    # fastapi-users JWTStrategy.write_token is async in the version used by the backend container.
-    autoaudit_token = await get_jwt_strategy().write_token(user)
-    redirect_url = _frontend_google_callback_url(
-        {"access_token": autoaudit_token, "token_type": "bearer"}
-    )
-
-    response = RedirectResponse(redirect_url, status_code=status.HTTP_302_FOUND)
+    if not user.is_active:
+        return RedirectResponse(
+            _frontend_google_callback_url({"error": "account_inactive"}),
+            status_code=302,
+        )
+    session_token = await strategy.write_token(user)
+    response = RedirectResponse(_frontend_google_callback_url({}), status_code=302)
+    session_transport()._set_login_cookie(response, session_token)
     response.delete_cookie(
         GOOGLE_OAUTH_STATE_COOKIE,
         path=f"{settings.API_PREFIX}/auth/google/callback",
+        secure=settings.BACKEND_PUBLIC_URL.startswith("https://"),
+        httponly=True,
+        samesite="lax",
     )
     return response
+
+
+@router.get("/csrf")
+async def get_csrf(request: Request):
+    return csrf_response(request)
+
+
+@router.post("/refresh", status_code=204)
+async def refresh_session(
+    request: Request,
+    user: User = Depends(get_current_user),
+    strategy=Depends(get_session_strategy),
+):
+    token, remaining = await strategy.rotate(request.cookies[SESSION_COOKIE], user)
+    transport = session_transport()
+    transport.cookie_max_age = remaining
+    return await transport.get_login_response(token)

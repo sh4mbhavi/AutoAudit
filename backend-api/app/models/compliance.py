@@ -4,7 +4,8 @@ from datetime import datetime
 from decimal import Decimal
 from typing import TYPE_CHECKING, Optional
 
-from sqlalchemy import ForeignKey, Numeric, String, Text
+from sqlalchemy import ForeignKey, Numeric, String, Text, text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -61,6 +62,63 @@ class Scan(Base):
     skipped_count: Mapped[int] = mapped_column(default=0)
     error_count: Mapped[int] = mapped_column(default=0)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Phase 3 attribution is unknown for legacy scans.
+    selected_count: Mapped[Optional[int]] = mapped_column(nullable=True)
+    coverage_score: Mapped[Optional[Decimal]] = mapped_column(
+        Numeric(5, 2), nullable=True
+    )
+    indeterminate_count: Mapped[int] = mapped_column(default=0, server_default="0")
+    not_assessable_count: Mapped[int] = mapped_column(default=0, server_default="0")
+    semantics_version: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    metadata_snapshot: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    metadata_digest: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    correlation_id: Mapped[Optional[str]] = mapped_column(String(128), nullable=True)
+    dispatch_id: Mapped[Optional[str]] = mapped_column(String(36), unique=True)
+    dispatch_count: Mapped[int] = mapped_column(default=0, server_default="0")
+    # UTC-stamped for the same reason as scan_dispatch.available_at: the
+    # dispatcher compares this column against (now() AT TIME ZONE 'UTC') as the
+    # COALESCE fallback for deadline_at.
+    last_progress_at: Mapped[datetime] = mapped_column(
+        server_default=text("(now() AT TIME ZONE 'UTC')")
+    )
+    deadline_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
+    lifecycle_version: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    connection_snapshot: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+
+    # Phase 7 pins the SOC 2 crosswalk the scan was assessed under, so a historical
+    # report renders from its own mapping rather than from whatever is on disk now.
+    # Null for scans created before Phase 7; those render without a SOC 2 projection
+    # rather than being back-dated to a mapping they never used.
+    mapping_id: Mapped[Optional[str]] = mapped_column(String(80), nullable=True)
+    mapping_version: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    mapping_digest: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
+    mapping_snapshot: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    # Digest over every .rego in the benchmark version, which metadata_digest does
+    # not cover: editing a policy changes evaluation without changing metadata.
+    policy_corpus_digest: Mapped[Optional[str]] = mapped_column(
+        String(64), nullable=True
+    )
+    evidence_version: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+
+    @property
+    def pending_count(self) -> int:
+        """Remaining results without inferring legacy selection or scores."""
+        return max(
+            0,
+            (self.total_controls or 0)
+            - sum(
+                getattr(self, name) or 0
+                for name in (
+                    "passed_count",
+                    "failed_count",
+                    "skipped_count",
+                    "error_count",
+                    "indeterminate_count",
+                    "not_assessable_count",
+                )
+            ),
+        )
 
     # Relationships
     user: Mapped["User"] = relationship(back_populates="scans")

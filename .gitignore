@@ -37,3 +37,8 @@ engine/legacy/engine/autoaudit_reports.json
 
 # Local SharePoint runtime override
 docker-compose.sharepoint.override.yml
+
+# Local Purview/compliance runtime override. Phase 8 added the overlay and its
+# .example but not this rule, so a file the example tells operators to fill with
+# real certificate host paths was stageable.
+docker-compose.compliance.override.yml

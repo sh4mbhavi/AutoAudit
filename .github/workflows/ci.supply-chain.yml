@@ -1,0 +1,166 @@
+name: "Supply chain"
+
+# Phase 10 adds this. Before it, the only dependency gate in the repository was
+# ci.grype.yml, which scans the source DIRECTORY at severity-cutoff critical.
+# That means:
+#
+#   * no SBOM existed for any image, so nothing could enumerate what shipped;
+#   * no container IMAGE was ever scanned, so the Debian base layer, the apt
+#     packages (build-essential, libpq-dev, tesseract-ocr, curl) and the
+#     PowerShell service's Mariner layer were entirely unexamined;
+#   * nothing verified that a built image matched the lockfile CI tested with --
+#     and engine/Dockerfile did not even copy its lockfile.
+#
+# The last of those was a real, shipped defect. It is fixed in engine/Dockerfile
+# and asserted by tools/tests/test_phase10_supply_chain.py; this workflow is what
+# keeps the rest honest.
+#
+# Every artifact here declares a retention period. Every scan step states plainly
+# whether it gates or reports.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '17 4 * * 1'
+
+permissions:
+  contents: read
+
+jobs:
+  sbom:
+    name: Build images, generate SBOMs and scan them
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+
+      - name: Build the worker image from its lockfile
+        # ENGINE_GIT_SHA is not decoration: the Dockerfile refuses to build
+        # without a 40-hex revision, and the value is written into every scan's
+        # provenance record.
+        run: |
+          docker build \
+            --build-arg ENGINE_GIT_SHA=${{ github.sha }} \
+            -t autoaudit-worker:${{ github.sha }} \
+            engine
+
+      - name: Build the API image
+        run: docker build -f backend-api/Dockerfile -t autoaudit-api:${{ github.sha }} .
+
+      - name: Verify the worker image matches engine/uv.lock
+        # The assertion that would have caught the pre-Phase-10 defect directly.
+        run: |
+          uv_lock_versions=$(python - <<'PY'
+          import json, re, pathlib
+          lock = pathlib.Path("engine/uv.lock").read_text()
+          print(json.dumps({m.group(1): m.group(2) for m in re.finditer(
+              r'\[\[package\]\]\nname = "([^"]+)"\nversion = "([^"]+)"', lock)}))
+          PY
+          )
+          image_versions=$(docker run --rm --entrypoint /app/.venv/bin/python \
+            autoaudit-worker:${{ github.sha }} -c \
+            'import importlib.metadata as m, json; print(json.dumps({p: m.version(p) for p in ["celery","httpx","sqlalchemy","cryptography","prometheus-client"]}))')
+          LOCK="$uv_lock_versions" IMAGE="$image_versions" python - <<'PY'
+          import json, os, sys
+          lock = json.loads(os.environ["LOCK"])
+          image = json.loads(os.environ["IMAGE"])
+          bad = {k: (v, lock.get(k)) for k, v in image.items() if lock.get(k) != v}
+          if bad:
+              print(f"image/lockfile mismatch: {bad}", file=sys.stderr)
+              sys.exit(1)
+          print(f"image matches engine/uv.lock for {len(image)} package(s)")
+          PY
+
+      - name: Generate SBOMs
+        uses: anchore/sbom-action@v0
+        with:
+          image: autoaudit-worker:${{ github.sha }}
+          format: cyclonedx-json
+          artifact-name: sbom-worker.cyclonedx.json
+          output-file: sbom-worker.cyclonedx.json
+
+      - name: Generate API SBOM
+        uses: anchore/sbom-action@v0
+        with:
+          image: autoaudit-api:${{ github.sha }}
+          format: cyclonedx-json
+          artifact-name: sbom-api.cyclonedx.json
+          output-file: sbom-api.cyclonedx.json
+
+      - name: Record the release manifest
+        run: |
+          python tools/ops/release_manifest.py \
+            --generated-at "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --image worker=autoaudit-worker:${{ github.sha }} \
+            --image api=autoaudit-api:${{ github.sha }} \
+            --output release-manifest.json
+          cat release-manifest.json
+
+      - name: Scan the worker IMAGE for vulnerabilities
+        # ci.grype.yml scans the source directory; this scans what actually
+        # ships, including every base-image and apt layer that a directory scan
+        # cannot see. Reported, not gating: the pre-existing backlog recorded in
+        # earlier phases (0 critical, 51 high, 49 medium) has never been
+        # triaged, and turning a gate on now would block every PR on debt this
+        # phase did not create. Raising the cutoff is a deliberate decision for
+        # the security owner.
+        id: image_scan
+        uses: anchore/scan-action@v6
+        with:
+          image: autoaudit-worker:${{ github.sha }}
+          grype-version: v0.118.0
+          fail-build: false
+          severity-cutoff: critical
+          output-format: sarif
+          output-file: grype-worker-image.sarif
+
+      - name: Upload image vulnerability report
+        if: always() && steps.image_scan.outputs.sarif != ''
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: ${{ steps.image_scan.outputs.sarif }}
+          category: worker-image
+
+      - name: Upload SBOMs and release manifest
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: supply-chain-${{ github.sha }}
+          path: |
+            sbom-worker.cyclonedx.json
+            sbom-api.cyclonedx.json
+            release-manifest.json
+            grype-worker-image.sarif
+          if-no-files-found: warn
+          # 90 days: long enough to answer "what was in the build that shipped
+          # last quarter", which is the question an auditor asks.
+          retention-days: 90
+
+  hooks:
+    name: Secret and lint hooks, enforced server-side
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
+      - name: Run pre-commit
+        # detect-secrets and detect-private-key ran only on developer machines.
+        # A contributor who never ran `pre-commit install` bypassed the
+        # repository's secret controls entirely, with nothing server-side to
+        # catch it.
+        run: |
+          python -m pip install pre-commit==4.0.1
+          pre-commit run --all-files --show-diff-on-failure

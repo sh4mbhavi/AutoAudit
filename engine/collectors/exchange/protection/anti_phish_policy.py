@@ -5,13 +5,13 @@ CIS Microsoft 365 Foundations Benchmark Controls:
 
 Connection Method: Exchange Online PowerShell (via Docker container)
 Authentication: Client secret via MSAL -> access token passed to -AccessToken parameter
-Required Cmdlets: Get-AntiPhishPolicy
+Required Cmdlets: Get-AntiPhishPolicy, Get-AntiPhishRule
 Required Permissions: Exchange.ManageAsApp + Exchange role assignment
 """
 
 from typing import Any
 
-from collectors.powershell_base import BasePowerShellCollector
+from collectors.powershell_base import BasePowerShellCollector, powershell_records
 from collectors.powershell_client import PowerShellClient
 
 
@@ -30,22 +30,33 @@ class AntiPhishPolicyDataCollector(BasePowerShellCollector):
             - anti_phish_policies: List of anti-phishing policies
             - default_policy: The default policy (Office365 AntiPhish Default)
         """
-        policies = await client.run_cmdlet("ExchangeOnline", "Get-AntiPhishPolicy")
+        # Phase 9: both reads share one Exchange session. Two cmdlets, one
+        # module, one tenant -- and one Connect/Disconnect instead of two.
+        raw_policies, raw_rules = await client.run_operations(
+            [
+                (
+                    "exchange.protection.anti_phish_policy.read",
+                    "exchange.protection.anti_phish_policy",
+                    {},
+                ),
+                (
+                    "exchange.protection.anti_phish_policy.rules",
+                    "exchange.protection.anti_phish_policy",
+                    {},
+                ),
+            ]
+        )
 
         # Handle None, single policy, or list
-        if policies is None:
-            policies = []
-        elif isinstance(policies, dict):
-            policies = [policies]
+        policies = powershell_records(raw_policies)
+        rules = powershell_records(raw_rules)
 
         # Find default policy
-        default_policy = next(
-            (p for p in policies if p.get("IsDefault")),
-            None
-        )
+        default_policy = next((p for p in policies if p.get("IsDefault")), None)
 
         return {
             "anti_phish_policies": policies,
+            "anti_phish_rules": rules,
             "total_policies": len(policies),
             "default_policy": default_policy,
         }

@@ -1,0 +1,51 @@
+{
+  "purpose": "Metrics referenced by AutoAudit alert rules that AutoAudit does not emit. Every entry names the exporter that must be deployed for the series to exist at all, so the monitoring stack's external dependencies are inventoried rather than assumed. tools/ci/check_alert_metrics.py refuses any alert metric that is neither emitted by the application nor listed here, and refuses any entry here that no alert uses.",
+  "warning": "An entry in this file is a statement about what the deployment platform must provide. It is NOT evidence that the exporter is deployed. At the time of writing no Prometheus, Alertmanager or exporter of any kind is deployed by this repository: the only deployment descriptors are docker-compose files.",
+  "metrics": [
+    {
+      "metric": "node_cpu_seconds_total",
+      "exporter": "node_exporter",
+      "note": "Per-CPU seconds by mode. Requires node_exporter on every host running an AutoAudit container."
+    },
+    {
+      "metric": "node_memory_MemAvailable_bytes",
+      "exporter": "node_exporter",
+      "note": "Linux-only; derived from /proc/meminfo."
+    },
+    {
+      "metric": "node_memory_MemTotal_bytes",
+      "exporter": "node_exporter",
+      "note": "Linux-only; derived from /proc/meminfo."
+    },
+    {
+      "metric": "node_filesystem_avail_bytes",
+      "exporter": "node_exporter",
+      "note": "Filesystem collector. The alert filters mountpoint=\"/\", so a deployment that puts the evidence volume elsewhere is not covered by it."
+    },
+    {
+      "metric": "node_filesystem_size_bytes",
+      "exporter": "node_exporter",
+      "note": "Filesystem collector; paired with node_filesystem_avail_bytes."
+    },
+    {
+      "metric": "container_network_receive_bytes_total",
+      "exporter": "cAdvisor",
+      "note": "Per-container network counters. Available from cAdvisor standalone or from the kubelet's embedded cAdvisor."
+    },
+    {
+      "metric": "kube_pod_container_status_restarts_total",
+      "exporter": "kube-state-metrics",
+      "note": "KUBERNETES ONLY. No Kubernetes manifest, Helm chart or IaC exists in this repository; the deployment platform has not been selected. The alert carries platform=kubernetes so a non-Kubernetes deployment can drop it by label."
+    },
+    {
+      "metric": "kubelet_volume_stats_available_bytes",
+      "exporter": "kubelet",
+      "note": "KUBERNETES ONLY. Served by the kubelet's /metrics endpoint; requires PersistentVolumeClaims, which presuppose a Kubernetes deployment this repository does not define."
+    },
+    {
+      "metric": "kubelet_volume_stats_capacity_bytes",
+      "exporter": "kubelet",
+      "note": "KUBERNETES ONLY. Paired with kubelet_volume_stats_available_bytes."
+    }
+  ]
+}

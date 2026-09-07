@@ -6,9 +6,13 @@ import React, {
   useState,
   type ReactNode,
 } from "react";
-import { login as apiLogin, getCurrentUser, APIError } from "../api/client";
+import {
+  login as apiLogin,
+  logout as apiLogout,
+  getCurrentUser,
+  refreshSession,
+} from "../api/client";
 
-/** User shape returned by `/users/me` and stored in local/session storage */
 export type AuthUser = {
   id?: number | string | null;
   email?: string | null;
@@ -23,7 +27,6 @@ export type AuthUser = {
 
 export type AuthContextValue = {
   user: AuthUser | null;
-  token: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (
@@ -31,180 +34,131 @@ export type AuthContextValue = {
     password: string,
     remember?: boolean,
   ) => Promise<AuthUser>;
-  loginWithAccessToken: (
-    accessToken: string,
-    remember?: boolean,
-  ) => Promise<AuthUser>;
-  logout: () => void;
+  completeOAuthLogin: () => Promise<AuthUser>;
+  logout: () => Promise<void>;
 };
-
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const TOKEN_KEY = "token";
-const USER_KEY = "user";
-
-function safeJsonParse(value: string | null): unknown {
-  if (!value) return null;
-  try {
-    return JSON.parse(value) as unknown;
-  } catch {
-    return null;
+function clearLegacyStorage() {
+  for (const name of ["localStorage", "sessionStorage"] as const) {
+    try {
+      for (const key of [
+        "token",
+        "user",
+        "autoaudit.oauth.google.callback.params",
+      ])
+        window[name].removeItem(key);
+    } catch {
+      /* Cookie auth works when browser storage is unavailable. */
+    }
   }
 }
 
-function getStoredToken(): string | null {
-  if (typeof window === "undefined") return null;
-  return (
-    window.localStorage.getItem(TOKEN_KEY) ||
-    window.sessionStorage.getItem(TOKEN_KEY)
-  );
-}
-
-function getStoredUser(): AuthUser | null {
-  if (typeof window === "undefined") return null;
-  const fromLocal = safeJsonParse(window.localStorage.getItem(USER_KEY));
-  const fromSession = safeJsonParse(window.sessionStorage.getItem(USER_KEY));
-  const parsed = fromLocal ?? fromSession;
-  if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
-    return parsed as AuthUser;
-  }
-  return null;
-}
-
-function clearStoredAuth(): void {
-  if (typeof window === "undefined") return;
-  window.localStorage.removeItem(TOKEN_KEY);
-  window.localStorage.removeItem(USER_KEY);
-  window.sessionStorage.removeItem(TOKEN_KEY);
-  window.sessionStorage.removeItem(USER_KEY);
-}
-
-function persistAuth(
-  accessToken: string,
-  userData: AuthUser,
-  remember: boolean,
-): void {
-  if (typeof window === "undefined") return;
-  const storage = remember ? window.localStorage : window.sessionStorage;
-  const other = remember ? window.sessionStorage : window.localStorage;
-
-  storage.setItem(TOKEN_KEY, accessToken);
-  storage.setItem(USER_KEY, JSON.stringify(userData));
-
-  other.removeItem(TOKEN_KEY);
-  other.removeItem(USER_KEY);
-}
-
-type AuthProviderProps = {
-  children: ReactNode;
-};
-
-export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<AuthUser | null>(() => getStoredUser());
-  const [token, setToken] = useState<string | null>(() => getStoredToken());
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const skipNextValidationRef = useRef(false);
-
-  const isAuthenticated = !!token && !!user;
+  const sessionGeneration = useRef(0);
+  const lastActivity = useRef(Date.now());
+  const logoutInFlight = useRef<Promise<void> | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    const generation = sessionGeneration.current;
+    clearLegacyStorage();
+    const expired = () => {
+      sessionGeneration.current += 1;
+      setUser(null);
+    };
+    window.addEventListener("autoaudit:session-expired", expired);
+    getCurrentUser()
+      .then((current: AuthUser) => {
+        if (!cancelled && generation === sessionGeneration.current)
+          setUser(current);
+      })
+      .catch(() => {
+        if (!cancelled && generation === sessionGeneration.current)
+          setUser(null);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+      window.removeEventListener("autoaudit:session-expired", expired);
+    };
+  }, []);
 
   useEffect(() => {
-    async function validateToken() {
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
+    if (!user) return;
+    // Only a currently valid session can rotate. The server enforces an absolute
+    // lifetime; expired sessions always require the user to sign in again.
+    const activity = () => {
+      lastActivity.current = Date.now();
+    };
+    for (const event of ["pointerdown", "keydown", "scroll"])
+      window.addEventListener(event, activity, { passive: true });
+    const timer = window.setInterval(
+      () => {
+        if (
+          document.visibilityState === "visible" &&
+          Date.now() - lastActivity.current < 5 * 60 * 1000
+        )
+          void refreshSession().catch(() => {});
+      },
+      5 * 60 * 1000,
+    );
+    return () => {
+      window.clearInterval(timer);
+      for (const event of ["pointerdown", "keydown", "scroll"])
+        window.removeEventListener(event, activity);
+    };
+  }, [user]);
 
-      if (skipNextValidationRef.current) {
-        skipNextValidationRef.current = false;
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const userData = await getCurrentUser(token);
-        setUser(userData as AuthUser);
-
-        const inLocal =
-          typeof window !== "undefined" &&
-          window.localStorage.getItem(TOKEN_KEY) === token;
-        const storage =
-          typeof window !== "undefined" && inLocal
-            ? window.localStorage
-            : window.sessionStorage;
-        if (typeof window !== "undefined") {
-          storage.setItem(USER_KEY, JSON.stringify(userData));
-        }
-      } catch (error) {
-        if (error instanceof APIError && error.status === 401) {
-          clearStoredAuth();
-          setToken(null);
-          setUser(null);
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    }
-
-    void validateToken();
-  }, [token]);
-
+  async function completeOAuthLogin(): Promise<AuthUser> {
+    const generation = ++sessionGeneration.current;
+    const current = (await getCurrentUser()) as AuthUser;
+    if (generation === sessionGeneration.current) setUser(current);
+    return current;
+  }
   async function login(
     email: string,
     password: string,
-    remember = true,
+    _remember?: boolean,
   ): Promise<AuthUser> {
-    const response = await apiLogin(email, password);
-    const accessToken = response.access_token;
-
-    const userData = (await getCurrentUser(accessToken)) as AuthUser;
-    persistAuth(accessToken, userData, remember);
-
-    skipNextValidationRef.current = true;
-    setToken(accessToken);
-    setUser(userData);
-    return userData;
+    sessionGeneration.current += 1;
+    await apiLogin(email, password);
+    return completeOAuthLogin();
   }
-
-  async function loginWithAccessToken(
-    accessToken: string,
-    remember = false,
-  ): Promise<AuthUser> {
-    if (!accessToken) {
-      throw new Error("Access token is required");
+  async function logout(): Promise<void> {
+    if (logoutInFlight.current) return logoutInFlight.current;
+    const pending = apiLogout().then(() => {
+      sessionGeneration.current += 1;
+      setUser(null);
+      clearLegacyStorage();
+    });
+    logoutInFlight.current = pending;
+    try {
+      await pending;
+    } finally {
+      logoutInFlight.current = null;
     }
-
-    const userData = (await getCurrentUser(accessToken)) as AuthUser;
-    persistAuth(accessToken, userData, remember);
-
-    skipNextValidationRef.current = true;
-    setToken(accessToken);
-    setUser(userData);
-    return userData;
   }
-
-  function logout(): void {
-    clearStoredAuth();
-    setToken(null);
-    setUser(null);
-  }
-
-  const value: AuthContextValue = {
-    user,
-    token,
-    isAuthenticated,
-    isLoading,
-    login,
-    loginWithAccessToken,
-    logout,
-  };
-
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{
+        user,
+        isAuthenticated: !!user,
+        isLoading,
+        login,
+        completeOAuthLogin,
+        logout,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
-
 export function useAuth(): AuthContextValue {
   const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
+  if (!context) throw new Error("useAuth must be used within an AuthProvider");
   return context;
 }

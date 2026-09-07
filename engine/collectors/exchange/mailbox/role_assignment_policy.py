@@ -31,7 +31,10 @@ class RoleAssignmentPolicyDataCollector(BasePowerShellCollector):
             - default_policy: The default role assignment policy
             - policies_allowing_addin_install: Policies that allow add-in installation
         """
-        policies = await client.run_cmdlet("ExchangeOnline", "Get-RoleAssignmentPolicy")
+        policies = await client.run_operation(
+            "exchange.mailbox.role_assignment_policy.read",
+            "exchange.mailbox.role_assignment_policy",
+        )
 
         # Handle None, single policy, or list
         if policies is None:
@@ -42,7 +45,7 @@ class RoleAssignmentPolicyDataCollector(BasePowerShellCollector):
         # Find default policy
         default_policy = next(
             (p for p in policies if p.get("IsDefault")),
-            policies[0] if policies else None
+            policies[0] if policies else None,
         )
 
         # Check which policies allow add-in installation
@@ -53,11 +56,13 @@ class RoleAssignmentPolicyDataCollector(BasePowerShellCollector):
             # Check for add-in related roles
             addin_roles = [r for r in assigned_roles if "Apps" in r or "Add-In" in r]
             if addin_roles:
-                policies_allowing_addins.append({
-                    "name": policy.get("Name"),
-                    "is_default": policy.get("IsDefault"),
-                    "addin_roles": addin_roles,
-                })
+                policies_allowing_addins.append(
+                    {
+                        "name": policy.get("Name"),
+                        "is_default": policy.get("IsDefault"),
+                        "addin_roles": addin_roles,
+                    }
+                )
 
         return {
             "role_assignment_policies": policies,

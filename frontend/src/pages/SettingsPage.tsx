@@ -9,7 +9,7 @@ type SettingsPageProps = {
 };
 
 export default function SettingsPage({ sidebarWidth = 220, isDarkMode = true }: SettingsPageProps) {
-  const { token } = useAuth();
+  const { user } = useAuth();
   const [confirmDeleteEnabled, setConfirmDeleteEnabled] = useState(true);
   const [draftConfirmDeleteEnabled, setDraftConfirmDeleteEnabled] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
@@ -21,7 +21,7 @@ export default function SettingsPage({ sidebarWidth = 220, isDarkMode = true }: 
       setIsLoading(true);
       setError(null);
       try {
-        const settings = await getSettings(token);
+        const settings = await getSettings();
         const enabled = settings?.confirm_delete_enabled ?? true;
         setConfirmDeleteEnabled(enabled);
         setDraftConfirmDeleteEnabled(enabled);
@@ -35,7 +35,7 @@ export default function SettingsPage({ sidebarWidth = 220, isDarkMode = true }: 
     }
 
     load();
-  }, [token]);
+  }, [user]);
 
   const hasChanges = draftConfirmDeleteEnabled !== confirmDeleteEnabled;
 
@@ -50,7 +50,7 @@ export default function SettingsPage({ sidebarWidth = 220, isDarkMode = true }: 
     setIsSaving(true);
     setError(null);
     try {
-      const updated = await updateSettings(token, {
+      const updated = await updateSettings({
         confirm_delete_enabled: draftConfirmDeleteEnabled,
       });
       const enabled = updated?.confirm_delete_enabled ?? draftConfirmDeleteEnabled;

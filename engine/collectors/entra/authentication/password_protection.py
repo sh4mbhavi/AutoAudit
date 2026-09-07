@@ -4,7 +4,7 @@ CIS Microsoft 365 Foundations Benchmark Controls:
     v6.0.0: 5.2.3.2, 5.2.3.3
 
 Connection Method: Microsoft Graph API
-Required Scopes: Directory.Read.All
+Required Scopes: GroupSettings.Read.All
 Graph Endpoint: /settings (directory settings)
 """
 
@@ -32,8 +32,7 @@ class PasswordProtectionDataCollector(BaseDataCollector):
             - lockout_settings: Account lockout configuration
         """
         # Get directory settings which include password rule settings
-        settings_response = await client.get("/settings", beta=True)
-        settings_list = settings_response.get("value", [])
+        settings_list = await client.get_all_pages("/settings", beta=True)
 
         # Find the password rule settings template
         password_settings = None
@@ -52,10 +51,16 @@ class PasswordProtectionDataCollector(BaseDataCollector):
         return {
             "password_protection_settings": password_settings,
             "settings_values": values,
-            "banned_password_list_enabled": values.get("EnableBannedPasswordCheck") == "True",
+            "banned_password_list_enabled": values.get("EnableBannedPasswordCheck")
+            == "True",
             "banned_password_list": values.get("BannedPasswordList"),
-            "on_prem_protection_enabled": values.get("EnableBannedPasswordCheckOnPremises") == "True",
+            "on_prem_protection_enabled": values.get(
+                "EnableBannedPasswordCheckOnPremises"
+            )
+            == "True",
             "lockout_threshold": values.get("LockoutThreshold"),
             "lockout_duration_in_seconds": values.get("LockoutDurationInSeconds"),
-            "enforce_custom_banned_passwords": values.get("BannedPasswordCheckOnPremisesMode"),
+            "enforce_custom_banned_passwords": values.get(
+                "BannedPasswordCheckOnPremisesMode"
+            ),
         }

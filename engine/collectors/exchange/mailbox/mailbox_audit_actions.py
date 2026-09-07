@@ -14,7 +14,7 @@ Required Permissions: Exchange.ManageAsApp + Exchange role assignment
 
 from typing import Any
 
-from collectors.powershell_base import BasePowerShellCollector
+from collectors.powershell_base import BasePowerShellCollector, powershell_records
 from collectors.powershell_client import PowerShellClient
 
 
@@ -35,19 +35,13 @@ class MailboxAuditActionsDataCollector(BasePowerShellCollector):
         """
         # Get user mailboxes with audit properties
         # Filter in PowerShell and select only needed properties to reduce output
-        cmdlet = (
-            "Get-EXOMailbox -PropertySets Audit, Minimum -ResultSize Unlimited "
-            "-WarningAction SilentlyContinue | "
-            "Where-Object { $_.RecipientTypeDetails -eq 'UserMailbox' } | "
-            "Select-Object UserPrincipalName, AuditEnabled, AuditAdmin, AuditDelegate, AuditOwner"
+        mailboxes = await client.run_operation(
+            "exchange.mailbox.mailbox_audit_actions.read",
+            "exchange.mailbox.mailbox_audit_actions",
         )
-        mailboxes = await client.run_cmdlet("ExchangeOnline", cmdlet)
 
         # Handle None, single result, or list
-        if mailboxes is None:
-            mailboxes = []
-        elif isinstance(mailboxes, dict):
-            mailboxes = [mailboxes]
+        mailboxes = powershell_records(mailboxes)
 
         return {
             "mailboxes": mailboxes,

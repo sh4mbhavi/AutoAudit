@@ -30,6 +30,11 @@ COPY --chown=appuser:appuser backend-api/alembic.ini backend-api/entrypoint.sh .
 # Copy evidence scanner assets/logic
 COPY --chown=appuser:appuser security ./security
 
+# Evidence object store. Created in the image and owned by the runtime user so a
+# fresh named volume mounted here inherits that ownership; without this the mount
+# lands root-owned and every upload fails as the non-root user.
+RUN install -d -o appuser -g appuser -m 0700 /app/evidence-store
+
 # Make entrypoint executable
 RUN chmod +x entrypoint.sh
 

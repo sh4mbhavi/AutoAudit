@@ -1,0 +1,251 @@
+# Standalone production template: docker compose -f docker-compose.production.yml up
+# Supply reviewed TLS material, Redis ACL and secrets; see Phase 5 handoff.
+#
+# Phase 10 added healthchecks, resource limits, health-ordered startup, bounded
+# logging and no-new-privileges to every service. Before that this template had
+# none of them while the DEVELOPMENT compose had healthchecks and limits -- so
+# the reviewed production topology was measurably less defended at runtime than
+# a developer's laptop, and the API could start migrations before PostgreSQL was
+# accepting connections.
+#
+# The dispatcher inherits build, secrets, networks, logging, security_opt and
+# resource limits from the worker anchor, and overrides command, environment,
+# depends_on and healthcheck. Check the rendered output, not the anchor, when
+# changing either.
+#
+# There is deliberately no `opa` service. Production evaluates policy with the
+# digest-pinned OPA binary baked into the worker image (OPA_BINARY), not against
+# an OPA server, so there is no OPA port to expose or protect.
+services:
+  db:
+    deploy:
+      resources:
+        limits: {memory: 1G, cpus: "2.0"}
+    image: postgres:16
+    environment:
+      POSTGRES_USER: autoaudit
+      POSTGRES_DB: autoaudit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    networks: [private]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autoaudit"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    logging: &logging
+      # Bounded, or a long-running host fills its disk with container logs and
+      # the first symptom is PostgreSQL refusing writes.
+      driver: json-file
+      options: {max-size: "10m", max-file: "5"}
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+  redis:
+    deploy:
+      resources:
+        limits: {memory: 320M, cpus: "0.5"}
+    image: redis:7-alpine
+    command: [redis-server, /usr/local/etc/redis/redis.conf]
+    volumes: [./infrastructure/runtime/redis.conf:/usr/local/etc/redis/redis.conf:ro]
+    secrets: [redis_cert, redis_key, runtime_ca, redis_acl]
+    tmpfs: [/data]
+    networks: [private]
+    healthcheck:
+      # TLS-only (redis.conf sets `port 0`), so the probe must speak TLS.
+      #
+      # NOAUTH counts as healthy, deliberately: the ACL file governs who may
+      # authenticate, and a reviewed ACL normally disables the default user. A
+      # server answering "-NOAUTH Authentication required" over TLS has proved
+      # both things a healthcheck needs to know -- it is listening, and it is
+      # enforcing auth -- without a credential being written into this file.
+      # Requiring PONG would require embedding one.
+      test: ["CMD-SHELL", "redis-cli --tls --cacert /run/secrets/runtime_ca -p 6379 ping 2>&1 | grep -Eq 'PONG|NOAUTH'"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    logging: *logging
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+  backend-api:
+    deploy:
+      resources:
+        limits: {memory: 512M, cpus: "1.0"}
+    build:
+      context: .
+      dockerfile: backend-api/Dockerfile
+    environment:
+      APP_ENV: production
+      DATABASE_URL: ${API_DATABASE_URL:?required}
+      REDIS_URL: ${REDIS_URL:?authenticated rediss URL required}
+      SECRET_KEY: ${SECRET_KEY:?required}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?required}
+      # Retired keys that may still DECRYPT. Empty by default, which is the
+      # steady state; a rotation sets it to the previous key and clears it again
+      # only once tools/ops/rotate_encryption_key.py --check reports clean.
+      # The API and BOTH engine services must carry the same ring, or a
+      # partially rolled deployment fails at scan time with InvalidToken.
+      ENCRYPTION_KEY_DECRYPT_ONLY: ${ENCRYPTION_KEY_DECRYPT_ONLY:-}
+      BACKEND_PUBLIC_URL: ${BACKEND_PUBLIC_URL:?HTTPS origin required}
+      FRONTEND_URL: ${FRONTEND_URL:?HTTPS origin required}
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      POLICIES_DIR: /app/policies
+      MAPPINGS_DIR: /app/mappings
+      EVIDENCE_STORAGE_DIR: /app/evidence-store
+    secrets: [runtime_ca]
+    # Evidence is a durable named volume, never the container writable layer, so
+    # uploaded evidence and generated reports survive a restart and stay subject
+    # to the recorded retention policy version.
+    volumes:
+      - ./engine/policies:/app/policies:ro
+      - ./engine/mappings:/app/mappings:ro
+      - evidence_store:/app/evidence-store
+    # Local TLS ingress proxy connects here; database/broker/PowerShell have no host ports.
+    ports: [127.0.0.1:8000:8000]
+    networks: [private, egress]
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    healthcheck:
+      # /readiness, not /liveness: liveness is hardcoded and would report healthy
+      # with an unreachable database. Phase 10 added the readiness endpoint for
+      # exactly this.
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/readiness"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    logging: *logging
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+  worker: &worker-runtime
+    deploy:
+      resources:
+        limits: {memory: 1G, cpus: "2.0"}
+    build:
+      context: ./engine
+      args:
+        ENGINE_GIT_SHA: ${ENGINE_GIT_SHA:?reviewed revision required}
+    environment:
+      APP_ENV: production
+      DATABASE_URL: ${WORKER_DATABASE_URL:?required}
+      REDIS_URL: ${REDIS_URL:?authenticated rediss URL required}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?required}
+      # Retired keys that may still DECRYPT. Empty by default, which is the
+      # steady state; a rotation sets it to the previous key and clears it again
+      # only once tools/ops/rotate_encryption_key.py --check reports clean.
+      # The API and BOTH engine services must carry the same ring, or a
+      # partially rolled deployment fails at scan time with InvalidToken.
+      ENCRYPTION_KEY_DECRYPT_ONLY: ${ENCRYPTION_KEY_DECRYPT_ONLY:-}
+      POWERSHELL_SERVICE_URL: https://powershell-service:8001
+      POWERSHELL_SERVICE_SECRET: ${POWERSHELL_SERVICE_SECRET:?required}
+      POWERSHELL_CA_FILE: /run/secrets/runtime_ca
+      OPA_BINARY: /usr/local/bin/opa
+      # Phase 8's drift fingerprints are written HERE, by worker/tasks.py via
+      # persist_factprint -- not by the dispatcher. Left unset, as it was before
+      # Phase 10, no factprint row is ever written and drift reports
+      # `fingerprints_unavailable`: the reviewed production template silently
+      # shipped a delivered feature switched off.
+      DRIFT_FACT_HMAC_KEY: ${DRIFT_FACT_HMAC_KEY:?required for drift fingerprints}
+    secrets: [runtime_ca]
+    networks: [private, egress]
+    depends_on:
+      db: {condition: service_healthy}
+      redis: {condition: service_healthy}
+      powershell-service: {condition: service_healthy}
+    healthcheck:
+      # The worker serves no HTTP; `celery inspect ping` is the only liveness
+      # signal it has.
+      test: ["CMD-SHELL", "celery -A worker.celery_app inspect ping -d celery@$$HOSTNAME"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+      start_period: 60s
+    logging: *logging
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+  dispatcher:
+    <<: *worker-runtime
+    command: [python, -m, worker.dispatcher]
+    environment:
+      APP_ENV: production
+      DATABASE_URL: ${WORKER_DATABASE_URL:?required}
+      REDIS_URL: ${REDIS_URL:?authenticated rediss URL required}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?required}
+      # Retired keys that may still DECRYPT. Empty by default, which is the
+      # steady state; a rotation sets it to the previous key and clears it again
+      # only once tools/ops/rotate_encryption_key.py --check reports clean.
+      # The API and BOTH engine services must carry the same ring, or a
+      # partially rolled deployment fails at scan time with InvalidToken.
+      ENCRYPTION_KEY_DECRYPT_ONLY: ${ENCRYPTION_KEY_DECRYPT_ONLY:-}
+      POWERSHELL_SERVICE_URL: https://powershell-service:8001
+      POWERSHELL_SERVICE_SECRET: ${POWERSHELL_SERVICE_SECRET:?required}
+      POWERSHELL_CA_FILE: /run/secrets/runtime_ca
+      OPA_BINARY: /usr/local/bin/opa
+      # Phase 10: the dispatcher exports the scan-lifecycle gauges every alert in
+      # scan_lifecycle.yaml reads. On the private network only -- no host port.
+      METRICS_PORT: ${DISPATCHER_METRICS_PORT:-9101}
+      # Also required here: the dispatcher runs the drift comparison on the
+      # post-finalisation path and reads the same key to verify fingerprints.
+      DRIFT_FACT_HMAC_KEY: ${DRIFT_FACT_HMAC_KEY:?required for drift fingerprints}
+    depends_on:
+      db: {condition: service_healthy}
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,os; urllib.request.urlopen(f'http://127.0.0.1:{os.environ[\\\"METRICS_PORT\\\"]}/metrics', timeout=5)\""]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
+  powershell-service:
+    deploy:
+      resources:
+        limits: {memory: 512M, cpus: "1.0"}
+    platform: linux/amd64
+    build:
+      context: ./engine/powershell
+    command: [uvicorn, main:app, --host, 0.0.0.0, --port, "8001", --ssl-keyfile, /run/secrets/powershell_key, --ssl-certfile, /run/secrets/powershell_cert, --no-access-log]
+    environment:
+      APP_ENV: production
+      POWERSHELL_SERVICE_SECRET: ${POWERSHELL_SERVICE_SECRET:?required}
+      # Phase 9: how many pwsh children this replica may run at once. Each loads
+      # ExchangeOnlineManagement and may live for a 300-second batch, so this is
+      # a memory decision as much as a throughput one. Raise it together with
+      # the replica's memory allocation, never on its own.
+      POWERSHELL_MAX_CONCURRENCY: ${POWERSHELL_MAX_CONCURRENCY:-4}
+    secrets: [powershell_cert, powershell_key]
+    networks: [private, egress]
+    healthcheck:
+      # The service name, not localhost: the certificate is issued for
+      # `powershell-service`, so a localhost probe fails hostname verification,
+      # the container never reports healthy, and the worker -- which depends on
+      # it being healthy -- never starts.
+      test: ["CMD-SHELL", "curl -fsS --cacert /run/secrets/powershell_cert https://powershell-service:8001/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 45s
+    logging: *logging
+    security_opt: [no-new-privileges:true]
+    restart: unless-stopped
+networks:
+  private:
+    internal: true
+  egress: {}
+volumes:
+  postgres_data:
+  evidence_store:
+secrets:
+  runtime_ca:
+    file: ${RUNTIME_CA_FILE:?required}
+  redis_cert:
+    file: ${REDIS_CERT_FILE:?required}
+  redis_key:
+    file: ${REDIS_KEY_FILE:?required}
+  redis_acl:
+    file: ${REDIS_ACL_FILE:?required}
+  powershell_cert:
+    file: ${POWERSHELL_CERT_FILE:?required}
+  powershell_key:
+    file: ${POWERSHELL_KEY_FILE:?required}

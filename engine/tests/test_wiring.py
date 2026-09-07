@@ -24,6 +24,40 @@ POLICIES_DIR = ENGINE_ROOT / "policies"
 
 VALID_AUTOMATION_STATUSES = {"ready", "manual", "deferred", "blocked", "not_started"}
 
+# Metadata references to collectors that are NOT in DATA_COLLECTORS today. Until
+# Phase 7 only 'ready' controls were checked, so these stayed invisible. Every
+# broken reference is pinned as (version, control_id, collector_id) rather than
+# by collector id alone, so pointing ANOTHER control at one of these ids is new
+# drift and fails (see test_known_unregistered_collectors_is_current).
+#
+# Both collector modules exist on disk (collectors/sharepoint/spo_tenant.py and
+# collectors/sharepoint/spo_sync_client_restriction.py) but nothing imports them.
+# Do not register them without verifying the wiring end to end.
+KNOWN_UNREGISTERED_COLLECTOR_REFERENCES = frozenset(
+    {
+        ("microsoft-365-foundations/v6.0.0", control_id, "sharepoint.spo_tenant")
+        for control_id in (
+            "7.2.1",
+            "7.2.2",
+            "7.2.3",
+            "7.2.4",
+            "7.2.6",
+            "7.2.7",
+            "7.2.8",
+            "7.2.9",
+            "7.2.10",
+            "7.2.11",
+        )
+    }
+    | {
+        (
+            "microsoft-365-foundations/v6.0.0",
+            "7.3.2",
+            "sharepoint.spo_sync_client_restriction",
+        )
+    }
+)
+
 # ---------------------------------------------------------------------------
 # Metadata discovery
 # ---------------------------------------------------------------------------
@@ -48,7 +82,7 @@ _PACKAGE_RE = re.compile(r"^package\s+(\S+)", re.MULTILINE)
 
 
 def _expected_package(framework: str, slug: str, version: str, control_id: str) -> str:
-    """Replicate the package-path logic from worker/tasks.py:380-395."""
+    """Replicate the package-path logic from worker/tasks.py:419-427."""
     framework_normalized = framework.replace("-", "_")
     benchmark_normalized = slug.replace("-", "_")
     version_normalized = version.replace(".", "_")
@@ -76,7 +110,9 @@ def _ready_controls() -> list[tuple[str, str, dict, Path, dict]]:
         version_label = f"{meta['slug']}/{meta['version']}"
         for ctrl in meta["controls"]:
             if ctrl["automation_status"] == "ready":
-                items.append((version_label, ctrl["control_id"], ctrl, version_dir, meta))
+                items.append(
+                    (version_label, ctrl["control_id"], ctrl, version_dir, meta)
+                )
     return items
 
 
@@ -94,6 +130,15 @@ def _all_rego_files() -> list[tuple[str, str, Path]]:
         for rego in sorted(version_dir.glob("*.rego")):
             items.append((version_label, rego.name, rego))
     return items
+
+
+def _non_ready_controls_with_collector() -> list[tuple[str, str, dict]]:
+    """(version_label, control_id, control) for non-ready controls naming a collector."""
+    return [
+        (version_label, control_id, control)
+        for version_label, control_id, control in _all_controls()
+        if control["automation_status"] != "ready" and control["data_collector_id"]
+    ]
 
 
 def _all_controls() -> list[tuple[str, str, dict]]:
@@ -136,6 +181,28 @@ _REGO_FILES_IDS = [f"{v}-{fname}" for v, fname, _ in _REGO_FILES]
 _ALL_CONTROLS = _all_controls()
 _ALL_CONTROLS_IDS = [f"{v}-{cid}" for v, cid, _ in _ALL_CONTROLS]
 
+_NON_READY_WITH_COLLECTOR = [
+    pytest.param(
+        version_label,
+        control_id,
+        control,
+        id=f"{version_label}-{control_id}",
+        marks=(
+            pytest.mark.xfail(
+                strict=True,
+                reason=(
+                    f"Known gap: collector '{control['data_collector_id']}' is "
+                    "referenced by metadata but not registered in DATA_COLLECTORS"
+                ),
+            )
+            if (version_label, control_id, control["data_collector_id"])
+            in KNOWN_UNREGISTERED_COLLECTOR_REFERENCES
+            else ()
+        ),
+    )
+    for version_label, control_id, control in _non_ready_controls_with_collector()
+]
+
 _ORPHANED = _orphaned_collectors()
 
 
@@ -149,7 +216,9 @@ _ORPHANED = _orphaned_collectors()
     _READY,
     ids=_READY_IDS,
 )
-def test_ready_control_policy_file_exists(version_label, control_id, control, version_dir, meta):
+def test_ready_control_policy_file_exists(
+    version_label, control_id, control, version_dir, meta
+):
     policy_file = control["policy_file"]
     assert policy_file is not None, (
         f"[{version_label}] control {control_id} has automation_status='ready' "
@@ -172,7 +241,9 @@ def test_ready_control_policy_file_exists(version_label, control_id, control, ve
     _READY,
     ids=_READY_IDS,
 )
-def test_ready_control_collector_registered(version_label, control_id, control, version_dir, meta):
+def test_ready_control_collector_registered(
+    version_label, control_id, control, version_dir, meta
+):
     from collectors.registry import DATA_COLLECTORS
 
     collector_id = control["data_collector_id"]
@@ -187,6 +258,49 @@ def test_ready_control_collector_registered(version_label, control_id, control, 
 
 
 # ---------------------------------------------------------------------------
+# Test 2b: Non-ready controls also name real collectors
+#
+# A control that is not yet 'ready' still declares the collector it will use.
+# Nothing used to check those declarations, so a metadata reference to a
+# collector that was never registered stayed invisible. The xfail entries above
+# record exactly which references are still broken today.
+# ---------------------------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "version_label,control_id,control",
+    _NON_READY_WITH_COLLECTOR,
+)
+def test_non_ready_control_collector_registered(version_label, control_id, control):
+    from collectors.registry import DATA_COLLECTORS
+
+    collector_id = control["data_collector_id"]
+    assert collector_id in DATA_COLLECTORS, (
+        f"[{version_label}] control {control_id} (automation_status="
+        f"'{control['automation_status']}') references collector '{collector_id}' "
+        f"which is not registered in DATA_COLLECTORS"
+    )
+
+
+def test_known_unregistered_collectors_is_current():
+    """The known-gap list must be exactly the debt that exists right now."""
+    from collectors.registry import DATA_COLLECTORS
+
+    unregistered = {
+        (version_label, control_id, control["data_collector_id"])
+        for version_label, control_id, control in _ALL_CONTROLS
+        if control["data_collector_id"]
+        and control["data_collector_id"] not in DATA_COLLECTORS
+    }
+    assert unregistered == KNOWN_UNREGISTERED_COLLECTOR_REFERENCES, (
+        "metadata references unregistered collectors that "
+        "KNOWN_UNREGISTERED_COLLECTOR_REFERENCES does not describe: "
+        f"new={sorted(unregistered - KNOWN_UNREGISTERED_COLLECTOR_REFERENCES)}, "
+        f"stale={sorted(KNOWN_UNREGISTERED_COLLECTOR_REFERENCES - unregistered)}"
+    )
+
+
+# ---------------------------------------------------------------------------
 # Test 3: Rego package declaration matches expected path
 # ---------------------------------------------------------------------------
 
@@ -196,15 +310,19 @@ def test_ready_control_collector_registered(version_label, control_id, control, 
     _READY_WITH_POLICY,
     ids=_READY_WITH_POLICY_IDS,
 )
-def test_rego_package_matches_metadata(version_label, control_id, control, version_dir, meta):
+def test_rego_package_matches_metadata(
+    version_label, control_id, control, version_dir, meta
+):
     rego_path = version_dir / control["policy_file"]
     if not rego_path.is_file():
-        pytest.skip("Rego file missing (covered by test_ready_control_policy_file_exists)")
+        pytest.skip(
+            "Rego file missing (covered by test_ready_control_policy_file_exists)"
+        )
 
     actual_package = _extract_rego_package(rego_path)
-    assert actual_package is not None, (
-        f"[{version_label}] {control['policy_file']} has no 'package' declaration"
-    )
+    assert (
+        actual_package is not None
+    ), f"[{version_label}] {control['policy_file']} has no 'package' declaration"
 
     expected = _expected_package(
         framework=meta["framework"],
@@ -271,12 +389,12 @@ def test_control_schema_consistency(version_label, control_id, control):
     )
 
     if status == "ready":
-        assert control["data_collector_id"] is not None, (
-            f"[{version_label}] control {control_id} is 'ready' but data_collector_id is null"
-        )
-        assert control["policy_file"] is not None, (
-            f"[{version_label}] control {control_id} is 'ready' but policy_file is null"
-        )
+        assert (
+            control["data_collector_id"] is not None
+        ), f"[{version_label}] control {control_id} is 'ready' but data_collector_id is null"
+        assert (
+            control["policy_file"] is not None
+        ), f"[{version_label}] control {control_id} is 'ready' but policy_file is null"
     else:
         assert control["policy_file"] is None, (
             f"[{version_label}] control {control_id} has automation_status='{status}' "
@@ -300,6 +418,6 @@ def test_no_duplicate_control_ids(meta_path, meta):
     for cid in ids:
         seen[cid] = seen.get(cid, 0) + 1
     duplicates = {cid: count for cid, count in seen.items() if count > 1}
-    assert not duplicates, (
-        f"[{meta['slug']}/{meta['version']}] Duplicate control_ids: {duplicates}"
-    )
+    assert (
+        not duplicates
+    ), f"[{meta['slug']}/{meta['version']}] Duplicate control_ids: {duplicates}"

@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event';
 import SettingsPage from './SettingsPage';
 
 vi.mock('../context/AuthContext', () => ({
-  useAuth: vi.fn().mockReturnValue({ token: 'test-token' }),
+  useAuth: vi.fn().mockReturnValue({ user: {id: 1} }),
 }));
 
 vi.mock('../api/client', () => ({
@@ -85,7 +85,7 @@ describe('handleSave', () => {
     await userEvent.click(screen.getByRole('button', { name: /save/i }));
 
     await waitFor(() =>
-      expect(mockUpdateSettings).toHaveBeenCalledWith('test-token', { confirm_delete_enabled: false })
+      expect(mockUpdateSettings).toHaveBeenCalledWith({ confirm_delete_enabled: false })
     );
   });
 

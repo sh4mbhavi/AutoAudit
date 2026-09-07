@@ -49,12 +49,24 @@ class MfaFatigueProtectionDataCollector(BaseDataCollector):
 
         # Extract individual feature states
         number_matching_state = feature_settings.get("numberMatchingRequiredState", {})
-        display_app_state = feature_settings.get("displayAppInformationRequiredState", {})
-        display_location_state = feature_settings.get("displayLocationInformationRequiredState", {})
+        display_app_state = feature_settings.get(
+            "displayAppInformationRequiredState", {}
+        )
+        display_location_state = feature_settings.get(
+            "displayLocationInformationRequiredState", {}
+        )
 
         # Determine if features are enabled
         # State can be "enabled", "disabled", or "default"
-        number_matching_enabled = number_matching_state.get("state") == "enabled"
+        method_state = config.get("state")
+        feature_state = number_matching_state.get("state")
+        number_matching_enabled = (
+            False
+            if method_state == "disabled"
+            else feature_state == "enabled"
+            if method_state == "enabled" and feature_state in ("enabled", "disabled")
+            else None
+        )
         display_app_enabled = display_app_state.get("state") == "enabled"
         display_location_enabled = display_location_state.get("state") == "enabled"
 
