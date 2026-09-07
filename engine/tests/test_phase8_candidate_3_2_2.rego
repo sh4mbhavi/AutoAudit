@@ -168,7 +168,6 @@ test_nested_collector_error_is_indeterminate if {
 	result.details.evaluation_status == "indeterminate"
 }
 
-
 # Some but not all returned Teams policies enforce. The benchmark does not say
 # whether that passes, so neither does this policy.
 test_partially_enforcing_is_indeterminate if {

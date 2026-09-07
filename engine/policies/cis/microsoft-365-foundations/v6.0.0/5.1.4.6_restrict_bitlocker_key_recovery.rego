@@ -19,23 +19,41 @@ package cis.microsoft_365_foundations.v6_0_0.control_5_1_4_6
 import rego.v1
 
 default result := {
-  "compliant": false,
-  "message": "Unable to determine allowedToReadBitlockerKeysForOwnedDevice",
-  "details": {},
+	"compliant": null,
+	"message": "Unable to evaluate: allowedToReadBitlockerKeysForOwnedDevice is unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected a boolean defaultUserRolePermissions.allowedToReadBitlockerKeysForOwnedDevice on the authorization policy; collector errors invalidate the evidence.",
+	},
 }
 
-compliant_value := true if { input.allowed_to_read_bitlocker_keys_for_owned_device == false } else := false if { true }
-
-msg := "Users are restricted from recovering BitLocker keys (allowedToReadBitlockerKeysForOwnedDevice=false)" if { input.allowed_to_read_bitlocker_keys_for_owned_device == false } else := "Users can recover BitLocker keys (allowedToReadBitlockerKeysForOwnedDevice=true)" if { input.allowed_to_read_bitlocker_keys_for_owned_device == true } else := "Unable to determine allowedToReadBitlockerKeysForOwnedDevice" if { true }
-
-result := out if {
-  value := input.allowed_to_read_bitlocker_keys_for_owned_device
-
-  out := {
-    "compliant": compliant_value,
-    "message": msg,
-    "details": {
-      "allowed_to_read_bitlocker_keys_for_owned_device": value,
-    },
-  }
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
 }
+
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
+}
+
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	is_boolean(input.allowed_to_read_bitlocker_keys_for_owned_device)
+}
+
+result := {
+	"compliant": compliant,
+	"message": generate_message(compliant),
+	"affected_resources": affected,
+	"details": {"allowed_to_read_bitlocker_keys_for_owned_device": input.allowed_to_read_bitlocker_keys_for_owned_device},
+} if {
+	valid_evidence
+	compliant := input.allowed_to_read_bitlocker_keys_for_owned_device == false
+	affected := ["authorizationPolicy" | not compliant]
+}
+
+generate_message(true) := "Users are restricted from recovering BitLocker keys (allowedToReadBitlockerKeysForOwnedDevice=false)"
+
+generate_message(false) := "Users can recover BitLocker keys (allowedToReadBitlockerKeysForOwnedDevice=true)"

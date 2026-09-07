@@ -13,33 +13,47 @@
 
 package cis.microsoft_365_foundations.v6_0_0.control_5_1_4_5
 
+import rego.v1
+
 default result := {
-    "compliant": false,
-    "message": "Unable to determine whether LAPS is enabled",
-    "details": {}
+	"compliant": null,
+	"message": "Unable to evaluate: the LAPS setting is unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected a boolean localAdminPassword.isEnabled on the device registration policy; collector errors invalidate the evidence.",
+	},
 }
 
-compliant if {
-    input.laps_enabled == true
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
 }
 
-compliant_value := true if {
-    compliant
-} else := false if {
-    true
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
 }
 
-msg := "Microsoft Entra Local Administrator Password Solution (LAPS) is enabled" if {
-    compliant
-} else := "Microsoft Entra Local Administrator Password Solution (LAPS) is not enabled"
-
-result := output if {
-    output := {
-        "compliant": compliant_value,
-        "message": msg,
-        "details": {
-            "laps_enabled": input.laps_enabled,
-            "local_admin_password_settings": input.local_admin_password_settings
-        }
-    }
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	is_boolean(input.laps_enabled)
 }
+
+result := {
+	"compliant": compliant,
+	"message": generate_message(compliant),
+	"affected_resources": affected,
+	"details": {
+		"laps_enabled": input.laps_enabled,
+		"local_admin_password_settings": object.get(input, "local_admin_password_settings", null),
+	},
+} if {
+	valid_evidence
+	compliant := input.laps_enabled == true
+	affected := ["deviceRegistrationPolicy" | not compliant]
+}
+
+generate_message(true) := "Microsoft Entra Local Administrator Password Solution (LAPS) is enabled"
+
+generate_message(false) := "Microsoft Entra Local Administrator Password Solution (LAPS) is not enabled"

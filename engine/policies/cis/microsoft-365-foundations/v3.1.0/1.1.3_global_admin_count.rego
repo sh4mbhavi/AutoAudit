@@ -21,41 +21,78 @@
 
 package cis.microsoft_365_foundations.v3_1_0.control_1_1_3
 
-default result := {"compliant": false, "message": "Evaluation failed"}
+import rego.v1
 
-default is_compliant := false
+recommended_min := 2
 
-is_compliant if {
-    input.global_admin_count >= 2
-    input.global_admin_count <= 4
+recommended_max := 4
+
+default result := {
+	"compliant": null,
+	"message": "Unable to evaluate: the tenant's Global Administrator count is unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected a numeric global_admin_count and a global_admins array; collector errors invalidate the evidence.",
+	},
 }
 
-result := output if {
-    admin_count := input.global_admin_count
-    output := {
-        "compliant": is_compliant,
-        "message": generate_message(admin_count),
-        "affected_resources": input.global_admins,
-        "details": {
-            "global_admin_count": admin_count,
-            "recommended_min": 2,
-            "recommended_max": 4
-        }
-    }
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
 }
 
-generate_message(admin_count) := msg if {
-    admin_count < 2
-    msg := sprintf("Only %d global admin(s) found. Minimum 2 recommended for continuity.", [admin_count])
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
 }
 
-generate_message(admin_count) := msg if {
-    admin_count > 4
-    msg := sprintf("%d global admins found. Maximum 4 recommended to minimize attack surface.", [admin_count])
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	is_number(input.global_admin_count)
+	is_array(input.global_admins)
 }
 
-generate_message(admin_count) := msg if {
-    admin_count >= 2
-    admin_count <= 4
-    msg := sprintf("%d global admins configured (within recommended range of 2-4)", [admin_count])
+result := {
+	"compliant": compliant,
+	"message": generate_message(input.global_admin_count),
+	"affected_resources": affected,
+	"details": {
+		"global_admin_count": input.global_admin_count,
+		"recommended_min": recommended_min,
+		"recommended_max": recommended_max,
+	},
+} if {
+	valid_evidence
+	compliant := in_recommended_range
+	affected := array.concat([], [account | some account in input.global_admins; not compliant])
+}
+
+default in_recommended_range := false
+
+in_recommended_range if {
+	input.global_admin_count >= recommended_min
+	input.global_admin_count <= recommended_max
+}
+
+generate_message(count_value) := sprintf(
+	"Only %d global admin(s) found. Minimum %d recommended for continuity.",
+	[count_value, recommended_min],
+) if {
+	count_value < recommended_min
+}
+
+generate_message(count_value) := sprintf(
+	"%d global admins found. Maximum %d recommended to minimize attack surface.",
+	[count_value, recommended_max],
+) if {
+	count_value > recommended_max
+}
+
+generate_message(count_value) := sprintf(
+	"%d global admins configured (within recommended range of %d-%d)",
+	[count_value, recommended_min, recommended_max],
+) if {
+	count_value >= recommended_min
+	count_value <= recommended_max
 }

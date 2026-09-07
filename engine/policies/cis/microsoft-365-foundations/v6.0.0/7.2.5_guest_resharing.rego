@@ -19,43 +19,44 @@
 
 package cis.microsoft_365_foundations.v6_0_0.control_7_2_5
 
+import rego.v1
+
 default result := {
-    "compliant": false,
-    "message": "Evaluation failed"
+	"compliant": null,
+	"message": "Unable to evaluate: the SharePoint tenant setting is unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected a boolean PreventExternalUsersFromResharing on the SharePoint tenant; collector errors invalidate the evidence.",
+	},
 }
 
-result := output if {
-    prevent_resharing := input.prevent_external_users_from_resharing
-
-    compliant := prevent_resharing == true
-
-    output := {
-        "compliant": compliant,
-        "message": generate_message(prevent_resharing),
-        "affected_resources": generate_affected_resources(compliant),
-        "details": {
-            "prevent_external_users_from_resharing": prevent_resharing
-        }
-    }
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
 }
 
-generate_message(prevent_resharing) := msg if {
-    prevent_resharing == true
-    msg := "SharePoint guest users cannot reshare items they do not own"
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
 }
 
-generate_message(prevent_resharing) := msg if {
-    prevent_resharing == false
-    msg := "SharePoint guest users can reshare items they do not own"
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	is_boolean(input.prevent_external_users_from_resharing)
 }
 
-generate_message(prevent_resharing) := msg if {
-    prevent_resharing == null
-    msg := "Unable to determine whether SharePoint guest users can reshare items they do not own"
+result := {
+	"compliant": compliant,
+	"message": generate_message(compliant),
+	"affected_resources": affected,
+	"details": {"prevent_external_users_from_resharing": input.prevent_external_users_from_resharing},
+} if {
+	valid_evidence
+	compliant := input.prevent_external_users_from_resharing == true
+	affected := ["SharePoint tenant: guest resharing" | not compliant]
 }
 
-generate_affected_resources(true) := []
+generate_message(true) := "SharePoint guest users cannot reshare items they do not own"
 
-generate_affected_resources(false) := [
-    "SharePoint guest users are allowed to reshare items they do not own"
-]
+generate_message(false) := "SharePoint guest users can reshare items they do not own"

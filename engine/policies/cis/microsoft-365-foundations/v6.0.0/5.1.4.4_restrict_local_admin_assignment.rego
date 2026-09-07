@@ -16,9 +16,13 @@ package cis.microsoft_365_foundations.v6_0_0.control_5_1_4_4
 import rego.v1
 
 default result := {
-	"compliant": false,
-	"message": "Unable to determine Entra join local administrator assignment configuration",
-	"details": {},
+	"compliant": null,
+	"message": "Unable to evaluate: Entra join local administrator assignment is unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected azureADJoin.localAdmins.registeringUsers['@odata.type'] to be one of the three known device registration membership types; collector errors invalidate the evidence.",
+	},
 }
 
 known_membership_types := {
@@ -27,20 +31,33 @@ known_membership_types := {
 	"#microsoft.graph.allDeviceRegistrationMembership",
 }
 
-result := output if {
-	membership_type := input.local_admin_registering_users_type
-	membership_type in known_membership_types
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
+}
 
-	compliant := membership_type != "#microsoft.graph.allDeviceRegistrationMembership"
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
+}
 
-	output := {
-		"compliant": compliant,
-		"message": generate_message(compliant),
-		"details": {
-			"local_admin_registering_users_type": membership_type,
-			"global_admins_enabled": object.get(input, "enable_global_admins", null),
-		},
-	}
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	input.local_admin_registering_users_type in known_membership_types
+}
+
+result := {
+	"compliant": compliant,
+	"message": generate_message(compliant),
+	"affected_resources": affected,
+	"details": {
+		"local_admin_registering_users_type": input.local_admin_registering_users_type,
+		"global_admins_enabled": object.get(input, "enable_global_admins", null),
+	},
+} if {
+	valid_evidence
+	compliant := input.local_admin_registering_users_type != "#microsoft.graph.allDeviceRegistrationMembership"
+	affected := ["deviceRegistrationPolicy" | not compliant]
 }
 
 generate_message(true) := "Local administrator assignment during Entra join is limited"

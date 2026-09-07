@@ -19,38 +19,44 @@
 
 package cis.microsoft_365_foundations.v6_0_0.control_7_3_1
 
-default result := {"compliant": false, "message": "Evaluation failed"}
+import rego.v1
 
-result := output if {
-    disallow_infected_file_download := input.disallow_infected_file_download
-
-    # Compliant when DisallowInfectedFileDownload is true
-    compliant := disallow_infected_file_download == true
-
-    output := {
-        "compliant": compliant,
-        "message": generate_message(disallow_infected_file_download),
-        "affected_resources": generate_affected_resources(compliant),
-        "details": {
-            "disallow_infected_file_download": disallow_infected_file_download
-        }
-    }
+default result := {
+	"compliant": null,
+	"message": "Unable to evaluate: the SharePoint tenant setting is unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected a boolean DisallowInfectedFileDownload on the SharePoint tenant; collector errors invalidate the evidence.",
+	},
 }
 
-generate_message(disallow_infected_file_download) := msg if {
-    disallow_infected_file_download == true
-    msg := "Infected SharePoint files are disallowed for download"
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
 }
 
-generate_message(disallow_infected_file_download) := msg if {
-    disallow_infected_file_download == false
-    msg := "Infected SharePoint files are allowed for download (DisallowInfectedFileDownload is False)"
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
 }
 
-generate_message(disallow_infected_file_download) := msg if {
-    disallow_infected_file_download == null
-    msg := "Unable to determine DisallowInfectedFileDownload status"
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	is_boolean(input.disallow_infected_file_download)
 }
 
-generate_affected_resources(true) := []
-generate_affected_resources(false) := ["Infected SharePoint files can be downloaded"]
+result := {
+	"compliant": compliant,
+	"message": generate_message(compliant),
+	"affected_resources": affected,
+	"details": {"disallow_infected_file_download": input.disallow_infected_file_download},
+} if {
+	valid_evidence
+	compliant := input.disallow_infected_file_download == true
+	affected := ["SharePoint tenant: infected file download" | not compliant]
+}
+
+generate_message(true) := "Infected SharePoint files are disallowed for download"
+
+generate_message(false) := "Infected SharePoint files are allowed for download (DisallowInfectedFileDownload is False)"

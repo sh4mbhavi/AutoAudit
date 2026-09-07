@@ -21,47 +21,69 @@
 
 package cis.microsoft_365_foundations.v6_0_0.control_2_1_10
 
-default result := {"compliant": false, "message": "Evaluation failed"}
+import rego.v1
 
-result := output if {
-    domains := input.domains
-
-    # Collect all domains where DMARC records are missing or empty
-    dmarc_issues := [d | d := domains[_]; not dmarc_record_published(d)]
-
-    compliant := count(dmarc_issues) == 0
-
-    output := {
-        "compliant": compliant,
-        "message": generate_message(compliant, dmarc_issues),
-        "affected_resources": generate_affected_resources(compliant, dmarc_issues),
-        "details": {
-            "total_domains": count(domains),
-            "non_compliant_domains_count": count(dmarc_issues),
-            "non_compliant_domains": dmarc_issues
-        }
-    }
+default result := {
+	"compliant": null,
+	"message": "Unable to evaluate: the tenant's domain records are unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected a non-empty domains array of domain objects. The collector returns an empty list when the DNS lookup itself returns nothing, and a tenant always has at least one accepted domain, so an empty list is a failed collection rather than a compliant tenant.",
+	},
 }
 
-dmarc_record_published(domain) if {
-    domain.dmarc_record
-    dmarc := lower(domain.dmarc_record)
-    dmarc != ""
-    startswith(dmarc, "v=dmarc1")
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
+}
 
-    tags := [trim_space(t) | t := split(dmarc, ";")[_]]
-    some i
-    tag := tags[i]
-    startswith(tag, "p=")
-    policy := trim_space(substring(tag, 2, count(tag)-2))
-    policy in {"quarantine", "reject"}
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
+}
+
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	is_array(input.domains)
+	count(input.domains) > 0
+	every domain in input.domains {
+		is_object(domain)
+	}
+}
+
+dmarc_issues := [domain |
+	some domain in input.domains
+	not dmarc_record_published(domain)
+]
+
+dmarc_record_published(domain) if {
+	record := object.get(domain, "dmarc_record", null)
+	is_string(record)
+	dmarc := lower(record)
+	startswith(dmarc, "v=dmarc1")
+	some tag in [trim_space(part) | some part in split(dmarc, ";")]
+	startswith(tag, "p=")
+	trim_space(substring(tag, 2, -1)) in {"quarantine", "reject"}
+}
+
+result := {
+	"compliant": compliant,
+	"message": generate_message(compliant, dmarc_issues),
+	"affected_resources": [object.get(domain, "domain", null) | some domain in dmarc_issues],
+	"details": {
+		"total_domains": count(input.domains),
+		"non_compliant_domains_count": count(dmarc_issues),
+		"non_compliant_domains": dmarc_issues,
+	},
+} if {
+	valid_evidence
+	compliant := count(dmarc_issues) == 0
 }
 
 generate_message(true, _) := "All Exchange domains have DMARC records published."
-generate_message(false, dmarc_issues) := sprintf(
-    "%d domain(s) do not meet DMARC enforcement requirements (missing record or p policy is not quarantine/reject)",
-    [count(dmarc_issues)]
-)
 
-generate_affected_resources(true, _) := []
-generate_affected_resources(false, dmarc_issues) := [d.domain | d := dmarc_issues[_]]
+generate_message(false, issues) := sprintf(
+	"%d domain(s) do not meet DMARC enforcement requirements (missing record or p policy is not quarantine/reject)",
+	[count(issues)],
+)

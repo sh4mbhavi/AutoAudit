@@ -19,40 +19,67 @@
 
 package cis.microsoft_365_foundations.v6_0_0.control_2_1_8
 
-default result := {"compliant": false, "message": "Evaluation failed"}
+import rego.v1
 
-result := output if {
-    domains := input.domains
-
-    # Collect all domains where SPF records are missing or empty
-    spf_issues := [d | d := domains[_]; not spf_record_published(d)]
-
-    compliant := count(spf_issues) == 0
-
-    output := {
-        "compliant": compliant,
-        "message": generate_message(compliant, spf_issues),
-        "affected_resources": generate_affected_resources(compliant, spf_issues),
-        "details": {
-            "total_domains": count(domains),
-            "non_compliant_domains_count": count(spf_issues),
-            "non_compliant_domains": spf_issues
-        }
-    }
+default result := {
+	"compliant": null,
+	"message": "Unable to evaluate: the tenant's domain records are unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected a non-empty domains array of domain objects. The collector returns an empty list when the DNS lookup itself returns nothing, and a tenant always has at least one accepted domain, so an empty list is a failed collection rather than a compliant tenant.",
+	},
 }
 
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
+}
+
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
+}
+
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	is_array(input.domains)
+	count(input.domains) > 0
+	every domain in input.domains {
+		is_object(domain)
+	}
+}
+
+spf_issues := [domain |
+	some domain in input.domains
+	not spf_record_published(domain)
+]
+
 spf_record_published(domain) if {
-    record := trim(domain.spf_record, " \t\r\n")
-    record != ""
-    startswith(lower(record), "v=spf1")
+	record := object.get(domain, "spf_record", null)
+	is_string(record)
+	trimmed := trim(record, " \t\r\n")
+	trimmed != ""
+	startswith(lower(trimmed), "v=spf1")
+}
+
+result := {
+	"compliant": compliant,
+	"message": generate_message(compliant, spf_issues),
+	"affected_resources": [object.get(domain, "domain", null) | some domain in spf_issues],
+	"details": {
+		"total_domains": count(input.domains),
+		"non_compliant_domains_count": count(spf_issues),
+		"non_compliant_domains": spf_issues,
+	},
+} if {
+	valid_evidence
+	compliant := count(spf_issues) == 0
 }
 
 generate_message(true, _) := "All Exchange domains have SPF records published."
 
-generate_message(false, spf_issues) := sprintf(
-    "%d domain(s) do not have a valid SPF record (v=spf1...) published",
-    [count(spf_issues)]
+generate_message(false, issues) := sprintf(
+	"%d domain(s) do not have a valid SPF record (v=spf1...) published",
+	[count(issues)],
 )
-
-generate_affected_resources(true, _) := []
-generate_affected_resources(false, spf_issues) := [d.domain | d := spf_issues[_]]

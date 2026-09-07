@@ -22,49 +22,67 @@
 
 package cis.microsoft_365_foundations.v6_0_0.control_1_3_7
 
-default result := {"compliant": false, "message": "Evaluation failed"}
+import rego.v1
 
-result := output if {
-    exists := input.service_principal_exists
-    enabled := input.account_enabled
-    is_compliant := is_restricted(exists, enabled)
+third_party_storage_app_id := "c1f33bc0-bdb4-4248-ba9b-096807ddb43e"
 
-    output := {
-        "compliant": is_compliant,
-        "message": generate_message(exists, enabled),
-        "affected_resources": affected_resources(exists, enabled),
-        "details": {
-            "service_principal_exists": exists,
-            "account_enabled": enabled,
-            "app_id": "c1f33bc0-bdb4-4248-ba9b-096807ddb43e"
-        }
-    }
+default result := {
+	"compliant": null,
+	"message": "Unable to evaluate: the Third Party Storage Services service principal is unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected a boolean service_principal_exists, and a boolean account_enabled whenever it exists; collector errors invalidate the evidence.",
+	},
 }
 
-# Compliant only when the service principal has been created AND disabled
-is_restricted(exists, enabled) := true if {
-    exists == true
-    enabled == false
-} else := false
-
-generate_message(exists, enabled) := msg if {
-    exists == true
-    enabled == false
-    msg := "The 'Third Party Storage Services' service principal is disabled; third-party storage is restricted."
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
 }
 
-generate_message(exists, _) := msg if {
-    exists == false
-    msg := "The 'Third Party Storage Services' service principal has not been created; third-party storage remains available by default."
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
 }
 
-generate_message(exists, enabled) := msg if {
-    exists == true
-    enabled == true
-    msg := "The 'Third Party Storage Services' service principal exists but is still enabled (accountEnabled: true)."
+# A service principal that has never been created is a real, determinate answer:
+# third-party storage is available by default. Only its *state* can be unknown.
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	input.service_principal_exists == false
 }
 
-affected_resources(exists, enabled) := [] if {
-    exists == true
-    enabled == false
-} else := ["Third Party Storage Services (appId: c1f33bc0-bdb4-4248-ba9b-096807ddb43e)"]
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	input.service_principal_exists == true
+	is_boolean(input.account_enabled)
+}
+
+result := {
+	"compliant": compliant,
+	"message": generate_message(compliant),
+	"affected_resources": affected,
+	"details": {
+		"service_principal_exists": input.service_principal_exists,
+		"account_enabled": object.get(input, "account_enabled", null),
+		"app_id": third_party_storage_app_id,
+	},
+} if {
+	valid_evidence
+	compliant := restricted
+	affected := [sprintf("Third Party Storage Services (appId: %s)", [third_party_storage_app_id]) | not compliant]
+}
+
+# Compliant only when the service principal has been created AND disabled.
+default restricted := false
+
+restricted if {
+	input.service_principal_exists == true
+	input.account_enabled == false
+}
+
+generate_message(true) := "The 'Third Party Storage Services' service principal is disabled; third-party storage is restricted."
+
+generate_message(false) := "Third-party storage is not restricted: the 'Third Party Storage Services' service principal is absent or still enabled."

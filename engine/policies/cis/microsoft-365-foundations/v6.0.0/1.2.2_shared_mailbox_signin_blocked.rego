@@ -20,86 +20,99 @@ package cis.microsoft_365_foundations.v6_0_0.control_1_2_2
 
 import rego.v1
 
+# Read `shared_mailboxes` with a type guard, not with object.get(..., []).
+# The default made an absent key indistinguishable from an empty tenant, and a
+# string got as far as count() -- {"shared_mailboxes": "oops"} was reported as
+# "Sign-in is blocked for all 4 shared mailbox(es)", 4 being the length of the
+# word.
 default result := {
-  "compliant": false,
-  "message": "Evaluation failed: unable to verify shared mailbox sign-in status",
-  "details": {}
+	"compliant": null,
+	"message": "Unable to evaluate: the tenant's shared mailboxes are unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected a shared_mailboxes array of mailbox objects; collector errors invalidate the evidence.",
+	},
 }
 
-default compliant := false
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
+}
 
-shared_mailboxes := object.get(input, "shared_mailboxes", [])
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
+}
 
-non_compliant_mailboxes := [
-  mailbox |
-  some mailbox in shared_mailboxes
-  object.get(mailbox, "account_disabled", null) == false
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	is_array(input.shared_mailboxes)
+	every mailbox in input.shared_mailboxes {
+		is_object(mailbox)
+	}
+}
+
+non_compliant_mailboxes := [mailbox |
+	some mailbox in input.shared_mailboxes
+	object.get(mailbox, "account_disabled", null) == false
 ]
 
-unknown_status_mailboxes := [
-  mailbox |
-  some mailbox in shared_mailboxes
-  object.get(mailbox, "account_disabled", null) == null
+# A mailbox whose account_disabled is absent, null or not a boolean has not told
+# us anything. It is not a finding and it is not a pass.
+unknown_status_mailboxes := [mailbox |
+	some mailbox in input.shared_mailboxes
+	not is_boolean(object.get(mailbox, "account_disabled", null))
 ]
 
-compliant if {
-  count(unknown_status_mailboxes) == 0
-  count(non_compliant_mailboxes) == 0
+result := {
+	"compliant": null,
+	"message": sprintf(
+		"Unable to determine sign-in status for %d of %d shared mailbox(es)",
+		[count(unknown_status_mailboxes), count(input.shared_mailboxes)],
+	),
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "At least one shared mailbox reported no boolean account_disabled value.",
+		"total_shared_mailboxes": count(input.shared_mailboxes),
+		"unknown_status_count": count(unknown_status_mailboxes),
+	},
+} if {
+	valid_evidence
+	count(unknown_status_mailboxes) > 0
 }
 
-result := output if {
-  count(unknown_status_mailboxes) == 0
-
-  output := {
-    "compliant": compliant,
-    "message": generate_message(
-      count(shared_mailboxes),
-      count(non_compliant_mailboxes)
-    ),
-    "affected_resources": non_compliant_mailboxes,
-    "details": {
-      "total_shared_mailboxes": count(shared_mailboxes),
-      "blocked_sign_in_count": count(shared_mailboxes) - count(non_compliant_mailboxes),
-      "direct_sign_in_enabled_count": count(non_compliant_mailboxes)
-    }
-  }
+result := {
+	"compliant": compliant,
+	"message": generate_message(count(input.shared_mailboxes), count(non_compliant_mailboxes)),
+	"affected_resources": non_compliant_mailboxes,
+	"details": {
+		"total_shared_mailboxes": count(input.shared_mailboxes),
+		"blocked_sign_in_count": count(input.shared_mailboxes) - count(non_compliant_mailboxes),
+		"direct_sign_in_enabled_count": count(non_compliant_mailboxes),
+	},
+} if {
+	valid_evidence
+	count(unknown_status_mailboxes) == 0
+	compliant := count(non_compliant_mailboxes) == 0
 }
 
-result := output if {
-  count(unknown_status_mailboxes) > 0
-
-  output := {
-    "compliant": false,
-    "message": sprintf(
-      "Unable to determine sign-in status for %d shared mailbox(es).",
-      [count(unknown_status_mailboxes)]
-    ),
-    "affected_resources": unknown_status_mailboxes,
-    "details": {
-      "total_shared_mailboxes": count(shared_mailboxes),
-      "unknown_status_count": count(unknown_status_mailboxes)
-    }
-  }
+generate_message(total, _) := "No shared mailboxes found." if {
+	total == 0
 }
 
-generate_message(total, _) := msg if {
-  total == 0
-  msg := "No shared mailboxes found."
+generate_message(total, non_compliant_count) := sprintf(
+	"Sign-in is blocked for all %d shared mailbox(es).",
+	[total],
+) if {
+	total > 0
+	non_compliant_count == 0
 }
 
-generate_message(total, non_compliant_count) := msg if {
-  total > 0
-  non_compliant_count == 0
-  msg := sprintf(
-    "Sign-in is blocked for all %d shared mailbox(es).",
-    [total]
-  )
-}
-
-generate_message(total, non_compliant_count) := msg if {
-  non_compliant_count > 0
-  msg := sprintf(
-    "%d of %d shared mailbox(es) allow direct sign-in.",
-    [non_compliant_count, total]
-  )
+generate_message(total, non_compliant_count) := sprintf(
+	"%d of %d shared mailbox(es) allow direct sign-in.",
+	[non_compliant_count, total],
+) if {
+	non_compliant_count > 0
 }

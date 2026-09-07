@@ -25,46 +25,47 @@
 
 package cis.microsoft_365_foundations.v6_0_0.control_2_1_14
 
-default result := {"compliant": false, "message": "Evaluation failed"}
+import rego.v1
 
-allowed_sender_domains := object.get(
-    input,
-    "allowed_sender_domains",
-    object.get(object.get(input, "default_policy", {}), "AllowedSenderDomains", null)
-)
-
-allowed_sender_domains_undefined := true if {
-    allowed_sender_domains != null
-    count(allowed_sender_domains) == 0
+default result := {
+	"compliant": null,
+	"message": "Unable to evaluate: the Exchange hosted content filter policy is unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected the Exchange hosted content filter's default_policy object and an AllowedSenderDomains array. The collector emits an empty list when the cmdlet returns nothing, so an absent default policy is a failed collection rather than a compliant tenant.",
+	},
 }
 
-allowed_sender_domains_undefined := false if {
-    allowed_sender_domains != null
-    count(allowed_sender_domains) > 0
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
 }
 
-allowed_sender_domains_undefined := null if {
-    allowed_sender_domains == null
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
 }
 
-result := output if {
-    # Ensure all inbound policies pass
-    compliant := allowed_sender_domains_undefined == true
+allowed_sender_domains := object.get(input, "allowed_sender_domains", null)
 
-    output := {
-        "compliant": compliant,
-        "message": generate_message(allowed_sender_domains_undefined),
-        "affected_resources": generate_affected_resources(allowed_sender_domains_undefined),
-        "details": {
-            "AllowedSenderDomains": allowed_sender_domains
-        }
-    }
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	is_object(input.default_policy)
+	is_array(allowed_sender_domains)
 }
 
-generate_message(true) := "AllowedSenderDomains is undefined for the policy"
-generate_message(false) := "AllowedSenderDomains is defined for the policy"
-generate_message(null) := "Unable to determine the AllowedSenderDomains status for the policy"
+result := {
+	"compliant": compliant,
+	"message": generate_message(compliant),
+	"affected_resources": affected,
+	"details": {"AllowedSenderDomains": allowed_sender_domains},
+} if {
+	valid_evidence
+	compliant := count(allowed_sender_domains) == 0
+	affected := ["HostedContentFilterPolicy" | not compliant]
+}
 
-generate_affected_resources(true) := []
-generate_affected_resources(false) := ["HostedContentFilterPolicy"]
-generate_affected_resources(null) := ["HostedContentFilterPolicy status unknown"]
+generate_message(true) := "AllowedSenderDomains is empty for the inbound anti-spam policy"
+
+generate_message(false) := "AllowedSenderDomains is defined for the inbound anti-spam policy"

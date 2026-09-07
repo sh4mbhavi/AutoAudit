@@ -19,54 +19,64 @@ package cis.microsoft_365_foundations.v6_0_0.control_5_1_3_1
 import rego.v1
 
 default result := {
-  "compliant": false,
-  "message": "No dynamic guest user group detected",
-  "details": {},
+	"compliant": null,
+	"message": "Unable to evaluate: the tenant's dynamic groups are unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected a dynamic_groups array of group objects; collector errors invalidate the evidence.",
+	},
 }
 
-# Look for dynamic membership rules referencing Guest user type.
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
+}
+
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
+}
+
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	is_array(input.dynamic_groups)
+	every group in input.dynamic_groups {
+		is_object(group)
+	}
+}
+
+# A membership rule targeting the Guest user type, however it is spelled.
 is_guest_rule(rule) if {
-  lower(rule) != ""
-  contains(lower(rule), "guest")
+	is_string(rule)
+	contains(lower(rule), "guest")
 }
 
-compliant_value := true if {
-  dyn := input.dynamic_groups
-  matching := [g |
-    some g in dyn
-    rule := g.membershipRule
-    rule != null
-    is_guest_rule(rule)
-  ]
-  count(matching) > 0
-} else := false if { true }
+matching_groups := [group |
+	some group in input.dynamic_groups
+	is_guest_rule(object.get(group, "membershipRule", null))
+]
 
-msg := sprintf("Found %d dynamic group(s) targeting guest users", [count(matching)]) if {
-  dyn := input.dynamic_groups
-  matching := [g |
-    some g in dyn
-    rule := g.membershipRule
-    rule != null
-    is_guest_rule(rule)
-  ]
-  count(matching) > 0
-} else := "No dynamic guest user group detected" if { true }
-
-result := output if {
-  dyn := input.dynamic_groups
-  matching := [g |
-    some g in dyn
-    rule := g.membershipRule
-    rule != null
-    is_guest_rule(rule)
-  ]
-
-  output := {
-    "compliant": compliant_value,
-    "message": msg,
-    "details": {
-      "dynamic_groups_count": input.dynamic_groups_count,
-      "matching_groups": [{"id": g.id, "displayName": g.displayName, "membershipRule": g.membershipRule} | some g in matching],
-    },
-  }
+result := {
+	"compliant": compliant,
+	"message": generate_message(compliant),
+	"affected_resources": affected,
+	"details": {
+		"dynamic_groups_count": count(input.dynamic_groups),
+		"matching_groups": [{
+			"id": object.get(group, "id", null),
+			"displayName": object.get(group, "displayName", null),
+			"membershipRule": object.get(group, "membershipRule", null),
+		} |
+			some group in matching_groups
+		],
+	},
+} if {
+	valid_evidence
+	compliant := count(matching_groups) > 0
+	affected := ["directory/groups" | not compliant]
 }
+
+generate_message(true) := "At least one dynamic group targets guest users"
+
+generate_message(false) := "No dynamic guest user group exists"

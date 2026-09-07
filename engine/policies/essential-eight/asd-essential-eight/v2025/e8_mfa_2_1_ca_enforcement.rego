@@ -38,136 +38,100 @@ package essential_eight.asd_essential_eight.v2025.control_e8_mfa_2_1
 
 import rego.v1
 
-# ---------------------------------------------------------------------------
-# Default result (returned if no rule below fires successfully)
-# ---------------------------------------------------------------------------
-
 default result := {
-    "compliant": false,
-    "message": "Unable to evaluate MFA enforcement: no Conditional Access policy data available",
-    "details": {},
+	"compliant": null,
+	"message": "Unable to evaluate MFA enforcement: Conditional Access policy data is unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected numeric total_policies and enabled_policies_count and both policies_requiring_mfa_for_* arrays; collector errors invalidate the evidence.",
+	},
 }
 
-# ---------------------------------------------------------------------------
-# Helper rules
-# ---------------------------------------------------------------------------
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
+}
 
-# Policies that require MFA AND cover all M365 services (all cloud apps)
-# AND target all users. This is the strongest form of MFA enforcement —
-# it covers privileged users implicitly and extends across the full
-# Essential Eight scope.
-mfa_all_users_all_apps := [p |
-    some p in input.policies_requiring_mfa_for_all_users
-    p.targets_all_apps == true
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
+}
+
+required_counts := ["total_policies", "enabled_policies_count", "mfa_policies_count", "privileged_roles_count"]
+
+required_lists := ["policies_requiring_mfa_for_all_users", "policies_requiring_mfa_for_privileged_roles", "all_mfa_policy_names"]
+
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	every field in required_counts {
+		is_number(object.get(input, field, null))
+	}
+	every field in required_lists {
+		is_array(object.get(input, field, null))
+	}
+}
+
+# Policies that require MFA, cover all M365 services and target all users. This
+# is the strongest form of enforcement: it covers privileged users implicitly.
+mfa_all_users_all_apps := [policy |
+	some policy in input.policies_requiring_mfa_for_all_users
+	object.get(policy, "targets_all_apps", null) == true
 ]
 
-# Policies that require MFA AND cover all M365 services
-# AND specifically target privileged directory roles.
-# This is the minimum enforcement expected by the Essential Eight for
-# the baseline (targeting privileged users specifically).
-mfa_privileged_roles_all_apps := [p |
-    some p in input.policies_requiring_mfa_for_privileged_roles
-    p.targets_all_apps == true
+# Policies that require MFA, cover all M365 services and target privileged
+# directory roles specifically. This is the Essential Eight baseline.
+mfa_privileged_roles_all_apps := [policy |
+	some policy in input.policies_requiring_mfa_for_privileged_roles
+	object.get(policy, "targets_all_apps", null) == true
 ]
 
-# Combined: any policy that satisfies MFA + M365 coverage
-# for either all users or privileged roles specifically.
 qualifying_policies := array.concat(mfa_all_users_all_apps, mfa_privileged_roles_all_apps)
 
-# Is there at least one qualifying policy?
-has_qualifying_policy if {
-    count(qualifying_policies) > 0
-}
-
-# Does any qualifying policy have broad exclusions that could undermine coverage?
-# Exclusions are flagged as a warning in the details — they are not an automatic
-# fail, but should be reviewed by an assessor.
-policies_with_exclusions := [p |
-    some p in qualifying_policies
-    p.has_exclusions == true
+# Exclusions do not fail the control on their own; they are surfaced for an
+# assessor to review.
+policies_with_exclusions := [policy |
+	some policy in qualifying_policies
+	object.get(policy, "has_exclusions", null) == true
 ]
 
-# ---------------------------------------------------------------------------
-# Compliance message helpers
-# ---------------------------------------------------------------------------
-
-compliant_msg := msg if {
-    has_qualifying_policy
-    count(policies_with_exclusions) == 0
-    msg := sprintf(
-        "MFA is enforced via %d Conditional Access policy(ies) covering privileged users and Microsoft 365 services with no exclusions detected",
-        [count(qualifying_policies)],
-    )
+result := {
+	"compliant": compliant,
+	"message": generate_message(count(qualifying_policies), count(policies_with_exclusions)),
+	"affected_resources": affected,
+	"details": {
+		"total_ca_policies": input.total_policies,
+		"enabled_ca_policies": input.enabled_policies_count,
+		"mfa_policies_count": input.mfa_policies_count,
+		"qualifying_policies_count": count(qualifying_policies),
+		"qualifying_policy_names": [object.get(policy, "display_name", null) | some policy in qualifying_policies],
+		"policies_with_exclusions": [object.get(policy, "display_name", null) | some policy in policies_with_exclusions],
+		"exclusions_detected": count(policies_with_exclusions) > 0,
+		"privileged_roles_in_tenant": input.privileged_roles_count,
+		"all_mfa_policy_names": input.all_mfa_policy_names,
+	},
+} if {
+	valid_evidence
+	compliant := count(qualifying_policies) > 0
+	affected := ["Conditional Access: no policy enforces MFA across all Microsoft 365 services" | not compliant]
 }
 
-compliant_msg := msg if {
-    has_qualifying_policy
-    count(policies_with_exclusions) > 0
-    msg := sprintf(
-        "MFA is enforced via %d Conditional Access policy(ies) covering privileged users and Microsoft 365 services, but %d policy(ies) contain exclusions that should be reviewed",
-        [count(qualifying_policies), count(policies_with_exclusions)],
-    )
+generate_message(qualifying, excluded) := sprintf(
+	"MFA is enforced via %d Conditional Access policy(ies) covering privileged users and Microsoft 365 services with no exclusions detected",
+	[qualifying],
+) if {
+	qualifying > 0
+	excluded == 0
 }
 
-non_compliant_msg := "No enabled Conditional Access policy found that requires MFA for privileged users or all users and covers Microsoft 365 services (all cloud apps)" if {
-    not has_qualifying_policy
+generate_message(qualifying, excluded) := sprintf(
+	"MFA is enforced via %d Conditional Access policy(ies) covering privileged users and Microsoft 365 services, but %d policy(ies) contain exclusions that should be reviewed",
+	[qualifying, excluded],
+) if {
+	qualifying > 0
+	excluded > 0
 }
 
-# ---------------------------------------------------------------------------
-# Main result rule
-# ---------------------------------------------------------------------------
-
-result := output if {
-    # Confirm we have usable input data before evaluating
-    total := input.total_policies
-    enabled := input.enabled_policies_count
-    has_qualifying_policy
-    msg := compliant_msg
-
-    output := {
-        "compliant": true,
-        "message": msg,
-        "details": {
-            # Policy counts for dashboard display
-            "total_ca_policies": total,
-            "enabled_ca_policies": enabled,
-            "mfa_policies_count": input.mfa_policies_count,
-            "qualifying_policies_count": count(qualifying_policies),
-
-            # Qualifying policy names (for report evidence)
-            "qualifying_policy_names": [p.display_name | some p in qualifying_policies],
-
-            # Exclusion warning (for assessor review)
-            "policies_with_exclusions": [p.display_name | some p in policies_with_exclusions],
-            "exclusions_detected": count(policies_with_exclusions) > 0,
-
-            # Evidence: privileged roles found in tenant
-            "privileged_roles_in_tenant": input.privileged_roles_count,
-
-            # All MFA policy names (supporting evidence)
-            "all_mfa_policy_names": input.all_mfa_policy_names,
-        },
-    }
-}
-
-result := output if {
-    total := input.total_policies
-    enabled := input.enabled_policies_count
-    not has_qualifying_policy
-
-    output := {
-        "compliant": false,
-        "message": non_compliant_msg,
-        "details": {
-            "total_ca_policies": total,
-            "enabled_ca_policies": enabled,
-            "mfa_policies_count": input.mfa_policies_count,
-            "qualifying_policies_count": 0,
-            "qualifying_policy_names": [],
-            "policies_with_exclusions": [],
-            "exclusions_detected": false,
-            "privileged_roles_in_tenant": input.privileged_roles_count,
-            "all_mfa_policy_names": input.all_mfa_policy_names,
-        },
-    }
+generate_message(qualifying, _) := "No enabled Conditional Access policy found that requires MFA for privileged users or all users and covers Microsoft 365 services (all cloud apps)" if {
+	qualifying == 0
 }

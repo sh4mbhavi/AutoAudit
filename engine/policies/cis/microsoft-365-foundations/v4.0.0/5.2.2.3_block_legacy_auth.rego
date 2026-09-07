@@ -19,42 +19,73 @@
 
 package cis.microsoft_365_foundations.v4_0_0.control_5_2_2_3
 
-default result := {"compliant": false, "message": "Evaluation failed"}
+import rego.v1
 
-# Check if a policy blocks legacy authentication for all users/apps
+default result := {
+	"compliant": null,
+	"message": "Unable to evaluate: Conditional Access policies are unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected a conditional_access_policies array of policy objects; collector errors invalidate the evidence. An empty array is a real answer -- the tenant has no Conditional Access policies -- and is a finding.",
+	},
+}
+
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
+}
+
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
+}
+
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	is_array(input.conditional_access_policies)
+	every policy in input.conditional_access_policies {
+		is_object(policy)
+	}
+}
+
+# A policy blocks legacy authentication only when it is enabled and applies to
+# every user and every application.
 is_legacy_auth_block_policy(policy) if {
-    policy.state == "enabled"
-    policy.targets_all_users == true
-    policy.targets_all_apps == true
-    policy.blocks_legacy_auth == true
-    policy.grant_control == "block"
+	policy.state == "enabled"
+	policy.targets_all_users == true
+	policy.targets_all_apps == true
+	policy.blocks_legacy_auth == true
+	policy.grant_control == "block"
 }
 
-result := output if {
-    blocking_policies := [p | some p in input.conditional_access_policies; is_legacy_auth_block_policy(p)]
-    compliant := count(blocking_policies) > 0
+blocking_policies := [policy |
+	some policy in input.conditional_access_policies
+	is_legacy_auth_block_policy(policy)
+]
 
-    output := {
-        "compliant": compliant,
-        "message": generate_message(blocking_policies, input.conditional_access_policies),
-        "affected_resources": generate_affected_resources(compliant, blocking_policies),
-        "details": {
-            "total_policies": count(input.conditional_access_policies),
-            "legacy_auth_block_policies": count(blocking_policies),
-            "blocking_policy_names": [p.display_name | some p in blocking_policies]
-        }
-    }
+result := {
+	"compliant": compliant,
+	"message": generate_message(count(blocking_policies)),
+	"affected_resources": affected,
+	"details": {
+		"total_policies": count(input.conditional_access_policies),
+		"legacy_auth_block_policies": count(blocking_policies),
+		"blocking_policy_names": [object.get(policy, "display_name", null) | some policy in blocking_policies],
+	},
+} if {
+	valid_evidence
+	compliant := count(blocking_policies) > 0
+	affected := ["Conditional Access: no policy blocks legacy authentication" | not compliant]
 }
 
-generate_message(blocking_policies, _) := msg if {
-    count(blocking_policies) > 0
-    msg := sprintf("Found %d Conditional Access policy(ies) blocking legacy authentication", [count(blocking_policies)])
+generate_message(blocking) := sprintf(
+	"Found %d Conditional Access policy(ies) blocking legacy authentication",
+	[blocking],
+) if {
+	blocking > 0
 }
 
-generate_message(blocking_policies, _) := msg if {
-    count(blocking_policies) == 0
-    msg := "No Conditional Access policy found that blocks legacy authentication for all users and applications"
+generate_message(blocking) := "No Conditional Access policy found that blocks legacy authentication for all users and applications" if {
+	blocking == 0
 }
-
-generate_affected_resources(true, _) := []
-generate_affected_resources(false, _) := ["No legacy auth blocking policy configured"]

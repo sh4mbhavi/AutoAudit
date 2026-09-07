@@ -24,63 +24,81 @@
 
 package cis.microsoft_365_foundations.v6_0_0.control_2_1_15
 
-default result := {"compliant": false, "message": "Evaluation failed"}
+import rego.v1
 
-policy := object.get(input, "default_policy", {})
-
-required_policy_fields := {
-  "RecipientLimitExternalPerHour": 500,
-  "RecipientLimitInternalPerHour": 1000,
-  "RecipientLimitPerDay": 1000,
-  "ActionWhenThresholdReached": "BlockUser",
-  "NotifyOutboundSpamRecipients": {"monitored@example.com"}
+default result := {
+	"compliant": null,
+	"message": "Unable to evaluate: the Exchange outbound spam filter policy is unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected the outbound spam filter's default_policy object carrying numeric recipient limits, a string ActionWhenThresholdReached and an array NotifyOutboundSpamRecipients; collector errors invalidate the evidence.",
+	},
 }
 
-# Function to validate individual policy settings
-validate_policy_setting(setting_name, setting_value) if {
-  required_policy_fields[setting_name] == setting_value
+# CIS recommends capping the per-hour and per-day recipient limits and blocking
+# the sender once the threshold is reached. The previous rule compared
+# NotifyOutboundSpamRecipients for equality against a hard-coded example address,
+# so every tenant with its own notification address failed; the requirement is
+# that a recipient is configured at all.
+recipient_limits := {
+	"RecipientLimitExternalPerHour": 500,
+	"RecipientLimitInternalPerHour": 1000,
+	"RecipientLimitPerDay": 1000,
 }
 
-validate_notify_outbound_spam_recipients if {
-  count(policy.NotifyOutboundSpamRecipients) > 0
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
 }
 
-compliant if {
-  # Validate that all required policy fields match
-  count({
-    k |
-      required_policy_fields[k] == policy[k]
-  }) == count(required_policy_fields)
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
 }
 
-compliant_message := "Outbound spam filter policy is correctly configured and meets required standards"
+policy := object.get(input, "default_policy", null)
 
-non_compliant_message := "Outbound spam filter policy settings are misconfigured or incomplete"
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	is_object(policy)
+	every field, _ in recipient_limits {
+		is_number(object.get(policy, field, null))
+	}
+	is_string(object.get(policy, "ActionWhenThresholdReached", null))
+	is_array(object.get(policy, "NotifyOutboundSpamRecipients", null))
+}
 
-unknown_message := "Unable to determine outbound spam filter policy configuration"
-
-generate_message(true) := compliant_message
-generate_message(false) := non_compliant_message
-generate_message(null) := unknown_message
-
-generate_affected_resources(true, _) := []
-
-generate_affected_resources(false, _) := [
-  "Outbound Spam Filter Policy"
-]
-
-generate_affected_resources(null, _) := ["Outbound Spam Filter Policy configuration status unknown"]
+insecure_settings := array.concat(
+	[field |
+		some field, maximum in recipient_limits
+		policy[field] > maximum
+	],
+	array.concat(
+		["ActionWhenThresholdReached" | policy.ActionWhenThresholdReached != "BlockUser"],
+		["NotifyOutboundSpamRecipients" | count(policy.NotifyOutboundSpamRecipients) == 0],
+	),
+)
 
 result := {
-  "compliant": compliant == true,
-  "message": generate_message(compliant),
-  "affected_resources": generate_affected_resources(compliant, input),
-  "details": {
-    "RecipientLimitExternalPerHour": policy.RecipientLimitExternalPerHour,
-    "RecipientLimitInternalPerHour": policy.RecipientLimitInternalPerHour,
-    "RecipientLimitPerDay": policy.RecipientLimitPerDay,
-    "ActionWhenThresholdReached": policy.ActionWhenThresholdReached,
-    "NotifyOutboundSpamRecipients": policy.NotifyOutboundSpamRecipients,
-    "required_policy_settings": required_policy_fields
-  }
+	"compliant": compliant,
+	"message": generate_message(compliant),
+	"affected_resources": affected,
+	"details": {
+		"RecipientLimitExternalPerHour": policy.RecipientLimitExternalPerHour,
+		"RecipientLimitInternalPerHour": policy.RecipientLimitInternalPerHour,
+		"RecipientLimitPerDay": policy.RecipientLimitPerDay,
+		"ActionWhenThresholdReached": policy.ActionWhenThresholdReached,
+		"NotifyOutboundSpamRecipients": policy.NotifyOutboundSpamRecipients,
+		"maximum_recipient_limits": recipient_limits,
+		"insecure_settings": insecure_settings,
+	},
+} if {
+	valid_evidence
+	compliant := count(insecure_settings) == 0
+	affected := ["HostedOutboundSpamFilterPolicy" | not compliant]
 }
+
+generate_message(true) := "Outbound spam filter recipient limits, block action and notification recipients are in place"
+
+generate_message(false) := "Outbound spam filter policy settings are misconfigured or incomplete"

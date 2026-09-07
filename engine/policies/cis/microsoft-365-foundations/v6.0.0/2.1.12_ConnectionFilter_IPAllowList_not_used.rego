@@ -23,44 +23,47 @@
 
 package cis.microsoft_365_foundations.v6_0_0.control_2_1_12
 
-default result := {"compliant": false, "message": "Evaluation failed"}
+import rego.v1
 
-# Required IPAllowList setting
-required_fields := {
-    "IPAllowList": []
+default result := {
+	"compliant": null,
+	"message": "Unable to evaluate: the Exchange hosted connection filter policy is unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected the Exchange hosted connection filter's default_policy object. The collector emits an empty list and null settings when the cmdlet returns nothing, so an absent default policy is a failed collection rather than a compliant tenant. IPAllowList must be an array.",
+	},
 }
 
-ip_allow_list := object.get(
-    input,
-    "ip_allow_list",
-    object.get(object.get(input, "default_policy", {}), "IPAllowList", null)
-)
-
-ip_allow_list_is_empty := null if {
-    ip_allow_list == null
-} else := true if {
-    ip_allow_list == []  # empty array
-} else := true if {
-    ip_allow_list == {}  # empty object
-} else := false
-
-result := output if {
-    compliant := ip_allow_list_is_empty == true
-
-    output := {
-        "compliant": compliant,
-        "message": generate_message(ip_allow_list_is_empty),
-        "affected_resources": generate_affected_resources(ip_allow_list_is_empty),
-        "details": {
-            "IPAllowList": ip_allow_list
-        }
-    }
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
 }
 
-generate_message(true) := "IPAllowList is empty or {} in Exchange Online Hosted Connection Filter"
-generate_message(false) := "IPAllowList is not empty or is not {} in Exchange Online Hosted Connection Filter"
-generate_message(null) := "Unable to determine the IPAllowList status in Exchange Online Hosted Connection Filter"
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
+}
 
-generate_affected_resources(true) := []
-generate_affected_resources(false) := ["HostedConnectionFilterPolicy"]
-generate_affected_resources(null) := ["HostedConnectionFilterPolicy status unknown"]
+ip_allow_list := object.get(input, "ip_allow_list", null)
+
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	is_object(input.default_policy)
+	is_array(ip_allow_list)
+}
+
+result := {
+	"compliant": compliant,
+	"message": generate_message(compliant),
+	"affected_resources": affected,
+	"details": {"IPAllowList": ip_allow_list},
+} if {
+	valid_evidence
+	compliant := count(ip_allow_list) == 0
+	affected := ["HostedConnectionFilterPolicy" | not compliant]
+}
+
+generate_message(true) := "IPAllowList is empty in the Exchange Online hosted connection filter"
+
+generate_message(false) := "IPAllowList is not empty in the Exchange Online hosted connection filter"

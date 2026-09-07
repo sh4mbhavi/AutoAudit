@@ -19,33 +19,55 @@
 
 package cis.microsoft_365_foundations.v6_0_0.control_6_5_3
 
-default result := {"compliant": false, "message": "Evaluation failed"}
+import rego.v1
 
-result := output if {
-    policies_with_external_storage := input.policies_with_external_storage
-    total_policies := input.total_policies
-
-    # Compliant when no policies allow external storage providers
-    compliant := count(policies_with_external_storage) == 0
-
-    output := {
-        "compliant": compliant,
-        "message": generate_message(policies_with_external_storage, total_policies),
-        "affected_resources": policies_with_external_storage,
-        "details": {
-            "total_owa_policies": total_policies,
-            "policies_with_external_storage": count(policies_with_external_storage),
-            "policy_names": policies_with_external_storage
-        }
-    }
+default result := {
+	"compliant": null,
+	"message": "Unable to evaluate: OWA mailbox policies are unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected a policies_with_external_storage array and at least one OWA mailbox policy. Every tenant has a default OWA mailbox policy, so a total of zero is a failed collection rather than a compliant tenant.",
+	},
 }
 
-generate_message(policies_with_storage, total) := msg if {
-    count(policies_with_storage) == 0
-    msg := sprintf("All %d OWA mailbox policy(ies) restrict additional storage providers", [total])
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
 }
 
-generate_message(policies_with_storage, total) := msg if {
-    count(policies_with_storage) > 0
-    msg := sprintf("%d of %d OWA mailbox policy(ies) allow additional storage providers", [count(policies_with_storage), total])
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
 }
+
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	is_array(input.policies_with_external_storage)
+	is_number(input.total_policies)
+	input.total_policies > 0
+}
+
+result := {
+	"compliant": compliant,
+	"message": generate_message(compliant, count(input.policies_with_external_storage), input.total_policies),
+	"affected_resources": input.policies_with_external_storage,
+	"details": {
+		"total_owa_policies": input.total_policies,
+		"policies_with_external_storage": count(input.policies_with_external_storage),
+		"policy_names": input.policies_with_external_storage,
+	},
+} if {
+	valid_evidence
+	compliant := count(input.policies_with_external_storage) == 0
+}
+
+generate_message(true, _, total) := sprintf(
+	"All %d OWA mailbox policy(ies) restrict additional storage providers",
+	[total],
+)
+
+generate_message(false, allowing, total) := sprintf(
+	"%d of %d OWA mailbox policy(ies) allow additional storage providers",
+	[allowing, total],
+)

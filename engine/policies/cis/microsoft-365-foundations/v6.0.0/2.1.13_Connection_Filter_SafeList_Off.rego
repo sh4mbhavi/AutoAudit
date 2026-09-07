@@ -24,44 +24,45 @@
 
 package cis.microsoft_365_foundations.v6_0_0.control_2_1_13
 
-default result := {"compliant": false, "message": "Evaluation failed"}
+import rego.v1
 
-# Required EnableSafeList setting
-required_fields := {
-    "EnableSafeList": false
+default result := {
+	"compliant": null,
+	"message": "Unable to evaluate: the Exchange hosted connection filter policy is unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected the Exchange hosted connection filter's default_policy object. The collector emits an empty list and null settings when the cmdlet returns nothing, so an absent default policy is a failed collection rather than a compliant tenant. EnableSafeList must be a boolean.",
+	},
 }
 
-enable_safe_list := object.get(
-    input,
-    "enable_safe_list",
-    object.get(object.get(input, "default_policy", {}), "EnableSafeList", null)
-)
-
-enable_safe_list_is_false := null if {
-    enable_safe_list == null
-} else := true if {
-    enable_safe_list == false  # Ensure EnableSafeList is False
-} else := false if {
-    enable_safe_list == true  # If EnableSafeList is True, it's non-compliant
-} else := null
-
-result := output if {
-    compliant := enable_safe_list_is_false == true
-
-    output := {
-        "compliant": compliant,
-        "message": generate_message(enable_safe_list_is_false),
-        "affected_resources": generate_affected_resources(enable_safe_list_is_false),
-        "details": {
-            "EnableSafeList": enable_safe_list
-        }
-    }
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
 }
 
-generate_message(true) := "EnableSafeList is False for Exchange Online Hosted Connection Filter"
-generate_message(false) := "EnableSafeList is not False for Exchange Online Hosted Connection Filter"
-generate_message(null) := "Unable to determine the EnableSafeList status in Exchange Online Hosted Connection Filter"
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
+}
 
-generate_affected_resources(true) := []
-generate_affected_resources(false) := ["HostedConnectionFilterPolicy"]
-generate_affected_resources(null) := ["HostedConnectionFilterPolicy status unknown"]
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	is_object(input.default_policy)
+	is_boolean(input.enable_safe_list)
+}
+
+result := {
+	"compliant": compliant,
+	"message": generate_message(compliant),
+	"affected_resources": affected,
+	"details": {"EnableSafeList": input.enable_safe_list},
+} if {
+	valid_evidence
+	compliant := input.enable_safe_list == false
+	affected := ["HostedConnectionFilterPolicy" | not compliant]
+}
+
+generate_message(true) := "EnableSafeList is False for the Exchange Online hosted connection filter"
+
+generate_message(false) := "EnableSafeList is not False for the Exchange Online hosted connection filter"

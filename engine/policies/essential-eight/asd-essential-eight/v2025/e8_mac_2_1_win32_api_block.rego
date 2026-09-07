@@ -20,33 +20,50 @@ package essential_eight.asd_essential_eight.v2025.control_e8_mac_2_1
 import rego.v1
 
 default result := {
-  "compliant": false,
-  "message": "Unable to determine Win32 API macro blocking rule state",
-  "details": {},
+	"compliant": null,
+	"message": "Unable to evaluate: the Win32 API macro blocking rule state is unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected a string win32_api_rule_state from the attack surface reduction rules; collector errors invalidate the evidence.",
+	},
 }
 
-compliant if {
-  input.win32_api_rule_state == "block"
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
 }
 
-compliant_value := true if { compliant } else := false if { true }
-
-msg := "Win32 API calls from Office macros are blocked in Block mode" if {
-  compliant
-} else := sprintf(
-  "Win32 API macro blocking is not compliant. Current state is '%s'; Essential Eight requires Block mode.",
-  [input.win32_api_rule_state],
-) if { true }
-
-result := output if {
-  output := {
-    "compliant": compliant_value,
-    "message": msg,
-    "details": {
-      "win32_api_rule_state": input.win32_api_rule_state,
-      "win32_api_rule_found": input.win32_api_rule_found,
-      "source": input.source,
-      "policy_name": input.policy_name,
-    },
-  }
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
 }
+
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	is_string(input.win32_api_rule_state)
+	input.win32_api_rule_state != ""
+}
+
+result := {
+	"compliant": compliant,
+	"message": generate_message(compliant, input.win32_api_rule_state),
+	"affected_resources": affected,
+	"details": {
+		"win32_api_rule_state": input.win32_api_rule_state,
+		"win32_api_rule_found": object.get(input, "win32_api_rule_found", null),
+		"source": object.get(input, "source", null),
+		"policy_name": object.get(input, "policy_name", null),
+	},
+} if {
+	valid_evidence
+	compliant := lower(input.win32_api_rule_state) == "block"
+	affected := [object.get(input, "policy_name", "Attack surface reduction rules") | not compliant]
+}
+
+generate_message(true, _) := "Win32 API calls from Office macros are blocked in Block mode"
+
+generate_message(false, state) := sprintf(
+	"Win32 API macro blocking is not compliant. Current state is '%s'; Essential Eight requires Block mode.",
+	[state],
+)

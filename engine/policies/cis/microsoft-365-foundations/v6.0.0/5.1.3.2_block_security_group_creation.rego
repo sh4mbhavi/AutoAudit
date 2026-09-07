@@ -19,23 +19,41 @@ package cis.microsoft_365_foundations.v6_0_0.control_5_1_3_2
 import rego.v1
 
 default result := {
-  "compliant": false,
-  "message": "Unable to determine allowedToCreateSecurityGroups",
-  "details": {},
+	"compliant": null,
+	"message": "Unable to evaluate: allowedToCreateSecurityGroups is unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected a boolean defaultUserRolePermissions.allowedToCreateSecurityGroups on the authorization policy; collector errors invalidate the evidence.",
+	},
 }
 
-compliant_value := true if { input.allowed_to_create_security_groups == false } else := false if { true }
-
-msg := "Users cannot create security groups (allowedToCreateSecurityGroups=false)" if { input.allowed_to_create_security_groups == false } else := "Users can create security groups (allowedToCreateSecurityGroups=true)" if { input.allowed_to_create_security_groups == true } else := "Unable to determine allowedToCreateSecurityGroups" if { true }
-
-result := out if {
-  value := input.allowed_to_create_security_groups
-
-  out := {
-    "compliant": compliant_value,
-    "message": msg,
-    "details": {
-      "allowed_to_create_security_groups": value,
-    },
-  }
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
 }
+
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
+}
+
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	is_boolean(input.allowed_to_create_security_groups)
+}
+
+result := {
+	"compliant": compliant,
+	"message": generate_message(compliant),
+	"affected_resources": affected,
+	"details": {"allowed_to_create_security_groups": input.allowed_to_create_security_groups},
+} if {
+	valid_evidence
+	compliant := input.allowed_to_create_security_groups == false
+	affected := ["authorizationPolicy" | not compliant]
+}
+
+generate_message(true) := "Users cannot create security groups (allowedToCreateSecurityGroups=false)"
+
+generate_message(false) := "Users can create security groups (allowedToCreateSecurityGroups=true)"

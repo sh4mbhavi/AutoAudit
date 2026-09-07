@@ -19,36 +19,59 @@ package cis.microsoft_365_foundations.v6_0_0.control_4_1
 import rego.v1
 
 default result := {
-  "compliant": false,
-  "message": "Unable to determine Intune compliance defaults",
-  "details": {},
+	"compliant": null,
+	"message": "Unable to evaluate: Intune compliance defaults are unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected boolean secureByDefault and isScheduledActionEnabled on the device management settings; collector errors invalidate the evidence.",
+	},
 }
 
-# Compliant when both secureByDefault and scheduled noncompliance actions are enabled.
-compliant if {
-  input.secure_by_default == true
-  input.is_scheduled_action_enabled == true
+required_settings := {
+	"secure_by_default": true,
+	"is_scheduled_action_enabled": true,
 }
 
-compliant_value := true if { compliant } else := false if { true }
-
-msg := "Devices without a compliance policy are treated as not compliant (secureByDefault & scheduled actions enabled)" if { compliant } else := "Intune compliance defaults are not sufficiently strict" if { true }
-
-# Heuristic based on tenant settings:
-# - secureByDefault should be true
-# - isScheduledActionEnabled should be true (scheduled actions for noncompliance)
-result := output if {
-  secure_by_default := input.secure_by_default
-  scheduled := input.is_scheduled_action_enabled
-
-  output := {
-    "compliant": compliant_value,
-    "message": msg,
-    "details": {
-      "secure_by_default": secure_by_default,
-      "is_scheduled_action_enabled": scheduled,
-      "device_compliance_checkin_threshold_days": input.device_compliance_on_boarded,
-      "compliance_policy_summaries_count": count(input.compliance_policy_summaries),
-    },
-  }
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
 }
+
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
+}
+
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	every field, _ in required_settings {
+		is_boolean(input[field])
+	}
+}
+
+# Each setting independently violates this control.
+insecure_settings := [field |
+	some field, expected in required_settings
+	input[field] != expected
+]
+
+result := {
+	"compliant": compliant,
+	"message": generate_message(compliant),
+	"affected_resources": affected,
+	"details": {
+		"secure_by_default": input.secure_by_default,
+		"is_scheduled_action_enabled": input.is_scheduled_action_enabled,
+		"device_compliance_checkin_threshold_days": object.get(input, "device_compliance_on_boarded", null),
+		"insecure_settings": insecure_settings,
+	},
+} if {
+	valid_evidence
+	compliant := count(insecure_settings) == 0
+	affected := ["deviceManagementSettings" | not compliant]
+}
+
+generate_message(true) := "Devices without a compliance policy are treated as not compliant (secureByDefault and scheduled actions enabled)"
+
+generate_message(false) := "Intune compliance defaults are not sufficiently strict"

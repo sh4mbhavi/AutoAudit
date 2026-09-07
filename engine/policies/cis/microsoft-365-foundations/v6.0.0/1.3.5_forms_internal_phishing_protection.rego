@@ -21,37 +21,59 @@ package cis.microsoft_365_foundations.v6_0_0.control_1_3_5
 
 import rego.v1
 
+# The previous computed result put `input.collector_error` in its details. That
+# key is absent from healthy evidence, so the object literal was undefined and
+# the rule never fired: this control returned its default for every input it has
+# ever seen, including a perfectly compliant tenant.
 default result := {
-  "compliant": false,
-  "message": "Evaluation failed: unable to retrieve Microsoft Forms settings",
-  "details": {}
+	"compliant": null,
+	"message": "Unable to evaluate: Microsoft Forms settings are unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected a boolean internal_phishing_protection_enabled in the Forms settings; collector errors invalidate the evidence.",
+	},
 }
 
-result := output if {
-  enabled := input.internal_phishing_protection_enabled
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
+}
 
-  output := {
-    "compliant": enabled == true,
-    "message": generate_message(enabled),
-    "affected_resources": generate_affected(enabled),
-    "details": {
-      "internal_phishing_protection_enabled": enabled,
-      "external_sharing_enabled": input.external_sharing_enabled,
-      "external_send_form_enabled": input.external_send_form_enabled,
-      "external_share_collaborating_enabled": input.external_share_collaborating_enabled,
-      "external_share_template_enabled": input.external_share_template_enabled,
-      "external_share_result_enabled": input.external_share_result_enabled,
-      "bing_search_enabled": input.bing_search_enabled,
-      "record_identity_by_default_enabled": input.record_identity_by_default_enabled,
-      "collector_error": input.collector_error
-    }
-  }
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
+}
+
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	is_boolean(input.internal_phishing_protection_enabled)
+}
+
+optional_settings := [
+	"external_sharing_enabled",
+	"external_send_form_enabled",
+	"external_share_collaborating_enabled",
+	"external_share_template_enabled",
+	"external_share_result_enabled",
+	"bing_search_enabled",
+	"record_identity_by_default_enabled",
+]
+
+result := {
+	"compliant": compliant,
+	"message": generate_message(compliant),
+	"affected_resources": affected,
+	"details": object.union(
+		{"internal_phishing_protection_enabled": input.internal_phishing_protection_enabled},
+		{setting: object.get(input, setting, null) | some setting in optional_settings},
+	),
+} if {
+	valid_evidence
+	compliant := input.internal_phishing_protection_enabled == true
+	affected := ["Microsoft Forms internal phishing protection" | not compliant]
 }
 
 generate_message(true) := "Microsoft Forms internal phishing protection is enabled"
-generate_message(false) := "Microsoft Forms internal phishing protection is not enabled"
-generate_message(null) := "Unable to determine Microsoft Forms internal phishing protection setting"
 
-generate_affected(true) := []
-generate_affected(false) := ["Microsoft Forms internal phishing protection is disabled"]
-generate_affected(null) := ["Microsoft Forms internal phishing protection setting unknown"]
+generate_message(false) := "Microsoft Forms internal phishing protection is not enabled"

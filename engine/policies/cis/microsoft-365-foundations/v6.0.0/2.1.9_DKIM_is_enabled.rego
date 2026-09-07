@@ -21,46 +21,50 @@ package cis.microsoft_365_foundations.v6_0_0.control_2_1_9
 
 import rego.v1
 
-default result := {"compliant": false, "message": "Evaluation failed"}
-
-# Compute dkim_enabled from per-domain lists
-dkim_enabled := true if count(input.domains_with_dkim_disabled) == 0
-dkim_enabled := false if count(input.domains_with_dkim_disabled) > 0
-dkim_enabled := null if {
-    not input.domains_with_dkim_enabled
-    not input.domains_with_dkim_disabled
+default result := {
+	"compliant": null,
+	"message": "Unable to evaluate: DKIM signing configuration is unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected both domains_with_dkim_enabled and domains_with_dkim_disabled arrays, covering at least one domain between them; collector errors invalidate the evidence.",
+	},
 }
 
-result := output if {
-    compliant := dkim_enabled == true
-
-    output := {
-        "compliant": compliant,
-        "message": generate_message(dkim_enabled),
-        "affected_resources": generate_affected_resources(dkim_enabled, input),
-        "details": {
-            "dkim_signing_enabled": dkim_enabled,
-            "domains_with_dkim_enabled": input.domains_with_dkim_enabled,
-            "domains_with_dkim_disabled": input.domains_with_dkim_disabled
-        }
-    }
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
 }
 
-generate_message(dkim_enabled) := msg if {
-    dkim_enabled == true
-    msg := "DKIM signing is enabled for Exchange Online domains"
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
 }
 
-generate_message(dkim_enabled) := msg if {
-    dkim_enabled == false
-    msg := "DKIM signing is disabled for Exchange Online domains"
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	is_array(input.domains_with_dkim_enabled)
+	is_array(input.domains_with_dkim_disabled)
+
+	# Neither list carrying a single domain means nothing was collected, not
+	# that the tenant has no domains.
+	count(input.domains_with_dkim_enabled) + count(input.domains_with_dkim_disabled) > 0
 }
 
-generate_message(dkim_enabled) := msg if {
-    dkim_enabled == null
-    msg := "Unable to determine DKIM signing status"
+result := {
+	"compliant": compliant,
+	"message": generate_message(compliant),
+	"affected_resources": input.domains_with_dkim_disabled,
+	"details": {
+		"dkim_signing_enabled": compliant,
+		"domains_with_dkim_enabled": input.domains_with_dkim_enabled,
+		"domains_with_dkim_disabled": input.domains_with_dkim_disabled,
+	},
+} if {
+	valid_evidence
+	compliant := count(input.domains_with_dkim_disabled) == 0
 }
 
-generate_affected_resources(true, _) := []
-generate_affected_resources(false, data_input) := data_input.domains_with_dkim_disabled
-generate_affected_resources(null, _) := ["DKIM signing status unknown"]
+generate_message(true) := "DKIM signing is enabled for Exchange Online domains"
+
+generate_message(false) := "DKIM signing is disabled for one or more Exchange Online domains"

@@ -19,32 +19,52 @@
 
 package cis.microsoft_365_foundations.v6_0_0.control_6_3_1
 
-default result := {"compliant": false, "message": "Evaluation failed"}
+import rego.v1
 
-result := output if {
-    policies_allowing_addins := input.policies_allowing_addin_install
-
-    # Compliant when no policies allow add-in installation
-    compliant := count(policies_allowing_addins) == 0
-
-    output := {
-        "compliant": compliant,
-        "message": generate_message(policies_allowing_addins),
-        "affected_resources": [p.name | some p in policies_allowing_addins],
-        "details": {
-            "total_policies": input.total_policies,
-            "policies_allowing_addins": count(policies_allowing_addins),
-            "policy_details": policies_allowing_addins
-        }
-    }
+default result := {
+	"compliant": null,
+	"message": "Unable to evaluate: Exchange role assignment policies are unavailable or malformed",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected a policies_allowing_addin_install array and at least one role assignment policy. Every tenant has a default role assignment policy, so a total of zero is a failed collection rather than a compliant tenant.",
+	},
 }
 
-generate_message(policies_allowing_addins) := msg if {
-    count(policies_allowing_addins) == 0
-    msg := "No role assignment policies allow user add-in installation"
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
 }
 
-generate_message(policies_allowing_addins) := msg if {
-    count(policies_allowing_addins) > 0
-    msg := sprintf("%d role assignment policy(ies) allow user add-in installation", [count(policies_allowing_addins)])
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
 }
+
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	is_array(input.policies_allowing_addin_install)
+	is_number(input.total_policies)
+	input.total_policies > 0
+}
+
+result := {
+	"compliant": compliant,
+	"message": generate_message(compliant, count(input.policies_allowing_addin_install)),
+	"affected_resources": [object.get(policy, "name", null) | some policy in input.policies_allowing_addin_install],
+	"details": {
+		"total_policies": input.total_policies,
+		"policies_allowing_addins": count(input.policies_allowing_addin_install),
+		"policy_details": input.policies_allowing_addin_install,
+	},
+} if {
+	valid_evidence
+	compliant := count(input.policies_allowing_addin_install) == 0
+}
+
+generate_message(true, _) := "No role assignment policies allow user add-in installation"
+
+generate_message(false, allowing) := sprintf(
+	"%d role assignment policy(ies) allow user add-in installation",
+	[allowing],
+)
