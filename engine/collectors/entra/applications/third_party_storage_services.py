@@ -60,4 +60,3 @@ class ThirdPartyStorageServicesDataCollector(BaseDataCollector):
             "account_enabled": account_enabled,
             "service_principal": service_principal,
         }
-    

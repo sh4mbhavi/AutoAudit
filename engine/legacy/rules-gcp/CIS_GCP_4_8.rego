@@ -30,13 +30,13 @@ gcloud compute instances update <INSTANCE_NAME> --shielded-vm-secure-boot
 4. Restart the instance:
 gcloud compute instances start <INSTANCE_NAME> `
 
-deny[v] if { 
+deny[v] if {
   b := input[_]
   r := b.enableIntegrityMonitoring
   r == blocked_value
   v := sprintf("Compute instance should ensure that Integrity Monitoring is enabled and the enableIntegrityMonitoring attribute should not be set to: %q", [r])
 }
-deny[v] if { 
+deny[v] if {
   b := input[_]
   q := b.enableVtpm
   q == blocked_value

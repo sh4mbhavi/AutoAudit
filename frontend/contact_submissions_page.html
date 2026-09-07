@@ -703,10 +703,10 @@
             document.querySelectorAll('.submission-item').forEach(item => {
                 item.classList.remove('active');
             });
-            
+
             // Add active class to clicked item
             event.currentTarget.classList.add('active');
-            
+
             console.log('Selected submission:', id);
             // Add logic to load submission details
         }
@@ -715,7 +715,7 @@
         document.querySelector('.btn-add-note').addEventListener('click', () => {
             const textarea = document.querySelector('.notes-section textarea');
             const noteText = textarea.value.trim();
-            
+
             if (noteText) {
                 console.log('Adding note:', noteText);
                 // Add your note saving logic here

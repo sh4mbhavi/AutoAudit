@@ -30,13 +30,27 @@ def upgrade() -> None:
         sa.Column("company", sa.String(length=255), nullable=True),
         sa.Column("subject", sa.String(length=50), nullable=False),
         sa.Column("message", sa.Text(), nullable=False),
-        sa.Column("status", sa.String(length=20), server_default=sa.text("'new'"), nullable=False),
-        sa.Column("priority", sa.String(length=20), server_default=sa.text("'medium'"), nullable=False),
+        sa.Column(
+            "status",
+            sa.String(length=20),
+            server_default=sa.text("'new'"),
+            nullable=False,
+        ),
+        sa.Column(
+            "priority",
+            sa.String(length=20),
+            server_default=sa.text("'medium'"),
+            nullable=False,
+        ),
         sa.Column("assigned_to", sa.Integer(), nullable=True),
         sa.Column("source", sa.String(length=50), nullable=True),
         sa.Column("ip_address", postgresql.INET(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
+        ),
         sa.Column("resolved_at", sa.DateTime(), nullable=True),
         sa.ForeignKeyConstraint(["assigned_to"], ["user.id"]),
         sa.PrimaryKeyConstraint("id"),
@@ -48,11 +62,19 @@ def upgrade() -> None:
         sa.Column("submission_id", postgresql.UUID(as_uuid=True), nullable=False),
         sa.Column("admin_user_id", sa.Integer(), nullable=True),
         sa.Column("note", sa.Text(), nullable=False),
-        sa.Column("is_internal", sa.Boolean(), server_default=sa.text("true"), nullable=False),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
-        sa.Column("updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "is_internal", sa.Boolean(), server_default=sa.text("true"), nullable=False
+        ),
+        sa.Column(
+            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
+        ),
+        sa.Column(
+            "updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
+        ),
         sa.ForeignKeyConstraint(["admin_user_id"], ["user.id"]),
-        sa.ForeignKeyConstraint(["submission_id"], ["contact_submissions.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["submission_id"], ["contact_submissions.id"], ondelete="CASCADE"
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
 
@@ -65,9 +87,13 @@ def upgrade() -> None:
         sa.Column("field_name", sa.String(length=100), nullable=True),
         sa.Column("old_value", sa.Text(), nullable=True),
         sa.Column("new_value", sa.Text(), nullable=True),
-        sa.Column("created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False),
+        sa.Column(
+            "created_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
+        ),
         sa.ForeignKeyConstraint(["admin_user_id"], ["user.id"]),
-        sa.ForeignKeyConstraint(["submission_id"], ["contact_submissions.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["submission_id"], ["contact_submissions.id"], ondelete="CASCADE"
+        ),
         sa.PrimaryKeyConstraint("id"),
     )
 

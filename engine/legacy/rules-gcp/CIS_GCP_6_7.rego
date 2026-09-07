@@ -24,7 +24,7 @@ The backup-start-time parameter is specified in 24-hour time, in the UTC±00 tim
 zone, and specifies the start of a 4-hour backup window. Backups can start any time
 during the backup window.`
 
-deny := { v |  
+deny := { v |
   b := input[_]
   r := b.settings.backupConfiguration.enabled
   r != blocked_value

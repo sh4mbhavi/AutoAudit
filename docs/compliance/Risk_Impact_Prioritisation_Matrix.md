@@ -8,18 +8,18 @@ This document outlines a risk prioritisation framework for AutoAudit using a lik
 ## 2. How the Matrix Works
 
 ### Likelihood (How often could this happen?)
-- **Almost Certain**: very likely, nothing currently stopping it  
-- **Likely**: will probably happen at some point  
-- **Possible**: could happen if controls are weak  
-- **Unlikely**: not expected but not impossible  
-- **Rare**: low chance of happening  
+- **Almost Certain**: very likely, nothing currently stopping it
+- **Likely**: will probably happen at some point
+- **Possible**: could happen if controls are weak
+- **Unlikely**: not expected but not impossible
+- **Rare**: low chance of happening
 
 ### Consequence (What happens if it does?)
-- **Insignificant**: barely noticeable, easily recovered  
-- **Minor**: small disruption, fixable quickly  
-- **Moderate**: some impact on project or tenant security  
-- **Major**: significant breach or compliance failure  
-- **Severe**: data loss, regulatory breach, or project-stopping incident  
+- **Insignificant**: barely noticeable, easily recovered
+- **Minor**: small disruption, fixable quickly
+- **Moderate**: some impact on project or tenant security
+- **Major**: significant breach or compliance failure
+- **Severe**: data loss, regulatory breach, or project-stopping incident
 
 ---
 
@@ -83,8 +83,8 @@ This document outlines a risk prioritisation framework for AutoAudit using a lik
 
 ## 7. References
 
-1. G. Porat, *CIS Microsoft 365 v6 Guide*, 2026  
-2. Nudge Security, *Top M365 Misconfigurations*, 2025  
-3. Metis Security, *Common M365 Misconfigurations*, 2024  
-4. Microsoft Learn, *Audit Log Retention*, 2024  
+1. G. Porat, *CIS Microsoft 365 v6 Guide*, 2026
+2. Nudge Security, *Top M365 Misconfigurations*, 2025
+3. Metis Security, *Common M365 Misconfigurations*, 2024
+4. Microsoft Learn, *Audit Log Retention*, 2024
 5. KnowledgeHut, *Probability & Impact M*

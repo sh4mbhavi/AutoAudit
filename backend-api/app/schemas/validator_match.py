@@ -8,5 +8,3 @@ class ValidatorMatch(BaseModel):
 
     term: str
     count: int
-
-

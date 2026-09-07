@@ -9,7 +9,7 @@ env/
 
 # Ignore project outputs/reports
 results/*
-!results/report_template.docx       
+!results/report_template.docx
 
 # macOS
 .DS_Store

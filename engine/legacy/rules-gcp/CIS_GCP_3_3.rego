@@ -16,7 +16,7 @@ gcloud dns managed-zones describe ZONE_NAME
 remediation := Use the below command to enable DNSSEC for Cloud DNS Zone Name.
 gcloud dns managed-zones update ZONE_NAME --dnssec-state on `
 
-deny := { v |  
+deny := { v |
   b := input[_]
   r := b.dnssecConfig.state
   r == blocked_value

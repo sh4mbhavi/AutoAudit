@@ -23,7 +23,7 @@ async def list_platforms(
     Returns only platforms where is_active=True (currently only M365).
     """
     result = await db.execute(
-        select(Platform).where(Platform.is_active == True).order_by(Platform.name)
+        select(Platform).where(Platform.is_active.is_(True)).order_by(Platform.name)
     )
     return list(result.scalars().all())
 

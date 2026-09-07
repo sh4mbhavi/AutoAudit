@@ -44,9 +44,13 @@ class AppsAndServicesSettingsDataCollector(BaseDataCollector):
                     raw_settings = resp.get("settings")
                 else:
                     value = resp.get("value")
-                    if isinstance(value, dict) and isinstance(value.get("settings"), dict):
+                    if isinstance(value, dict) and isinstance(
+                        value.get("settings"), dict
+                    ):
                         raw_settings = value.get("settings")
-                    elif isinstance(value, list) and value and isinstance(value[0], dict):
+                    elif (
+                        isinstance(value, list) and value and isinstance(value[0], dict)
+                    ):
                         if isinstance(value[0].get("settings"), dict):
                             raw_settings = value[0].get("settings")
 
@@ -54,7 +58,9 @@ class AppsAndServicesSettingsDataCollector(BaseDataCollector):
         except Exception as exc:
             collector_error = str(exc)
             try:
-                settings = await client.get("/admin/microsoft365Apps/settings", beta=True)
+                settings = await client.get(
+                    "/admin/microsoft365Apps/settings", beta=True
+                )
             except Exception as exc2:
                 collector_error = f"{collector_error} | fallback_error={exc2}"
                 settings = {}
@@ -63,13 +69,17 @@ class AppsAndServicesSettingsDataCollector(BaseDataCollector):
             settings.get("isOfficeStoreEnabled") if isinstance(settings, dict) else None
         )
         trial_enabled = (
-            settings.get("isAppAndServicesTrialEnabled") if isinstance(settings, dict) else None
+            settings.get("isAppAndServicesTrialEnabled")
+            if isinstance(settings, dict)
+            else None
         )
 
         # Best-effort derived signal used by the old policy implementation.
         derived_user_owned_apps_enabled: bool | None
         if isinstance(settings, dict) and "isUserAppsAndServicesEnabled" in settings:
-            derived_user_owned_apps_enabled = settings.get("isUserAppsAndServicesEnabled")
+            derived_user_owned_apps_enabled = settings.get(
+                "isUserAppsAndServicesEnabled"
+            )
         elif office_store_enabled is False and trial_enabled is False:
             derived_user_owned_apps_enabled = False
         elif office_store_enabled is True or trial_enabled is True:

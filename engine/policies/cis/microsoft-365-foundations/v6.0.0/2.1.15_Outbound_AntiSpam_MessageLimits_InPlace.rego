@@ -8,7 +8,7 @@
 #    • Internal: Restrict sending to internal recipients (per hour) - 1000
 #    • Daily: Maximum recipient limit per day - 1000
 #    • Action: Over limit action - Restrict the user from sending mail
-#  
+#
 # related_resources:
 # - ref: https://www.cisecurity.org/benchmark/microsoft_365
 #   description: CIS Microsoft 365 Foundations Benchmark

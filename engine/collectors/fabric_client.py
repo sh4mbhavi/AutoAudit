@@ -47,7 +47,9 @@ class FabricClient:
         result = self._msal_app.acquire_token_for_client(scopes=[self.FABRIC_SCOPE])
 
         if "access_token" not in result:
-            error = result.get("error_description", result.get("error", "Unknown error"))
+            error = result.get(
+                "error_description", result.get("error", "Unknown error")
+            )
             raise Exception(f"Failed to acquire Fabric token: {error}")
 
         self._access_token = result["access_token"]
@@ -85,9 +87,7 @@ class FabricClient:
             response.raise_for_status()
             return response.json() if response.content else {}
 
-    async def get(
-        self, endpoint: str, params: dict | None = None
-    ) -> dict[str, Any]:
+    async def get(self, endpoint: str, params: dict | None = None) -> dict[str, Any]:
         """GET request to Fabric Admin API.
 
         Args:

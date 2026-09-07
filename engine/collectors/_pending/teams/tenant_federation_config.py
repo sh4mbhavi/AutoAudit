@@ -47,10 +47,16 @@ class TenantFederationConfigDataCollector(BasePowerShellCollector):
 
         return {
             "federation_config": config,
-            "allow_federated_users": config.get("AllowFederatedUsers") if config else None,
+            "allow_federated_users": config.get("AllowFederatedUsers")
+            if config
+            else None,
             "allow_public_users": config.get("AllowPublicUsers") if config else None,
-            "allow_teams_consumer": config.get("AllowTeamsConsumer") if config else None,
-            "allow_teams_consumer_inbound": config.get("AllowTeamsConsumerInbound") if config else None,
+            "allow_teams_consumer": config.get("AllowTeamsConsumer")
+            if config
+            else None,
+            "allow_teams_consumer_inbound": config.get("AllowTeamsConsumerInbound")
+            if config
+            else None,
             "allowed_domains": config.get("AllowedDomains") if config else None,
             "blocked_domains": config.get("BlockedDomains") if config else None,
         }

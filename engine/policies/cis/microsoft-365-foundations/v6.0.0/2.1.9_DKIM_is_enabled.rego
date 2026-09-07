@@ -3,7 +3,7 @@
 # description: |
 #     DKIM is one of the trio of authentication methods (SPF, DKIM, and DMARC) that help
 #     prevent attackers from sending messages that look like they come from your domain.
-# 
+#
 # related_resources:
 # - ref: https://www.cisecurity.org/benchmark/microsoft_365
 #   description: CIS Microsoft 365 Foundations Benchmark
@@ -26,7 +26,7 @@ default result := {"compliant": false, "message": "Evaluation failed"}
 # Compute dkim_enabled from per-domain lists
 dkim_enabled := true if count(input.domains_with_dkim_disabled) == 0
 dkim_enabled := false if count(input.domains_with_dkim_disabled) > 0
-dkim_enabled := null if { 
+dkim_enabled := null if {
     not input.domains_with_dkim_enabled
     not input.domains_with_dkim_disabled
 }

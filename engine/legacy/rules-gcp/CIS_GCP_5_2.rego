@@ -18,7 +18,7 @@ LockedTime: LOCK_DATE `
 remediation := `Use the on option in a uniformbucketlevelaccess set command:
 gsutil uniformbucketlevelaccess set on gs://BUCKET_NAME/`
 
-deny := { v |  
+deny := { v |
   b := input[_]
   r := b.iamConfiguration.bucketPolicyOnly.enabled
   r == blocked_value

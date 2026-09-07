@@ -89,7 +89,6 @@ class RegularBackups(Strategy):
         kv = _parse_kv_multi(t)
         run_ml2 = "_ml2" in _norm(source_file)
 
-        
         if not run_ml2:
             rows: List[Dict] = []
 
@@ -124,7 +123,9 @@ class RegularBackups(Strategy):
                 )
 
             # ML1-RB-02 Offsite OR immutable (PASS if either signal exists)
-            if _kv_has(kv, "backup_location", "offsite") or _kv_has(kv, "immutability", "enabled"):
+            if _kv_has(kv, "backup_location", "offsite") or _kv_has(
+                kv, "immutability", "enabled"
+            ):
                 rows.append(
                     _row(
                         "ML1",
@@ -182,7 +183,9 @@ class RegularBackups(Strategy):
                 )
 
             # ML1-RB-04 Retention policy
-            if _kv_has(kv, "retention_policy", "defined") and _kv_any(kv, "retention_days"):
+            if _kv_has(kv, "retention_policy", "defined") and _kv_any(
+                kv, "retention_days"
+            ):
                 rows.append(
                     _row(
                         "ML1",
@@ -194,7 +197,9 @@ class RegularBackups(Strategy):
                         t,
                     )
                 )
-            elif _kv_has(kv, "retention_policy", "defined") and not _kv_any(kv, "retention_days"):
+            elif _kv_has(kv, "retention_policy", "defined") and not _kv_any(
+                kv, "retention_days"
+            ):
                 rows.append(
                     _row(
                         "ML1",
@@ -206,7 +211,9 @@ class RegularBackups(Strategy):
                         t,
                     )
                 )
-            elif _kv_has(kv, "retention_policy", "missing") or _kv_has(kv, "immutability", "disabled"):
+            elif _kv_has(kv, "retention_policy", "missing") or _kv_has(
+                kv, "immutability", "disabled"
+            ):
                 rows.append(
                     _row(
                         "ML1",
@@ -220,7 +227,11 @@ class RegularBackups(Strategy):
                 )
 
             # ML1-RB-05 Backup encryption
-            if _kv_has(kv, "encryption", "none") or _kv_has(kv, "kms", "missing") or _has_text(t, "unencrypted_backup"):
+            if (
+                _kv_has(kv, "encryption", "none")
+                or _kv_has(kv, "kms", "missing")
+                or _has_text(t, "unencrypted_backup")
+            ):
                 rows.append(
                     _row(
                         "ML1",
@@ -265,7 +276,10 @@ class RegularBackups(Strategy):
             elif _kv_has(kv, "access", "allowed") and (
                 _kv_has(kv, "is_backup_admin", "false")
                 or _kv_has(kv, "role", "user")
-                or not (_kv_has(kv, "role", "backup-admin") or _kv_has(kv, "role", "backup_admin"))
+                or not (
+                    _kv_has(kv, "role", "backup-admin")
+                    or _kv_has(kv, "role", "backup_admin")
+                )
             ):
                 rows.append(
                     _row(
@@ -388,7 +402,9 @@ class RegularBackups(Strategy):
             )
 
         # ML2-RB-04 Policy alignment
-        if _kv_has(kv, "retention_policy", "missing") or _kv_has(kv, "immutability", "disabled"):
+        if _kv_has(kv, "retention_policy", "missing") or _kv_has(
+            kv, "immutability", "disabled"
+        ):
             ml2_rows.append(
                 _row(
                     "ML2",
@@ -461,7 +477,9 @@ class RegularBackups(Strategy):
                     t,
                 )
             )
-        elif _kv_has(kv, "access", "allowed") and _kv_has(kv, "is_backup_admin", "false"):
+        elif _kv_has(kv, "access", "allowed") and _kv_has(
+            kv, "is_backup_admin", "false"
+        ):
             ml2_rows.append(
                 _row(
                     "ML2",
@@ -491,8 +509,13 @@ class RegularBackups(Strategy):
         implied_pf = "FAIL" if any_ml2_fail else "PASS"
 
         # Pick the first real ML2 control detected (exclude ML2-RB-00 parsing fallback).
-        primary_ml2 = next((r["test_id"] for r in ml2_rows if r.get("test_id") != "ML2-RB-00"), "ML2-RB-00")
-        ml1_test_id, ml1_name = self._ML2_TO_ML1.get(primary_ml2, ("ML1-RB-00", "Evidence parsing"))
+        primary_ml2 = next(
+            (r["test_id"] for r in ml2_rows if r.get("test_id") != "ML2-RB-00"),
+            "ML2-RB-00",
+        )
+        ml1_test_id, ml1_name = self._ML2_TO_ML1.get(
+            primary_ml2, ("ML1-RB-00", "Evidence parsing")
+        )
 
         rows: List[Dict] = []
         rows.append(

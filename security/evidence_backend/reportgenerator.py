@@ -1,6 +1,5 @@
 import os
 from pathlib import Path
-from typing import Optional
 import sys
 
 # Ensure the monorepo root is importable when running this file directly.
@@ -8,27 +7,34 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
-from security.reports.report_service import generate_pdf
-from security.strategies import load_strategies
+# E402: the monorepo root is only importable after the sys.path insert above.
+from security.reports.report_service import generate_pdf  # noqa: E402
+from security.strategies import load_strategies  # noqa: E402
 
-#------------------------ Import core_ocr.py----------------
-from security.evidence_backend.core_ocr import (
+# ------------------------ Import core_ocr.py----------------
+from security.evidence_backend.core_ocr import (  # noqa: E402
     configure_tesseract,
     extract_text_and_preview,
 )
 
-#------------------------ Same result and username environment ----------------
-RESULTS_DIR  = Path(os.environ.get("AUTOAUDIT_RESULTS", "results"))
-REPORTS_DIR  = Path(os.environ.get("AUTOAUDIT_REPORTS", RESULTS_DIR / "reports"))
+# ------------------------ Same result and username environment ----------------
+RESULTS_DIR = Path(os.environ.get("AUTOAUDIT_RESULTS", "results"))
+REPORTS_DIR = Path(os.environ.get("AUTOAUDIT_REPORTS", RESULTS_DIR / "reports"))
 PREVIEWS_DIR = Path(os.environ.get("AUTOAUDIT_PREVIEWS", RESULTS_DIR / "previews"))
-TEMPLATE_PATH = Path(os.environ.get("AUTOAUDIT_TEMPLATE", RESULTS_DIR / "report_template.docx"))
-CSV_PATH     = Path(os.environ.get("AUTOAUDIT_CSV", RESULTS_DIR / "scan_report.csv"))
+TEMPLATE_PATH = Path(
+    os.environ.get("AUTOAUDIT_TEMPLATE", RESULTS_DIR / "report_template.docx")
+)
+CSV_PATH = Path(os.environ.get("AUTOAUDIT_CSV", RESULTS_DIR / "scan_report.csv"))
 
 for p in (RESULTS_DIR, REPORTS_DIR, PREVIEWS_DIR):
     p.mkdir(parents=True, exist_ok=True)
 
+
 def get_username() -> str:
-    return os.environ.get("AUTOAUDIT_USER") or (input("Enter your username: ").strip() or "user")
+    return os.environ.get("AUTOAUDIT_USER") or (
+        input("Enter your username: ").strip() or "user"
+    )
+
 
 # ----------------------- UI helpers -----------------------
 def choose_one(title: str, options: list[str]) -> str:
@@ -44,16 +50,18 @@ def choose_one(title: str, options: list[str]) -> str:
                 return options[i - 1]
         print("Invalid selection. Please enter a single number from the list.")
 
+
 def list_evidence(folder: Path):
     # Supported evidence types
     image_exts = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".webp"}
     other_exts = {".pdf", ".txt", ".docx"}
     exts = image_exts | other_exts
-    # allow the tool to find files within folders as well 
+    # allow the tool to find files within folders as well
     return sorted(
         [p for p in folder.rglob("*") if p.is_file() and p.suffix.lower() in exts],
-        key=lambda p: p.as_posix().lower()
+        key=lambda p: p.as_posix().lower(),
     )
+
 
 def choose_one_evidence(evidence_dir: Path) -> Path | None:
     """
@@ -66,7 +74,9 @@ def choose_one_evidence(evidence_dir: Path) -> Path | None:
         for i, p in enumerate(files, 1):
             print(f"{i}. {p.name}")
     else:
-        print("No supported files found in ./evidence (you can paste a full file path).")
+        print(
+            "No supported files found in ./evidence (you can paste a full file path)."
+        )
 
     while True:
         resp = input("Pick ONE evidence file by number, or paste a full path: ").strip()
@@ -85,14 +95,15 @@ def choose_one_evidence(evidence_dir: Path) -> Path | None:
 
         print("Invalid selection. Try again.")
 
+
 # ------------------------ Main --------------------------
 def main():
-    configure_tesseract() 
+    configure_tesseract()
     user_id = get_username()
 
     here = Path(__file__).resolve()
-    root = here.parents[1]                      # …/AutoAudit/security
-    evidence_dir = root / "evidence"            # …/AutoAudit/security/evidence
+    root = here.parents[1]  # …/AutoAudit/security
+    evidence_dir = root / "evidence"  # …/AutoAudit/security/evidence
     evidence_dir.mkdir(parents=True, exist_ok=True)
 
     print(f"Looking for evidence in: {evidence_dir}")
@@ -136,7 +147,9 @@ def main():
             if not rows:
                 print("No findings for this strategy.")
             for idx, r in enumerate(rows, start=1):
-                uid = _safe_uid(f"{user_id}-{chosen_strategy.name}-{evidence_path.stem}-{idx:02d}") # unique file names for multiple findings
+                uid = _safe_uid(
+                    f"{user_id}-{chosen_strategy.name}-{evidence_path.stem}-{idx:02d}"
+                )  # unique file names for multiple findings
                 data = {
                     "UniqueID": uid,
                     "UserID": user_id,
@@ -157,7 +170,7 @@ def main():
                     data,
                     template_path=str(TEMPLATE_PATH),
                     output_dir=str(REPORTS_DIR),
-                    base_dir="."
+                    base_dir=".",
                 )
                 print(f"   ✅ {chosen_strategy.name} → {pdf}")
                 generated.append(pdf)
@@ -166,7 +179,9 @@ def main():
             if not hits:
                 print("No findings for this strategy.")
             else:
-                uid = _safe_uid(f"{user_id}-{chosen_strategy.name}-{evidence_path.stem}-HITS")
+                uid = _safe_uid(
+                    f"{user_id}-{chosen_strategy.name}-{evidence_path.stem}-HITS"
+                )
                 data = {
                     "UniqueID": uid,
                     "UserID": user_id,
@@ -185,7 +200,7 @@ def main():
                     data,
                     template_path=str(TEMPLATE_PATH),
                     output_dir=str(REPORTS_DIR),
-                    base_dir="."
+                    base_dir=".",
                 )
                 print(f"   ✅ {chosen_strategy.name} → {pdf}")
                 generated.append(pdf)

@@ -8,7 +8,7 @@
 #   filter policy are IP Allow List, IP Block List and Safe list.
 #   The safe list is a pre-configured allow list that is dynamically updated by Microsoft.
 #   The recommended safe list state is: Off or False
-#  
+#
 # related_resources:
 # - ref: https://www.cisecurity.org/benchmark/microsoft_365
 #   description: CIS Microsoft 365 Foundations Benchmark

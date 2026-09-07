@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 
 logger = logging.getLogger("api")
 
+
 def problem(
     status: int, title: str, detail: str | None = None, type_: str = "about:blank"
 ):
@@ -13,17 +14,14 @@ def problem(
 
     # Log error in structured format
     if status >= 400:
-        logger.error({
-            "status": status,
-            "title": title,
-            "detail": detail
-        })
+        logger.error({"status": status, "title": title, "detail": detail})
 
     return JSONResponse(status_code=status, content=payload)
 
 
 class NotFound(HTTPException):
     """Custom 404 that uses Problem Details format."""
+
     def __init__(self, resource: str):
         self.resource = resource
         detail = f"{resource} not found"

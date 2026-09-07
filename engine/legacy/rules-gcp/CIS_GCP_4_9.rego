@@ -35,7 +35,7 @@ gcloud compute instances delete-access-config <INSTANCE_NAME> --zone=<ZONE> -
 In the above example, the ACCESS_CONFIG_NAME is External NAT. The name of your
 access config might be different `
 
-deny := { v |  
+deny := { v |
   b := input[_]
   r := b.networkInterfaces[_]
   r.accessConfigs != null

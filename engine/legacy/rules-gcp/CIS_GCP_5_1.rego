@@ -16,7 +16,7 @@ remediation := `Remove allUsers and allAuthenticatedUsers access.
 gsutil iam ch -d allUsers gs://BUCKET_NAME
 gsutil iam ch -d allAuthenticatedUsers gs://BUCKET_NAME `
 
-deny := { v |  
+deny := { v |
   b := input.bindings[_]
   r := b.members[_]
   r in blocked_value

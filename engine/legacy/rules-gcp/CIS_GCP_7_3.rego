@@ -16,7 +16,7 @@ remediation := `The default CMEK for existing data sets can be updated by specif
 the EncryptionConfiguration.kmsKeyName field when calling the datasets.insert
 or datasets.patch methods`
 
-deny := { v |  
+deny := { v |
   b := input[_]
   r := b.access[_]
   q := r.defaultEncryptionConfiguration.kmsKeyName

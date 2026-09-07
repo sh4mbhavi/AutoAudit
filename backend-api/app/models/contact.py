@@ -20,7 +20,9 @@ if TYPE_CHECKING:
 class ContactSubmission(Base):
     __tablename__ = "contact_submissions"
 
-    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid4
+    )
     first_name: Mapped[str] = mapped_column(String(100), nullable=False)
     last_name: Mapped[str] = mapped_column(String(100), nullable=False)
     email: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -66,7 +68,9 @@ class ContactSubmission(Base):
 class SubmissionNote(Base):
     __tablename__ = "submission_notes"
 
-    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid4
+    )
     submission_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("contact_submissions.id", ondelete="CASCADE"),
@@ -91,7 +95,9 @@ class SubmissionNote(Base):
 class SubmissionHistory(Base):
     __tablename__ = "submission_history"
 
-    id: Mapped[UUID] = mapped_column(PG_UUID(as_uuid=True), primary_key=True, default=uuid4)
+    id: Mapped[UUID] = mapped_column(
+        PG_UUID(as_uuid=True), primary_key=True, default=uuid4
+    )
     submission_id: Mapped[UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("contact_submissions.id", ondelete="CASCADE"),
@@ -105,4 +111,6 @@ class SubmissionHistory(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     submission: Mapped["ContactSubmission"] = relationship(back_populates="history")
-    admin_user: Mapped["User | None"] = relationship(back_populates="submission_history")
+    admin_user: Mapped["User | None"] = relationship(
+        back_populates="submission_history"
+    )

@@ -91,9 +91,7 @@ class E8MfaEnforcementDataCollector(BaseDataCollector):
         # --- Fetch Conditional Access policies ---
         raw_policies = await client.get_conditional_access_policies()
 
-        enabled_policies = [
-            p for p in raw_policies if p.get("state") == "enabled"
-        ]
+        enabled_policies = [p for p in raw_policies if p.get("state") == "enabled"]
 
         # --- Identify MFA-requiring policies ---
         # A policy requires MFA when "mfa" appears in grantControls.builtInControls
@@ -153,7 +151,8 @@ class E8MfaEnforcementDataCollector(BaseDataCollector):
                     "id": r.get("id"),
                     "displayName": r.get("displayName"),
                     "roleTemplateId": r.get("roleTemplateId"),
-                    "is_known_privileged": r.get("displayName") in PRIVILEGED_ROLE_NAMES,
+                    "is_known_privileged": r.get("displayName")
+                    in PRIVILEGED_ROLE_NAMES,
                 }
                 for r in directory_roles
                 if r.get("displayName") in PRIVILEGED_ROLE_NAMES
@@ -167,16 +166,13 @@ class E8MfaEnforcementDataCollector(BaseDataCollector):
             "total_policies": len(raw_policies),
             "enabled_policies_count": len(enabled_policies),
             "mfa_policies_count": len(policies_requiring_mfa),
-
             # Core assessment data for Rego policy
             "policies_requiring_mfa_for_privileged_roles": mfa_for_privileged_roles,
             "policies_requiring_mfa_for_all_users": mfa_for_all_users,
             "policies_covering_m365": mfa_covering_m365,
-
             # Evidence fields
             "privileged_roles_in_tenant": privileged_roles_in_tenant,
             "privileged_roles_count": len(privileged_roles_in_tenant),
-
             # Supporting detail (all raw MFA policies, for auditor review)
             "all_mfa_policy_names": [
                 p.get("displayName") for p in policies_requiring_mfa
@@ -202,7 +198,6 @@ class E8MfaEnforcementDataCollector(BaseDataCollector):
             "id": policy.get("id"),
             "display_name": policy.get("displayName"),
             "state": policy.get("state"),
-
             # User scope
             "targets_all_users": CA_ALL_SENTINEL in include_users,
             "include_roles": include_roles,
@@ -214,13 +209,10 @@ class E8MfaEnforcementDataCollector(BaseDataCollector):
             "exclude_groups": exclude_groups,
             "exclude_roles": exclude_roles,
             "has_exclusions": bool(exclude_users or exclude_groups or exclude_roles),
-
             # App scope — "All" means all cloud apps (covers M365)
             "targets_all_apps": CA_ALL_SENTINEL in include_apps,
             "include_apps": include_apps,
-
             # Grant control
-            "requires_mfa": MFA_GRANT_CONTROL in (
-                grant_controls.get("builtInControls") or []
-            ),
+            "requires_mfa": MFA_GRANT_CONTROL
+            in (grant_controls.get("builtInControls") or []),
         }

@@ -10,7 +10,7 @@ verification := `1. Ensure the below command returns off for every Cloud SQL SQL
 database instance
 gcloud sql instances describe <INSTANCE_NAME> --format=json | jq
 '.settings.databaseFlags[] | select(.name=="external scripts
-enabled")|.value' 
+enabled")|.value'
 In the output, database flags are listed under the settings as the collection
 databaseFlags.`
 
@@ -19,7 +19,7 @@ SQL Server database instance using the below command.
 gcloud sql instances patch <INSTANCE_NAME> --database-flags "external scripts
 enabled"=off`
 
-deny := { v |  
+deny := { v |
   b := input[_]
   r := b.settings.databaseFlags[_]
   q := r.value

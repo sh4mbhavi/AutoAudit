@@ -52,7 +52,7 @@
 - [ ] Code follows project conventions
 - [ ] No secrets, credentials, or tokens committed
 - [ ] Relevant documentation updated (if applicable)
-- [ ] CI/CD workflows pass on this branch 
+- [ ] CI/CD workflows pass on this branch
 - [ ] PR is focused on one thing
 
 ## Screenshots

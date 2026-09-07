@@ -35,8 +35,14 @@ SERVICES = ("db", "redis", "powershell-service", "backend-api", "worker", "dispa
 
 def run(cmd, **kw):
     return subprocess.run(  # nosec B603
-        cmd, cwd=kw.pop("cwd", ROOT), text=True, capture_output=True,
-        timeout=kw.pop("timeout", 1800), check=False, **kw)
+        cmd,
+        cwd=kw.pop("cwd", ROOT),
+        text=True,
+        capture_output=True,
+        timeout=kw.pop("timeout", 1800),
+        check=False,
+        **kw,
+    )
 
 
 def openssl(*args):
@@ -48,19 +54,59 @@ def openssl(*args):
 
 def material(d: Path, redis_password: str) -> dict[str, str]:
     ca_key, ca_crt = d / "ca.key", d / "ca.crt"
-    openssl("req", "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", str(ca_key),
-            "-out", str(ca_crt), "-days", "1", "-subj", "/CN=autoaudit-p11-ca", "-sha256")
+    openssl(
+        "req",
+        "-x509",
+        "-newkey",
+        "rsa:2048",
+        "-nodes",
+        "-keyout",
+        str(ca_key),
+        "-out",
+        str(ca_crt),
+        "-days",
+        "1",
+        "-subj",
+        "/CN=autoaudit-p11-ca",
+        "-sha256",
+    )
 
     out = {}
     for host in ("redis", "powershell-service"):
         key, crt, csr = d / f"{host}.key", d / f"{host}.crt", d / f"{host}.csr"
         ext = d / f"{host}.ext"
         ext.write_text(f"subjectAltName=DNS:{host}\nextendedKeyUsage=serverAuth\n")
-        openssl("req", "-newkey", "rsa:2048", "-nodes", "-keyout", str(key),
-                "-out", str(csr), "-subj", f"/CN={host}", "-sha256")
-        openssl("x509", "-req", "-in", str(csr), "-CA", str(ca_crt), "-CAkey", str(ca_key),
-                "-CAcreateserial", "-out", str(crt), "-days", "1", "-sha256",
-                "-extfile", str(ext))
+        openssl(
+            "req",
+            "-newkey",
+            "rsa:2048",
+            "-nodes",
+            "-keyout",
+            str(key),
+            "-out",
+            str(csr),
+            "-subj",
+            f"/CN={host}",
+            "-sha256",
+        )
+        openssl(
+            "x509",
+            "-req",
+            "-in",
+            str(csr),
+            "-CA",
+            str(ca_crt),
+            "-CAkey",
+            str(ca_key),
+            "-CAcreateserial",
+            "-out",
+            str(crt),
+            "-days",
+            "1",
+            "-sha256",
+            "-extfile",
+            str(ext),
+        )
         out[host] = (str(crt), str(key))
 
     acl = d / "redis.acl"
@@ -80,30 +126,46 @@ def environment(d: Path) -> dict[str, str]:
     rp = secrets.token_urlsafe(24).replace("-", "x").replace("_", "y")
     fernet = base64.urlsafe_b64encode(secrets.token_bytes(32)).decode()
     env = {**os.environ}
-    env.update({
-        "POSTGRES_PASSWORD": pg,
-        "API_DATABASE_URL": f"postgresql+asyncpg://autoaudit:{pg}@db:5432/autoaudit",
-        "WORKER_DATABASE_URL": f"postgresql://autoaudit:{pg}@db:5432/autoaudit",
-        "REDIS_URL": (f"rediss://autoaudit:{rp}@redis:6379/0"
-                      "?ssl_cert_reqs=required&ssl_check_hostname=true"
-                      "&ssl_ca_certs=/run/secrets/runtime_ca"),
-        "SECRET_KEY": secrets.token_urlsafe(48),
-        "ENCRYPTION_KEY": fernet,
-        "ENCRYPTION_KEY_DECRYPT_ONLY": "",
-        "POWERSHELL_SERVICE_SECRET": secrets.token_urlsafe(32),
-        "DRIFT_FACT_HMAC_KEY": secrets.token_urlsafe(32),
-        "BACKEND_PUBLIC_URL": "https://api.p11.invalid",
-        "FRONTEND_URL": "https://app.p11.invalid",
-        "ENGINE_GIT_SHA": "8736fcb93565dcc1e1a60a06392a879f5a585335",
-        "DISPATCHER_METRICS_PORT": "9101",
-    })
+    env.update(
+        {
+            "POSTGRES_PASSWORD": pg,
+            "API_DATABASE_URL": f"postgresql+asyncpg://autoaudit:{pg}@db:5432/autoaudit",
+            "WORKER_DATABASE_URL": f"postgresql://autoaudit:{pg}@db:5432/autoaudit",
+            "REDIS_URL": (
+                f"rediss://autoaudit:{rp}@redis:6379/0"
+                "?ssl_cert_reqs=required&ssl_check_hostname=true"
+                "&ssl_ca_certs=/run/secrets/runtime_ca"
+            ),
+            "SECRET_KEY": secrets.token_urlsafe(48),
+            "ENCRYPTION_KEY": fernet,
+            "ENCRYPTION_KEY_DECRYPT_ONLY": "",
+            "POWERSHELL_SERVICE_SECRET": secrets.token_urlsafe(32),
+            "DRIFT_FACT_HMAC_KEY": secrets.token_urlsafe(32),
+            "BACKEND_PUBLIC_URL": "https://api.p11.invalid",
+            "FRONTEND_URL": "https://app.p11.invalid",
+            "ENGINE_GIT_SHA": "8736fcb93565dcc1e1a60a06392a879f5a585335",
+            "DISPATCHER_METRICS_PORT": "9101",
+        }
+    )
     env.update(material(d, rp))
     return env
 
 
 def compose(env, project, *args):
-    return run(["docker", "compose", "-f", "docker-compose.production.yml", "-f", os.environ["P11_OVERRIDE"],
-                "-p", project, *args], env=env)
+    return run(
+        [
+            "docker",
+            "compose",
+            "-f",
+            "docker-compose.production.yml",
+            "-f",
+            os.environ["P11_OVERRIDE"],
+            "-p",
+            project,
+            *args,
+        ],
+        env=env,
+    )
 
 
 def health(env, project, service, seconds=300):
@@ -152,7 +214,10 @@ def main() -> int:
                 else:
                     failures.append(f"{service}: {state}")
                     logs = compose(env, project, "logs", "--tail", "40", service)
-                    print(f"--- {service} ({state}) ---\n{logs.stdout[-4000:]}", file=sys.stderr)
+                    print(
+                        f"--- {service} ({state}) ---\n{logs.stdout[-4000:]}",
+                        file=sys.stderr,
+                    )
             for service in SERVICES:
                 b = bindings(env, project, service)
                 expected = ["8000/tcp"] if service == "backend-api" else []

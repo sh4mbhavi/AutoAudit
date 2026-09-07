@@ -32,47 +32,87 @@ class SSLChecker:
 
             scanner.queue_scan(scan_request)
             for result in scanner.get_results():
-                if result.scan_status.name == 'ERROR':
-                    self.results.append({
-                        'name': 'SSL/TLS Scan',
-                        'status': 'ERROR',
-                        'details': f'Could not scan {self.domain}.'
-                    })
+                if result.scan_status.name == "ERROR":
+                    self.results.append(
+                        {
+                            "name": "SSL/TLS Scan",
+                            "status": "ERROR",
+                            "details": f"Could not scan {self.domain}.",
+                        }
+                    )
                     return False
                 self.sslyze_results = result
                 return True
 
         except ServerHostnameCouldNotBeResolved:
-            self.results.append({
-                'name': 'SSL/TLS Scan',
-                'status': 'ERROR',
-                'details': f'Could not resolve domain: {self.domain}'
-            })
+            self.results.append(
+                {
+                    "name": "SSL/TLS Scan",
+                    "status": "ERROR",
+                    "details": f"Could not resolve domain: {self.domain}",
+                }
+            )
             return False
         except Exception as e:
-            self.results.append({
-                'name': 'SSL/TLS Scan',
-                'status': 'ERROR',
-                'details': f'Unexpected error: {e}'
-            })
+            self.results.append(
+                {
+                    "name": "SSL/TLS Scan",
+                    "status": "ERROR",
+                    "details": f"Unexpected error: {e}",
+                }
+            )
             return False
 
     def check_vulnerabilities(self):
         try:
-            heartbleed = self.sslyze_results.scan_commands_results[ScanCommand.HEARTBLEED]
+            heartbleed = self.sslyze_results.scan_commands_results[
+                ScanCommand.HEARTBLEED
+            ]
             if not heartbleed.is_vulnerable_to_heartbleed:
-                self.results.append({'name': 'Heartbleed Vulnerability', 'status': 'PASS', 'details': 'Server is not vulnerable to Heartbleed.'})
+                self.results.append(
+                    {
+                        "name": "Heartbleed Vulnerability",
+                        "status": "PASS",
+                        "details": "Server is not vulnerable to Heartbleed.",
+                    }
+                )
             else:
-                self.results.append({'name': 'Heartbleed Vulnerability', 'status': 'FAIL', 'details': 'Server is vulnerable to Heartbleed!'})
-            self.results.append({'name': 'POODLE, FREAK, Logjam', 'status': 'INFO', 'details': 'Checked implicitly via cipher and protocol scans.'})
+                self.results.append(
+                    {
+                        "name": "Heartbleed Vulnerability",
+                        "status": "FAIL",
+                        "details": "Server is vulnerable to Heartbleed!",
+                    }
+                )
+            self.results.append(
+                {
+                    "name": "POODLE, FREAK, Logjam",
+                    "status": "INFO",
+                    "details": "Checked implicitly via cipher and protocol scans.",
+                }
+            )
         except Exception:
-            self.results.append({'name': 'Heartbleed Vulnerability', 'status': 'ERROR', 'details': 'Could not complete Heartbleed check.'})
+            self.results.append(
+                {
+                    "name": "Heartbleed Vulnerability",
+                    "status": "ERROR",
+                    "details": "Could not complete Heartbleed check.",
+                }
+            )
 
     def check_certificate(self):
         try:
-            cert_info = self.sslyze_results.scan_commands_results[ScanCommand.CERTIFICATE_INFO]
+            cert_info = self.sslyze_results.scan_commands_results[
+                ScanCommand.CERTIFICATE_INFO
+            ]
             if not cert_info:
-                self.results.append({'name': 'Certificate Information', 'status': 'ERROR', 'details': 'Could not retrieve certificate info.'})
+                self.results.append(
+                    {
+                        "name": "Certificate Information",
+                        "status": "ERROR",
+                        "details": "Could not retrieve certificate info.",
+                    }
+                )
                 return
 
             cert = cert_info.certificate_deployments[0].received_certificate_chain[0]
@@ -80,44 +120,86 @@ class SSLChecker:
             time_left = not_valid_after - datetime.utcnow()
 
             if cert_info.hostname_validation_result.is_hostname_match:
-                self.results.append({'name': 'Hostname Matches SSL Certificate', 'status': 'PASS', 'details': 'Hostname matches the SSL certificate.'})
+                self.results.append(
+                    {
+                        "name": "Hostname Matches SSL Certificate",
+                        "status": "PASS",
+                        "details": "Hostname matches the SSL certificate.",
+                    }
+                )
             else:
-                self.results.append({'name': 'Hostname Matches SSL Certificate', 'status': 'FAIL', 'details': 'Hostname does NOT match the SSL certificate.'})
+                self.results.append(
+                    {
+                        "name": "Hostname Matches SSL Certificate",
+                        "status": "FAIL",
+                        "details": "Hostname does NOT match the SSL certificate.",
+                    }
+                )
 
-            self.results.append({
-                'name': 'SSL Has Not Expired',
-                'status': 'PASS' if time_left.days > 0 else 'FAIL',
-                'details': f'Certificate expires in {time_left.days} days.' if time_left.days > 0 else f'Certificate expired {-time_left.days} days ago.'
-            })
+            self.results.append(
+                {
+                    "name": "SSL Has Not Expired",
+                    "status": "PASS" if time_left.days > 0 else "FAIL",
+                    "details": f"Certificate expires in {time_left.days} days."
+                    if time_left.days > 0
+                    else f"Certificate expired {-time_left.days} days ago.",
+                }
+            )
 
-            self.results.append({
-                'name': 'SSL Does Not Expire Within 20 Days',
-                'status': 'PASS' if time_left.days > 20 else 'FAIL',
-                'details': f'Certificate expires in {time_left.days} days.'
-            })
+            self.results.append(
+                {
+                    "name": "SSL Does Not Expire Within 20 Days",
+                    "status": "PASS" if time_left.days > 20 else "FAIL",
+                    "details": f"Certificate expires in {time_left.days} days.",
+                }
+            )
 
             validity_period = cert.not_valid_after - cert.not_valid_before
-            self.results.append({
-                'name': 'SSL Expiration Shorter than 398 Days',
-                'status': 'PASS' if validity_period.days < 398 else 'WARN',
-                'details': f'Validity period is {validity_period.days} days.'
-            })
+            self.results.append(
+                {
+                    "name": "SSL Expiration Shorter than 398 Days",
+                    "status": "PASS" if validity_period.days < 398 else "WARN",
+                    "details": f"Validity period is {validity_period.days} days.",
+                }
+            )
 
             key_size = cert.public_key().key_size
-            self.results.append({
-                'name': 'Strong Public Certificate Key Length',
-                'status': 'PASS' if key_size >= 2048 else 'FAIL',
-                'details': f'Public key size: {key_size} bits.'
-            })
+            self.results.append(
+                {
+                    "name": "Strong Public Certificate Key Length",
+                    "status": "PASS" if key_size >= 2048 else "FAIL",
+                    "details": f"Public key size: {key_size} bits.",
+                }
+            )
 
-            path_validation = cert_info.certificate_deployments[0].path_validation_result
+            path_validation = cert_info.certificate_deployments[
+                0
+            ].path_validation_result
             if path_validation and path_validation.was_validation_successful:
-                self.results.append({'name': 'Trusted SSL Certificate', 'status': 'PASS', 'details': 'Certificate chain is trusted.'})
+                self.results.append(
+                    {
+                        "name": "Trusted SSL Certificate",
+                        "status": "PASS",
+                        "details": "Certificate chain is trusted.",
+                    }
+                )
             else:
-                self.results.append({'name': 'Trusted SSL Certificate', 'status': 'FAIL', 'details': 'Certificate chain is not trusted.'})
+                self.results.append(
+                    {
+                        "name": "Trusted SSL Certificate",
+                        "status": "FAIL",
+                        "details": "Certificate chain is not trusted.",
+                    }
+                )
 
         except Exception:
-            self.results.append({'name': 'Certificate Checks', 'status': 'ERROR', 'details': 'Could not complete certificate checks.'})
+            self.results.append(
+                {
+                    "name": "Certificate Checks",
+                    "status": "ERROR",
+                    "details": "Could not complete certificate checks.",
+                }
+            )
 
     def check_protocols_and_ciphers(self):
         try:
@@ -134,20 +216,30 @@ class SSLChecker:
             check_insecure(ScanCommand.TLS_1_1_CIPHER_SUITES, "TLS 1.1")
 
             if insecure_protocols:
-                self.results.append({
-                    'name': 'No Insecure SSL/TLS Versions',
-                    'status': 'FAIL',
-                    'details': f"Insecure protocols supported: {', '.join(insecure_protocols)}"
-                })
+                self.results.append(
+                    {
+                        "name": "No Insecure SSL/TLS Versions",
+                        "status": "FAIL",
+                        "details": f"Insecure protocols supported: {', '.join(insecure_protocols)}",
+                    }
+                )
             else:
-                self.results.append({
-                    'name': 'No Insecure SSL/TLS Versions',
-                    'status': 'PASS',
-                    'details': 'Only secure protocols (TLS 1.2, TLS 1.3) are enabled.'
-                })
+                self.results.append(
+                    {
+                        "name": "No Insecure SSL/TLS Versions",
+                        "status": "PASS",
+                        "details": "Only secure protocols (TLS 1.2, TLS 1.3) are enabled.",
+                    }
+                )
 
         except Exception:
-            self.results.append({'name': 'Protocol Version Checks', 'status': 'ERROR', 'details': 'Could not check protocol versions.'})
+            self.results.append(
+                {
+                    "name": "Protocol Version Checks",
+                    "status": "ERROR",
+                    "details": "Could not check protocol versions.",
+                }
+            )
 
     def run_checks(self):
         if self._run_sslyze():

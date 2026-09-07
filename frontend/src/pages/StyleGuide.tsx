@@ -100,7 +100,7 @@ export default function StyleGuide() {
           ))}
         </div>
       </section>
-      
+
       {/* Typography*/}
       {/* Header font*/}
       <section>
@@ -114,7 +114,7 @@ export default function StyleGuide() {
           <h3 className="text-3xl font-header">Heading 3 – League Spartan</h3>
         </div>
       </section>
-      
+
       {/* Body Font */}
       <section>
         <h2 className="mb-2 text-2xl font-header">Body Text</h2>
@@ -130,7 +130,7 @@ export default function StyleGuide() {
           </p>
         </div>
       </section>
-          
+
       {/* Code font demo */}
       <section>
         <h2 className="mb-2 text-2xl font-header">Code Text</h2>
@@ -148,6 +148,6 @@ export default function StyleGuide() {
 
 
     </div>
-    
+
   );
 }

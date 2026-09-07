@@ -1,8 +1,8 @@
 # METADATA
 # title: Ensure DMARC Records for all Exchange Online domains are published
 # description: |
-#   DMARC, or Domain-based Message Authentication, Reporting, and Conformance, 
-#   assists recipient mail systems in determining the appropriate action to take when 
+#   DMARC, or Domain-based Message Authentication, Reporting, and Conformance,
+#   assists recipient mail systems in determining the appropriate action to take when
 #   messages from a domain fail to meet SPF or DKIM authentication criteria.
 #   Ensure that the record exists that has the following flags defined either
 #   p=quarantine OR p=reject.

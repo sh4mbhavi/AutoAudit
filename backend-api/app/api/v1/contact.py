@@ -41,7 +41,9 @@ def _build_history_entry(
     )
 
 
-@router.post("/", response_model=ContactSubmissionRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=ContactSubmissionRead, status_code=status.HTTP_201_CREATED
+)
 async def create_contact_submission(
     payload: ContactSubmissionCreate,
     request: Request,
@@ -100,7 +102,9 @@ async def get_submission(
     )
     submission = result.scalar_one_or_none()
     if not submission:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found"
+        )
     return submission
 
 
@@ -117,7 +121,9 @@ async def update_submission(
     )
     submission = result.scalar_one_or_none()
     if not submission:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found"
+        )
 
     history_entries: list[SubmissionHistory] = []
 
@@ -167,7 +173,9 @@ async def update_submission(
 
     if "assigned_to" in payload.model_fields_set:
         if payload.assigned_to is not None:
-            user_result = await db.execute(select(User).where(User.id == payload.assigned_to))
+            user_result = await db.execute(
+                select(User).where(User.id == payload.assigned_to)
+            )
             assigned_user = user_result.scalar_one_or_none()
             if not assigned_user:
                 raise HTTPException(
@@ -209,13 +217,17 @@ async def delete_submission(
     )
     submission = result.scalar_one_or_none()
     if not submission:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found"
+        )
 
     await db.delete(submission)
     await db.commit()
 
 
-@router.get("/submissions/{submission_id}/notes", response_model=list[SubmissionNoteRead])
+@router.get(
+    "/submissions/{submission_id}/notes", response_model=list[SubmissionNoteRead]
+)
 async def list_notes(
     submission_id: UUID,
     _: User = Depends(require_admin),
@@ -245,7 +257,9 @@ async def add_note(
     )
     submission = result.scalar_one_or_none()
     if not submission:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Submission not found"
+        )
 
     note = SubmissionNote(
         submission_id=submission_id,
@@ -269,7 +283,9 @@ async def add_note(
     return note
 
 
-@router.get("/submissions/{submission_id}/history", response_model=list[SubmissionHistoryRead])
+@router.get(
+    "/submissions/{submission_id}/history", response_model=list[SubmissionHistoryRead]
+)
 async def list_history(
     submission_id: UUID,
     _: User = Depends(require_admin),

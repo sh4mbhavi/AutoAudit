@@ -54,7 +54,9 @@ class FormsSettingsDataCollector(BaseDataCollector):
                             raw_settings = value.get("formsSettings")
                         else:
                             raw_settings = value
-                    elif isinstance(value, list) and value and isinstance(value[0], dict):
+                    elif (
+                        isinstance(value, list) and value and isinstance(value[0], dict)
+                    ):
                         entry = value[0]
                         if isinstance(entry.get("settings"), dict):
                             raw_settings = entry.get("settings")
@@ -106,7 +108,9 @@ class FormsSettingsDataCollector(BaseDataCollector):
                 _get_setting_value("isExternalSharingEnabled", "externalSharingEnabled")
             ),
             "external_send_form_enabled": _normalize_bool(
-                _get_setting_value("isExternalSendFormEnabled", "externalSendFormEnabled")
+                _get_setting_value(
+                    "isExternalSendFormEnabled", "externalSendFormEnabled"
+                )
             ),
             "external_share_collaborating_enabled": _normalize_bool(
                 _get_setting_value(

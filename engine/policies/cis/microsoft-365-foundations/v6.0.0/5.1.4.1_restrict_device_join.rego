@@ -49,4 +49,3 @@ result := output if {
     },
   }
 }
-

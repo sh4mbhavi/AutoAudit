@@ -69,8 +69,7 @@ class ConditionalAccessPoliciesDataCollector(BaseDataCollector):
         # Categorize policies by state
         enabled_policies = [p for p in policies if p.get("state") == "enabled"]
         report_only_policies = [
-            p for p in policies
-            if p.get("state") == "enabledForReportingButNotEnforced"
+            p for p in policies if p.get("state") == "enabledForReportingButNotEnforced"
         ]
         disabled_policies = [p for p in policies if p.get("state") == "disabled"]
 
@@ -87,36 +86,42 @@ class ConditionalAccessPoliciesDataCollector(BaseDataCollector):
 
             # Check for MFA requirement
             if "mfa" in built_in_controls:
-                policies_requiring_mfa.append({
-                    "id": policy.get("id"),
-                    "displayName": policy.get("displayName"),
-                    "state": policy.get("state"),
-                    "conditions": conditions,
-                    "grantControls": grant_controls,
-                })
+                policies_requiring_mfa.append(
+                    {
+                        "id": policy.get("id"),
+                        "displayName": policy.get("displayName"),
+                        "state": policy.get("state"),
+                        "conditions": conditions,
+                        "grantControls": grant_controls,
+                    }
+                )
 
             # Check for legacy auth blocking
             # Legacy auth is blocked when clientAppTypes includes legacy types and action is block
             legacy_types = {"exchangeActiveSync", "other"}
             if legacy_types.intersection(set(client_app_types)):
                 if "block" in built_in_controls:
-                    policies_blocking_legacy_auth.append({
+                    policies_blocking_legacy_auth.append(
+                        {
+                            "id": policy.get("id"),
+                            "displayName": policy.get("displayName"),
+                            "state": policy.get("state"),
+                            "conditions": conditions,
+                            "grantControls": grant_controls,
+                        }
+                    )
+
+            # Check for compliant device requirement
+            if "compliantDevice" in built_in_controls:
+                policies_requiring_compliant_device.append(
+                    {
                         "id": policy.get("id"),
                         "displayName": policy.get("displayName"),
                         "state": policy.get("state"),
                         "conditions": conditions,
                         "grantControls": grant_controls,
-                    })
-
-            # Check for compliant device requirement
-            if "compliantDevice" in built_in_controls:
-                policies_requiring_compliant_device.append({
-                    "id": policy.get("id"),
-                    "displayName": policy.get("displayName"),
-                    "state": policy.get("state"),
-                    "conditions": conditions,
-                    "grantControls": grant_controls,
-                })
+                    }
+                )
 
         return {
             "policies": policies,

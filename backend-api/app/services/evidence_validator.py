@@ -67,7 +67,12 @@ def _normalize_text(text: str) -> str:
     if not text:
         return ""
     out = text.lower()
-    out = out.replace("\u2010", "-").replace("\u2011", "-").replace("\u2013", "-").replace("\u2014", "-")
+    out = (
+        out.replace("\u2010", "-")
+        .replace("\u2011", "-")
+        .replace("\u2013", "-")
+        .replace("\u2014", "-")
+    )
     out = re.sub(r"\s+", " ", out)
     return out.strip()
 
@@ -126,6 +131,8 @@ def validate_text(strategy_name: str, extracted_text: str) -> dict:
     return {
         "matched": matched,
         "missing": missing,
-        "summary": {"matchedCount": summary.matchedCount, "totalTerms": summary.totalTerms},
+        "summary": {
+            "matchedCount": summary.matchedCount,
+            "totalTerms": summary.totalTerms,
+        },
     }
-

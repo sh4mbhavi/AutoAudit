@@ -16,7 +16,7 @@ Server database instance using the below command.
 gcloud sql instances patch <INSTANCE_NAME> --database-flags "user
 connections=[0-32,767]"`
 
-deny := { v |  
+deny := { v |
   b := input[_]
   r := b.settings.databaseFlags[_]
   q := r.value

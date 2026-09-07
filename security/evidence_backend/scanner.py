@@ -1,48 +1,70 @@
 import os
 import csv
-from typing import List
+import json
 import sys
 from pathlib import Path
+from typing import List
+from urllib import request
 
 
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
-    
-from security.strategies import load_strategies
 
-#------------------------ Import core_ocr.py---------------
-from security.evidence_backend.core_ocr import extract_text_and_preview, SUPPORTED_ALL_EXTS
+# E402: the monorepo root is only importable after the sys.path insert above.
+from security.strategies import load_strategies  # noqa: E402
+
+# ------------------------ Import core_ocr.py---------------
+from security.evidence_backend.core_ocr import (  # noqa: E402
+    extract_text_and_preview,
+    SUPPORTED_ALL_EXTS,
+)
 
 # ------------------------ recent-scan logger (add-on) ----------------
-import json
-from urllib import request
 
-def _post_recent_scan(user: str, strategy: str, status: str, base_url: str = None) -> None:
+
+def _post_recent_scan(
+    user: str, strategy: str, status: str, base_url: str = None
+) -> None:
     """Best-effort ping to the UI logger; never raises."""
     try:
-        base = (base_url or os.environ.get("AUTOAUDIT_UI_URL") or "http://127.0.0.1:8000").rstrip("/")
+        base = (
+            base_url or os.environ.get("AUTOAUDIT_UI_URL") or "http://127.0.0.1:8000"
+        ).rstrip("/")
         url = f"{base}/api/scan-mem-log"
-        data = json.dumps({"user": user or "user", "strategy": strategy or "", "status": status or "success"}).encode("utf-8")
-        req = request.Request(url, data=data, headers={"Content-Type": "application/json"}, method="POST")
+        data = json.dumps(
+            {
+                "user": user or "user",
+                "strategy": strategy or "",
+                "status": status or "success",
+            }
+        ).encode("utf-8")
+        req = request.Request(
+            url, data=data, headers={"Content-Type": "application/json"}, method="POST"
+        )
         request.urlopen(req, timeout=2)
     except Exception:
         pass
+
 
 # track context for error ping
 _LAST_RUN = {"user": "user", "strategy": ""}
 # --------------------------------------------------------------------
 
-#------------------------ Same result and username environment ----------------
+# ------------------------ Same result and username environment ----------------
 RESULTS_DIR = Path(os.environ.get("AUTOAUDIT_RESULTS", "results"))
-PREVIEWS    = Path(os.environ.get("AUTOAUDIT_PREVIEWS", RESULTS_DIR / "previews"))
-CSV_PATH    = Path(os.environ.get("AUTOAUDIT_CSV", RESULTS_DIR / "scan_report.csv"))
+PREVIEWS = Path(os.environ.get("AUTOAUDIT_PREVIEWS", RESULTS_DIR / "previews"))
+CSV_PATH = Path(os.environ.get("AUTOAUDIT_CSV", RESULTS_DIR / "scan_report.csv"))
 
 RESULTS_DIR.mkdir(parents=True, exist_ok=True)
 PREVIEWS.mkdir(parents=True, exist_ok=True)
 
+
 def get_username() -> str:
-    return os.environ.get("AUTOAUDIT_USER") or (input("Enter your username: ").strip() or "user")
+    return os.environ.get("AUTOAUDIT_USER") or (
+        input("Enter your username: ").strip() or "user"
+    )
+
 
 # ---------- Folder mapping for the 8 Essential Eight strategies ----------
 STRAT_DIR_MAP = {
@@ -55,6 +77,7 @@ STRAT_DIR_MAP = {
     "regular backups": "regular_backups",
     "user application hardening": "user_application_hardening",
 }
+
 
 # ---------- UI helpers ----------
 def choose_from_menu(title: str, options: List[str]) -> List[str]:
@@ -69,6 +92,7 @@ def choose_from_menu(title: str, options: List[str]) -> List[str]:
             idxs.append(int(tok) - 1)
     return [options[i] for i in idxs]
 
+
 # ---------- Content extraction ----------
 def read_text_file(path: Path) -> str:
     """Read small text-like files into a single string."""
@@ -80,10 +104,12 @@ def read_text_file(path: Path) -> str:
         except Exception:
             return ""
 
+
 def extract_text(path: Path) -> str:
     text, _ = extract_text_and_preview(path, PREVIEWS)
     return text or ""
-    
+
+
 def list_supported_files(folder: Path) -> List[Path]:
     if not folder.exists():
         return []
@@ -93,9 +119,10 @@ def list_supported_files(folder: Path) -> List[Path]:
             out.append(p)
     return sorted(out, key=lambda x: x.name.lower())
 
+
 # ---------- Main ----------
 def main():
-    # 1) user id that was keyed in 
+    # 1) user id that was keyed in
     user_id = get_username()
 
     # 2) load strategies
@@ -117,25 +144,42 @@ def main():
 
     # record context for pings (first chosen strategy is a good summary)
     global _LAST_RUN
-    _LAST_RUN = {"user": user_id, "strategy": (chosen_strategies[0].name if chosen_strategies else "")}
+    _LAST_RUN = {
+        "user": user_id,
+        "strategy": (chosen_strategies[0].name if chosen_strategies else ""),
+    }
 
-    print("\n📋 Scanning using strategies:", ", ".join(s.name for s in chosen_strategies), "\n")
+    print(
+        "\n📋 Scanning using strategies:",
+        ", ".join(s.name for s in chosen_strategies),
+        "\n",
+    )
 
     # 4) where evidence/files live
     base_dir = Path(os.environ.get("AUTOAUDIT_INPUT_DIR", "evidence"))
 
     # 5) CSV header
-    report_rows = [(
-        "UserID", "Image", "Strategy", "TestID", "Sub-Strategy",
-        "ML Level", "Pass/Fail", "Priority", "Recommendation", "Evidence Extract"
-    )]
+    report_rows = [
+        (
+            "UserID",
+            "Image",
+            "Strategy",
+            "TestID",
+            "Sub-Strategy",
+            "ML Level",
+            "Pass/Fail",
+            "Priority",
+            "Recommendation",
+            "Evidence Extract",
+        )
+    ]
 
     # 6) scan per strategy
     for strat in chosen_strategies:
         strat_key = strat.name.lower().strip()
         strat_sub = STRAT_DIR_MAP.get(strat_key, None)
         preferred = (base_dir / strat_sub) if strat_sub else base_dir
-        fallback  = base_dir
+        fallback = base_dir
 
         files = list_supported_files(preferred)
         using_dir = preferred
@@ -144,7 +188,9 @@ def main():
             using_dir = fallback
 
         if not files:
-            print(f"⚠️  No files found for '{strat.name}' in '{preferred}' or '{fallback}'. Skipping.")
+            print(
+                f"⚠️  No files found for '{strat.name}' in '{preferred}' or '{fallback}'. Skipping."
+            )
             continue
 
         print(f"\n🔎 Strategy: {strat.name}")
@@ -157,12 +203,20 @@ def main():
             if not raw_text.strip():
                 print("   (no readable text found)\n")
                 # record a row so you can see the file in the CSV
-                report_rows.append((
-                    user_id, fpath.name, strat.name, "", "", "",
-                    "NO_TEXT", "Low",
-                    "OCR could not read this file. Try a clearer screenshot.",
-                    ""
-                ))
+                report_rows.append(
+                    (
+                        user_id,
+                        fpath.name,
+                        strat.name,
+                        "",
+                        "",
+                        "",
+                        "NO_TEXT",
+                        "Low",
+                        "OCR could not read this file. Try a clearer screenshot.",
+                        "",
+                    )
+                )
                 continue
 
             preview = (raw_text[:200] + "…") if len(raw_text) > 200 else raw_text
@@ -173,38 +227,56 @@ def main():
             if hasattr(strat, "emit_hits"):
                 rows = strat.emit_hits(raw_text, source_file=fpath.name)
                 for r in rows:
-                    report_rows.append((
-                        user_id,
-                        fpath.name,
-                        strat.name,
-                        r.get("test_id", ""),
-                        r.get("sub_strategy", ""),
-                        r.get("detected_level", ""),
-                        r.get("pass_fail", ""),
-                        r.get("priority", ""),
-                        r.get("recommendation", ""),
-                        "; ".join(r.get("evidence", [])),
-                    ))
+                    report_rows.append(
+                        (
+                            user_id,
+                            fpath.name,
+                            strat.name,
+                            r.get("test_id", ""),
+                            r.get("sub_strategy", ""),
+                            r.get("detected_level", ""),
+                            r.get("pass_fail", ""),
+                            r.get("priority", ""),
+                            r.get("recommendation", ""),
+                            "; ".join(r.get("evidence", [])),
+                        )
+                    )
                     rows_added += 1
             else:
                 hits = strat.match(raw_text)
                 if hits:
-                    report_rows.append((
-                        user_id, fpath.name, strat.name, "", "", "",
-                        "HIT", "Medium",
-                        "Heuristic match.",
-                        ", ".join(hits)
-                    ))
+                    report_rows.append(
+                        (
+                            user_id,
+                            fpath.name,
+                            strat.name,
+                            "",
+                            "",
+                            "",
+                            "HIT",
+                            "Medium",
+                            "Heuristic match.",
+                            ", ".join(hits),
+                        )
+                    )
                     rows_added += 1
 
             # If no matches, write a NO_MATCH row so the file appears in the report
             if rows_added == 0:
-                report_rows.append((
-                    user_id, fpath.name, strat.name, "", "", "",
-                    "NO_MATCH", "Low",
-                    "No rule matched this file.",
-                    ""
-                ))
+                report_rows.append(
+                    (
+                        user_id,
+                        fpath.name,
+                        strat.name,
+                        "",
+                        "",
+                        "",
+                        "NO_MATCH",
+                        "Low",
+                        "No rule matched this file.",
+                        "",
+                    )
+                )
 
     # 7) save
     try:
@@ -222,13 +294,16 @@ def main():
     # success ping (non-blocking)
     _post_recent_scan(_LAST_RUN["user"], _LAST_RUN["strategy"], "success")
 
+
 if __name__ == "__main__":
     try:
         main()
     except Exception:
         # error ping (non-blocking), then re-raise
         try:
-            _post_recent_scan(_LAST_RUN.get("user", "user"), _LAST_RUN.get("strategy", ""), "error")
+            _post_recent_scan(
+                _LAST_RUN.get("user", "user"), _LAST_RUN.get("strategy", ""), "error"
+            )
         except Exception:
             pass
         raise

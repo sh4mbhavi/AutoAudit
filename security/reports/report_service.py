@@ -18,7 +18,7 @@ def generate_pdf(
     template_path: os.PathLike | str = "templates/report_template.docx",
     output_dir: os.PathLike | str = "reports_out",
     base_dir: os.PathLike | str = ".",
-    image_marker: str = "[Embed evidence here]",   
+    image_marker: str = "[Embed evidence here]",
     unique_id_override: Optional[str] = None,
 ) -> Path:
     """
@@ -26,12 +26,12 @@ def generate_pdf(
 
     Expected keys in `data` (case/spacing tolerant):
       UniqueID or UserID -> becomes UniqueID in template
-      Evidence -> path to original evidence file 
-      Evidence Preview (optional) -> path to an image to embed 
+      Evidence -> path to original evidence file
+      Evidence Preview (optional) -> path to an image to embed
       Strategy, TestID, Sub-Strategy, ML Level, Pass/Fail, Priority,
       Recommendation -> Recommendations, Evidence Extract -> Extract
-      Description 
-      Confidence 
+      Description
+      Confidence
 
     Returns: Path to the generated PDF.
     """
@@ -54,9 +54,13 @@ def generate_pdf(
     _replace_xml_text_everywhere(doc, mapping)
     if embed_path:
         if not _insert_image_at_marker(doc, image_marker, embed_path, width_inches=6.0):
-            _insert_image_at_marker(doc, "[Embed screenshot here]", embed_path, width_inches=6.0)
+            _insert_image_at_marker(
+                doc, "[Embed screenshot here]", embed_path, width_inches=6.0
+            )
     else:
-        _remove_markers_everywhere(doc, ["[Embed evidence here]", "[Embed screenshot here]"])
+        _remove_markers_everywhere(
+            doc, ["[Embed evidence here]", "[Embed screenshot here]"]
+        )
     filled = pdf_path.with_suffix(".filled.docx")
     doc.save(str(filled))
     _convert_docx_to_pdf(filled, pdf_path)
@@ -70,12 +74,22 @@ def generate_pdf(
 
 # ---------- Mapping (OCR dict -> template placeholders) ----------
 
+
 def _normalize_keys(d: Mapping[str, Any]) -> Dict[str, str]:
     norm: Dict[str, str] = {}
     for k, v in d.items():
-        key = " ".join(str(k).strip().lower().replace("_", " ").replace("-", " ").replace("/", " ").split())
+        key = " ".join(
+            str(k)
+            .strip()
+            .lower()
+            .replace("_", " ")
+            .replace("-", " ")
+            .replace("/", " ")
+            .split()
+        )
         norm[key] = "" if v is None else str(v)
     return norm
+
 
 def _pick(norm: Dict[str, str], *names: str) -> str:
     for n in names:
@@ -84,28 +98,42 @@ def _pick(norm: Dict[str, str], *names: str) -> str:
             return norm[key]
     return ""
 
-def _map_to_placeholders(data: Mapping[str, Any], base_dir: Path) -> Tuple[Dict[str, str], Optional[Path], str]:
+
+def _map_to_placeholders(
+    data: Mapping[str, Any], base_dir: Path
+) -> Tuple[Dict[str, str], Optional[Path], str]:
     n = _normalize_keys(data)
 
     # Inputs (tolerant keys)
-    unique_id = _pick(n, "uniqueid", "unique id", "userid", "user id") or str(uuid.uuid4())
-    strategy  = _pick(n, "strategy")
-    testid    = _pick(n, "testid", "test id")
-    substrat  = _pick(n, "sub-strategy", "sub strategy")
-    level     = _pick(n, "ml level", "level")
-    passfail  = _pick(n, "pass/fail", "pass fail")
-    priority  = _pick(n, "priority")
-    rec       = _pick(n, "recommendation", "recommendations")
-    extract   = _pick(n, "evidence extract", "extract")
-    descr     = _pick(n, "description")
-    confidence = _pick(n, "confidence")  
+    unique_id = _pick(n, "uniqueid", "unique id", "userid", "user id") or str(
+        uuid.uuid4()
+    )
+    strategy = _pick(n, "strategy")
+    testid = _pick(n, "testid", "test id")
+    substrat = _pick(n, "sub-strategy", "sub strategy")
+    level = _pick(n, "ml level", "level")
+    passfail = _pick(n, "pass/fail", "pass fail")
+    priority = _pick(n, "priority")
+    rec = _pick(n, "recommendation", "recommendations")
+    extract = _pick(n, "evidence extract", "extract")
+    descr = _pick(n, "description")
+    confidence = _pick(n, "confidence")
 
     # Evidence paths
-    evidence_path_str = _pick(n, "evidence", "evidence path", "file", "file path", "filepath", "image", "screenshot")
-    preview_path_str  = _pick(n, "evidence preview", "preview", "embed path")
+    evidence_path_str = _pick(
+        n,
+        "evidence",
+        "evidence path",
+        "file",
+        "file path",
+        "filepath",
+        "image",
+        "screenshot",
+    )
+    preview_path_str = _pick(n, "evidence preview", "preview", "embed path")
 
     # Resolve paths
-    embed_path: Optional[Path] = None  
+    embed_path: Optional[Path] = None
     file_name = ""
     if evidence_path_str:
         ep = Path(evidence_path_str)
@@ -123,37 +151,37 @@ def _map_to_placeholders(data: Mapping[str, Any], base_dir: Path) -> Tuple[Dict[
             ep = Path(evidence_path_str)
             if not ep.is_absolute():
                 ep = base_dir / ep
-            if ep.exists() and ep.suffix.lower() in {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".webp"}:
+            if ep.exists() and ep.suffix.lower() in {
+                ".png",
+                ".jpg",
+                ".jpeg",
+                ".tif",
+                ".tiff",
+                ".bmp",
+                ".webp",
+            }:
                 embed_path = ep
 
     # Mapping to template placeholders (support a couple of variants)
     mapping: Dict[str, str] = {
         "UniqueID": unique_id,
         "Unique ID": unique_id,
-        "UserID": unique_id,            
-
+        "UserID": unique_id,
         "Strategy": strategy,
         "Test_id": testid,
         "Sub-Strategy": substrat,
-
         "level": level,
         "Level": level,
-
         "Pass/Fail": passfail,
         "Priority": priority,
-
         "Recommendations": rec,
-
         "extract": extract,
         "Extract": extract,
-
         "Description": descr,
         "description": descr,
         "Confidence": confidence or "",
-
         "file name": file_name,
         "File Name": file_name,
-
         "Date Generated": datetime.now().strftime("%d %b %Y"),
     }
     _expand_placeholder_variants(mapping)
@@ -161,6 +189,7 @@ def _map_to_placeholders(data: Mapping[str, Any], base_dir: Path) -> Tuple[Dict[
 
 
 # ---------- DOCX helpers ----------
+
 
 def _iter_paragraphs(doc):
     for p in doc.paragraphs:
@@ -170,6 +199,7 @@ def _iter_paragraphs(doc):
             for cell in row.cells:
                 for p in cell.paragraphs:
                     yield p
+
 
 def _replace_in_runs(paragraph, mapping: Mapping[str, Any]) -> bool:
     changed = False
@@ -183,6 +213,7 @@ def _replace_in_runs(paragraph, mapping: Mapping[str, Any]) -> bool:
             changed = True
     return changed
 
+
 def _rebuild_paragraph_text(paragraph, mapping: Mapping[str, Any]) -> None:
     full = "".join(run.text for run in paragraph.runs)
     repl = full
@@ -193,16 +224,19 @@ def _rebuild_paragraph_text(paragraph, mapping: Mapping[str, Any]) -> None:
             r.text = ""
         paragraph.add_run(repl)
 
+
 def _replace_braced_placeholders_everywhere(doc, mapping: Mapping[str, Any]) -> None:
     for p in _iter_paragraphs(doc):
         if not _replace_in_runs(p, mapping):
             _rebuild_paragraph_text(p, mapping)
+
 
 def _replace_xml_text_everywhere(doc, mapping: Mapping[str, Any]) -> None:
     """
     Replace {tokens} in all <w:t> text nodes across main doc part,
     headers, and footers. Works even with older python-docx (no namespaces kwarg).
     """
+
     def replace_in_part(part):
         root = part.element
         texts = []
@@ -236,7 +270,10 @@ def _replace_xml_text_everywhere(doc, mapping: Mapping[str, Any]) -> None:
         except Exception:
             pass
 
-def _insert_image_at_marker(doc, marker: str, image_path: os.PathLike | str, width_inches: float = 6.0) -> bool:
+
+def _insert_image_at_marker(
+    doc, marker: str, image_path: os.PathLike | str, width_inches: float = 6.0
+) -> bool:
     ip = Path(image_path)
     if not ip.exists():
         return False
@@ -256,6 +293,7 @@ def _insert_image_at_marker(doc, marker: str, image_path: os.PathLike | str, wid
         doc.add_picture(str(ip), width=Inches(width_inches))
     return True
 
+
 def _convert_docx_to_pdf(input_docx: Path, output_pdf: Path) -> None:
     """
     Try docx2pdf (uses Word on Windows/macOS). If unavailable, fall back to LibreOffice.
@@ -263,6 +301,7 @@ def _convert_docx_to_pdf(input_docx: Path, output_pdf: Path) -> None:
     # Preferred: docx2pdf
     try:
         from docx2pdf import convert
+
         convert(str(input_docx), str(output_pdf))
         return
     except Exception:
@@ -272,8 +311,18 @@ def _convert_docx_to_pdf(input_docx: Path, output_pdf: Path) -> None:
     try:
         out_dir = str(output_pdf.parent.resolve())
         subprocess.run(
-            ["soffice", "--headless", "--convert-to", "pdf", "--outdir", out_dir, str(input_docx.resolve())],
-            check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE
+            [
+                "soffice",
+                "--headless",
+                "--convert-to",
+                "pdf",
+                "--outdir",
+                out_dir,
+                str(input_docx.resolve()),
+            ],
+            check=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
         )
         expected = output_pdf.with_suffix(".pdf")
         if expected.exists() and expected != output_pdf:
@@ -331,7 +380,8 @@ def _simple_pdf_from_docx(input_docx: Path, output_pdf: Path) -> bool:
         return True
     except Exception:
         return False
-        
+
+
 def _remove_markers_everywhere(doc, markers: list[str]) -> None:
     for p in _iter_paragraphs(doc):
         full = "".join(r.text for r in p.runs)
@@ -375,7 +425,9 @@ def _remove_markers_everywhere(doc, markers: list[str]) -> None:
         except Exception:
             pass
 
+
 # ---------- Tolerant placeholder variants ----------
+
 
 def _expand_placeholder_variants(mapping: Dict[str, str]) -> None:
     """
@@ -384,7 +436,7 @@ def _expand_placeholder_variants(mapping: Dict[str, str]) -> None:
       - optional spaces inside braces: { Token } as well as {Token}
     This only adds alias keys; it does NOT change original keys/values.
     """
-    hyphens = ["-", "\u2010", "\u2011", "\u2013", "\u2014"] 
+    hyphens = ["-", "\u2010", "\u2011", "\u2013", "\u2014"]
     to_add: Dict[str, str] = {}
 
     for k, v in list(mapping.items()):

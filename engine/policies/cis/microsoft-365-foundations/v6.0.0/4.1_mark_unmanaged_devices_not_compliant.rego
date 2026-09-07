@@ -52,4 +52,3 @@ result := output if {
     },
   }
 }
-

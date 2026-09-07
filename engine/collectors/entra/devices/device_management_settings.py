@@ -43,7 +43,9 @@ class DeviceManagementSettingsDataCollector(BaseDataCollector):
 
         return {
             "device_management_settings": settings,
-            "device_compliance_on_boarded": settings.get("deviceComplianceCheckinThresholdDays"),
+            "device_compliance_on_boarded": settings.get(
+                "deviceComplianceCheckinThresholdDays"
+            ),
             "is_scheduled_action_enabled": settings.get("isScheduledActionEnabled"),
             "secure_by_default": settings.get("secureByDefault"),
             "compliance_policy_summaries": compliance_settings.get("value", []),

@@ -2,6 +2,7 @@ import os
 import subprocess
 from pathlib import Path
 
+
 # directory of results into one single folder
 def ensure_results_dirs(root: Path) -> dict[str, Path]:
     results = root / "results"
@@ -16,7 +17,8 @@ def ensure_results_dirs(root: Path) -> dict[str, Path]:
         "PREVIEWS_DIR": previews,
         "CSV_PATH": results / "scan_report.csv",
         "TEMPLATE_PATH": results / "report_template.docx",
-    }    
+    }
+
 
 # Step 1: Welcome message
 def main():
@@ -25,10 +27,12 @@ def main():
     if not username:
         username = "user"
 
-    # Step 2: Choice of scan mode 
+    # Step 2: Choice of scan mode
     print("\nPlease choose your preferred scan mode:")
     print("1. Scanner: batch scanning of evidences with CSV summary report")
-    print("2. Report Generator: single evidence scan with pdf executive report generated")
+    print(
+        "2. Report Generator: single evidence scan with pdf executive report generated"
+    )
     while True:
         choice = input("Pick 1 or 2: ").strip()
         if choice in {"1", "2"}:
@@ -46,7 +50,7 @@ def main():
     os.environ["AUTOAUDIT_CSV"] = str(paths["CSV_PATH"])
     os.environ["AUTOAUDIT_TEMPLATE"] = str(paths["TEMPLATE_PATH"])
 
-    # Step 3: Run the respective python script 
+    # Step 3: Run the respective python script
     scanner = str((here / "evidence_backend" / "scanner.py").resolve())
     reportg = str((here / "evidence_backend" / "reportgenerator.py").resolve())
 
@@ -60,6 +64,7 @@ def main():
         here = Path(__file__).resolve().parent
         os.environ["AUTOAUDIT_INPUT_DIR"] = str(here / "evidence")
         subprocess.run(["python", reportg], check=False)
+
 
 if __name__ == "__main__":
     main()

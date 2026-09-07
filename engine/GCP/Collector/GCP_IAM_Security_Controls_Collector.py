@@ -72,40 +72,37 @@ class GcpIamSecurityControlsCollector(BaseDataCollector):
             "role_based_access": len(role_bindings) > 0,
             "audit_logging_enabled": len(audit_logs) > 0,
             "access_requests": access_requests,
-
             # 6.2 - Revocation
-            "revocation_workflow_enforced": client.config.get("revocation_workflow", False),
-            "account_suspension_enabled": client.config.get("account_suspension", False),
+            "revocation_workflow_enforced": client.config.get(
+                "revocation_workflow", False
+            ),
+            "account_suspension_enabled": client.config.get(
+                "account_suspension", False
+            ),
             "access_removal_enforced": len(revocation_events) > 0,
             "revocation_events": revocation_events,
-
             # 6.3 - MFA for Apps
             "mfa_policy_enabled": client.config.get("mfa_enabled", False),
             "sso_integration_enforced": bool(iap_settings),
             "externally_exposed_apps_covered": bool(iap_settings),
             "signin_logs": signin_logs,
-
             # 6.4 - Remote Access
             "remote_access_protected": bool(iap_settings),
             "mfa_required_for_remote": client.config.get("mfa_enabled", False),
             "policy_applied": bool(iap_settings),
             "remote_access_logs": remote_access_logs,
-
             # 6.5 - Admin MFA
             "admin_mfa_enabled": client.config.get("admin_mfa", False),
             "admin_scope_defined": len(admin_roles) > 0,
             "admin_logs": admin_logs,
             "admin_identities": list(admin_roles.keys()),
-
             # 6.6 - Inventory
             "inventory": inventory,
-
             # 6.7 - Centralized Access
             "central_directory_used": True,  # assumed if using GCP Identity
             "sso_enabled": bool(iap_settings),
             "app_integration_count": len(iap_settings),
             "change_events": self._extract_change_events(audit_logs),
-
             # 6.8 - RBAC
             "roles": list(role_bindings.keys()),
             "group_based_assignment": len(groups) > 0,
@@ -139,54 +136,68 @@ class GcpIamSecurityControlsCollector(BaseDataCollector):
         events = []
         for log in logs:
             if "SetIamPolicy" in log.get("methodName", ""):
-                events.append({
-                    "request_id": log.get("insertId"),
-                    "requester": log.get("authenticationInfo", {}).get("principalEmail"),
-                    "approver": "unknown",
-                    "role": log.get("resourceName"),
-                    "group": "",
-                    "justification": "N/A",
-                    "request_timestamp": log.get("timestamp"),
-                    "approval_timestamp": log.get("timestamp"),
-                    "provisioning_timestamp": log.get("timestamp"),
-                    "audit_log_matched": True,
-                })
+                events.append(
+                    {
+                        "request_id": log.get("insertId"),
+                        "requester": log.get("authenticationInfo", {}).get(
+                            "principalEmail"
+                        ),
+                        "approver": "unknown",
+                        "role": log.get("resourceName"),
+                        "group": "",
+                        "justification": "N/A",
+                        "request_timestamp": log.get("timestamp"),
+                        "approval_timestamp": log.get("timestamp"),
+                        "provisioning_timestamp": log.get("timestamp"),
+                        "audit_log_matched": True,
+                    }
+                )
         return events
 
     def _extract_revocations(self, logs):
         events = []
         for log in logs:
-            if "SetIamPolicy" in log.get("methodName", "") and log.get("operation", {}).get("first", False):
-                events.append({
-                    "user_id": log.get("authenticationInfo", {}).get("principalEmail"),
-                    "event_type": "role_change",
-                    "initiator": "system",
-                    "actioned_by": log.get("authenticationInfo", {}).get("principalEmail"),
-                    "event_timestamp": log.get("timestamp"),
-                    "suspension_timestamp": log.get("timestamp"),
-                    "removed_roles": ["unknown"],
-                    "removed_groups": [],
-                    "audit_log_matched": True,
-                })
+            if "SetIamPolicy" in log.get("methodName", "") and log.get(
+                "operation", {}
+            ).get("first", False):
+                events.append(
+                    {
+                        "user_id": log.get("authenticationInfo", {}).get(
+                            "principalEmail"
+                        ),
+                        "event_type": "role_change",
+                        "initiator": "system",
+                        "actioned_by": log.get("authenticationInfo", {}).get(
+                            "principalEmail"
+                        ),
+                        "event_timestamp": log.get("timestamp"),
+                        "suspension_timestamp": log.get("timestamp"),
+                        "removed_roles": ["unknown"],
+                        "removed_groups": [],
+                        "audit_log_matched": True,
+                    }
+                )
         return events
 
     def _extract_signins(self, logs):
         return [
             {
-                "application": l.get("resourceName"),
+                "application": log.get("resourceName"),
                 "mfa_required": True,
-                "timestamp": l.get("timestamp"),
+                "timestamp": log.get("timestamp"),
             }
-            for l in logs if "login" in l.get("methodName", "").lower()
+            for log in logs
+            if "login" in log.get("methodName", "").lower()
         ]
 
     def _extract_remote_access(self, logs):
         return [
             {
                 "mfa_required": True,
-                "timestamp": l.get("timestamp"),
+                "timestamp": log.get("timestamp"),
             }
-            for l in logs if "iap" in l.get("resourceName", "").lower()
+            for log in logs
+            if "iap" in log.get("resourceName", "").lower()
         ]
 
     def _extract_admin_activity(self, logs, admin_roles):
@@ -194,20 +205,24 @@ class GcpIamSecurityControlsCollector(BaseDataCollector):
         for log in logs:
             user = log.get("authenticationInfo", {}).get("principalEmail")
             if user in admin_roles:
-                events.append({
-                    "mfa_used": True,
-                    "timestamp": log.get("timestamp"),
-                })
+                events.append(
+                    {
+                        "mfa_used": True,
+                        "timestamp": log.get("timestamp"),
+                    }
+                )
         return events
 
     def _build_identity_inventory(self, identities, groups):
         inventory = []
         for i in identities:
-            inventory.append({
-                "name": i.get("email"),
-                "owner": "identity-team",
-                "last_review": datetime.utcnow().isoformat(),
-            })
+            inventory.append(
+                {
+                    "name": i.get("email"),
+                    "owner": "identity-team",
+                    "last_review": datetime.utcnow().isoformat(),
+                }
+            )
         return inventory
 
     def _extract_change_events(self, logs):
@@ -216,18 +231,19 @@ class GcpIamSecurityControlsCollector(BaseDataCollector):
                 "directory_change": True,
                 "downstream_effect": True,
             }
-            for l in logs if "SetIamPolicy" in l.get("methodName", "")
+            for log in logs
+            if "SetIamPolicy" in log.get("methodName", "")
         ]
 
     def _extract_access_reviews(self, logs):
         cutoff = datetime.utcnow() - timedelta(days=365)
         return [
             {
-                "review_date": l.get("timestamp"),
-                "reviewer": l.get("authenticationInfo", {}).get("principalEmail"),
+                "review_date": log.get("timestamp"),
+                "reviewer": log.get("authenticationInfo", {}).get("principalEmail"),
             }
-            for l in logs
-            if l.get("timestamp") and self._parse_time(l["timestamp"]) > cutoff
+            for log in logs
+            if log.get("timestamp") and self._parse_time(log["timestamp"]) > cutoff
         ]
 
     def _parse_time(self, ts: str) -> datetime:

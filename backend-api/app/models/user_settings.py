@@ -39,4 +39,3 @@ class UserSettings(Base):
     )
 
     user = relationship("User", back_populates="settings")
-

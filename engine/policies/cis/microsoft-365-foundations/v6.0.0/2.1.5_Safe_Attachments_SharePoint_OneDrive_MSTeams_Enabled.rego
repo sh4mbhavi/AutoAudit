@@ -2,7 +2,7 @@
 # title: Ensure Safe Attachments for SharePoint, OneDrive, and Microsoft Teams is Enabled
 # description: |
 #   Safe Attachments for SharePoint, OneDrive, and Microsoft Teams scans these services for malicious files.
-#  
+#
 # related_resources:
 # - ref: https://www.cisecurity.org/benchmark/microsoft_365
 #   description: CIS Microsoft 365 Foundations Benchmark

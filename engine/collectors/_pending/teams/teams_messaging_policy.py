@@ -48,13 +48,16 @@ class TeamsMessagingPolicyDataCollector(BasePowerShellCollector):
 
         # Find global policy
         global_policy = next(
-            (p for p in policies if p.get("Identity") == "Global"),
-            None
+            (p for p in policies if p.get("Identity") == "Global"), None
         )
 
         return {
             "messaging_policies": policies,
             "total_policies": len(policies),
             "global_policy": global_policy,
-            "allow_security_end_user_reporting": global_policy.get("AllowSecurityEndUserReporting") if global_policy else None,
+            "allow_security_end_user_reporting": global_policy.get(
+                "AllowSecurityEndUserReporting"
+            )
+            if global_policy
+            else None,
         }

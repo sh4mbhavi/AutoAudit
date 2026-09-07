@@ -57,4 +57,3 @@ def downgrade() -> None:
     """Downgrade schema."""
     op.drop_index(op.f("ix_user_settings_user_id"), table_name="user_settings")
     op.drop_table("user_settings")
-

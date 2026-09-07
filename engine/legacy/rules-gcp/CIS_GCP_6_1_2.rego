@@ -9,7 +9,7 @@ blocked_value := "on"
 verification := `1. List all Cloud SQL database Instances
 gcloud sql instances list
 2. Ensure the below command returns on for every Cloud SQL Mysql database
-instance 
+instance
 gcloud sql instances describe <INSTANCE_NAME> --format=json | jq
 '.settings.databaseFlags[] | select(.name=="skip_show_database")|.value' `
 
@@ -20,7 +20,7 @@ database instance using the below command.
 gcloud sql instances patch <INSTANCE_NAME> --database-flags
 skip_show_database=on`
 
-deny := { v |  
+deny := { v |
   b := input[_]
   r := b.settings.databaseFlags[_]
   q := r.value

@@ -16,7 +16,7 @@ gcloud sql instances patch <INSTANCE_NAME> --database-flags
 cloudsql.enable_pgaudit=on
 Note: RESTART is required to get this configuration in effect.`
 
-deny := { v |  
+deny := { v |
   b := input[_]
   r := b.settings.databaseFlags[_]
   q := r.value

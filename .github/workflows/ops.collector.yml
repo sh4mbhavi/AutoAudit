@@ -32,7 +32,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0 
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -43,7 +43,7 @@ jobs:
         run: pip install google-api-python-client google-auth google-auth-httplib2 google-auth-oauthlib
 
       - name: Run GCP Access Collector
-        env: 
+        env:
           GCP_CREDENTIALS: ${{ secrets.GCP_CREDENTIALS }}
         run: |
           set -euo pipefail
@@ -140,5 +140,3 @@ jobs:
             git commit -m "Update iam_policy.json & networks.json & firewalls.json & ComputeInstances.json && sql_instances.json && buckets_iam_policies.json && dataproc_clusters.json && bigquery_datasets_full.json"
             git push origin engine-development
           fi
-          
-        

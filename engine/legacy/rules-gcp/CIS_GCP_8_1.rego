@@ -36,7 +36,7 @@ Change the project by running the below command and repeat the remediation
 procedure for other projects:
 gcloud config set project <project_ID>"`
 
-deny := { v |  
+deny := { v |
   b := input[_]
   r := b.access[_]
   q := r.specialGroup

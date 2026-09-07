@@ -22,7 +22,7 @@ roles containing allUsers or allAuthenticatedUsers.
 Update the dataset:
 bq update --source PATH_TO_FILE PROJECT_ID:DATASET_NAME`
 
-deny := { v |  
+deny := { v |
   b := input[_]
   r := b.clusters[_]
   q := r.clusterConfig.encryptionConfig.gcePdKmsKeyName

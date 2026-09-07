@@ -1,6 +1,6 @@
 """User settings API endpoints."""
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -17,7 +17,9 @@ async def _get_or_create_settings(
     db: AsyncSession,
     user_id: int,
 ) -> UserSettings:
-    result = await db.execute(select(UserSettings).where(UserSettings.user_id == user_id))
+    result = await db.execute(
+        select(UserSettings).where(UserSettings.user_id == user_id)
+    )
     settings = result.scalar_one_or_none()
     if settings:
         return settings
@@ -53,4 +55,3 @@ async def update_my_settings(
     await db.commit()
     await db.refresh(settings)
     return settings
-

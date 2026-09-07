@@ -39,4 +39,3 @@ result := out if {
     },
   }
 }
-

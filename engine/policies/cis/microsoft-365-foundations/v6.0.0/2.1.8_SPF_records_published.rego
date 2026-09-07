@@ -3,7 +3,7 @@
 # description: |
 #   A corresponding Sender Policy Framework (SPF) record
 #   should be created for each domain that will be configured in Exchange.
-#  
+#
 # related_resources:
 # - ref: https://www.cisecurity.org/benchmark/microsoft_365
 #   description: CIS Microsoft 365 Foundations Benchmark

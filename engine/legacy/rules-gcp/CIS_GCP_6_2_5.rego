@@ -17,7 +17,7 @@ gcloud sql instances patch <INSTANCE_NAME> --database-flags
 log_min_messages=<DEBUG5|DEBUG4|DEBUG3|DEBUG2|DEBUG1|INFO|NOTICE|WARNING|ERRO
 R|LOG|FATAL|PANIC>`
 
-deny := { v |  
+deny := { v |
   b := input[_]
   r := b.settings.databaseFlags[_]
   q := r.value

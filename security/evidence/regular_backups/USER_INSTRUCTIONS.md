@@ -6,7 +6,7 @@ Evidence detection is **key=value driven**, deterministic, and case-insensitive.
 
 ---
 
-## 1. General rules   
+## 1. General rules
 
 - Files must be plain text (`.txt`)
 - Evidence is parsed using `key=value` pairs (anywhere in the text)
@@ -36,7 +36,7 @@ backup_failed.txt
 status=failure
 reason=no_recent_backup
 
-offsite_backup.txt 
+offsite_backup.txt
 backup_location=offsite
 or
 immutability=enabled
@@ -135,7 +135,3 @@ Confirm _ml2 is present for ML2 evidence
 Confirm keys match this guide
 
 Confirm the file represents one outcome
-
-
-
-

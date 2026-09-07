@@ -12,4 +12,3 @@ Not implemented: Window's scrollTo() method
       Tests  243 passed (243)
    Start at  15:23:24
    Duration  3.04s (transform 2.24s, setup 2.48s, import 5.68s, tests 6.84s, environment 19.80s)
-

@@ -21,7 +21,7 @@ gcloud sql instances patch <INSTANCE_NAME> --database-flags
 log_min_error_statement=<DEBUG5|DEBUG4|DEBUG3|DEBUG2|DEBUG1|INFO|NOTICE|WARNI
 NG|ERROR>`
 
-deny := { v |  
+deny := { v |
   b := input[_]
   r := b.settings.databaseFlags[_]
   q := r.value

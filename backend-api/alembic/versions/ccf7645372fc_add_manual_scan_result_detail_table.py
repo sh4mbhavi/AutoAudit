@@ -5,6 +5,7 @@ Revises: j1k2l3m4n567
 Create Date: 2026-04-13
 
 """
+
 from typing import Sequence, Union
 
 from alembic import op
@@ -32,7 +33,9 @@ def upgrade() -> None:
         sa.Column(
             "updated_at", sa.DateTime(), server_default=sa.text("now()"), nullable=False
         ),
-        sa.ForeignKeyConstraint(["scan_result_id"], ["scan_result.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(
+            ["scan_result_id"], ["scan_result.id"], ondelete="CASCADE"
+        ),
         sa.ForeignKeyConstraint(["user_id"], ["user.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
         sa.UniqueConstraint("scan_result_id"),

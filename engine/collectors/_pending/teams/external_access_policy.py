@@ -47,8 +47,7 @@ class ExternalAccessPolicyDataCollector(BasePowerShellCollector):
 
         # Find global policy
         global_policy = next(
-            (p for p in policies if p.get("Identity") == "Global"),
-            None
+            (p for p in policies if p.get("Identity") == "Global"), None
         )
 
         return {

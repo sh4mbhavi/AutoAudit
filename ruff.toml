@@ -1,0 +1,19 @@
+# Source-controlled lint scope.
+#
+# Before this file the repository had no ruff configuration at all, so the gate
+# in .pre-commit-config.yaml enforced "whatever ruff 0.8.0 happens to default
+# to". That is a scope which moves on a version bump without anyone deciding to
+# move it. The values below are ruff 0.8.0's effective defaults for this tree,
+# written down verbatim: enabling this file changes no finding today, and any
+# future change to the rule set now has to be an explicit commit.
+
+# ruff 0.8.0's default rule set: pycodestyle E4 (imports), E7 (statements),
+# E9 (runtime/syntax) and the whole of pyflakes.
+lint.select = ["E4", "E7", "E9", "F"]
+
+# The oldest interpreter anything in this repository runs on. engine/ and
+# backend-api/ target 3.11, but engine/powershell/Dockerfile's image ships
+# Python 3.9, so 3.9 is the floor the shared modules must stay valid for.
+target-version = "py39"
+
+line-length = 88

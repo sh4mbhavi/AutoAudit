@@ -85,7 +85,9 @@ def upgrade() -> None:
         ),
         sa.ForeignKeyConstraint(["scan_id"], ["scan.id"]),
         sa.PrimaryKeyConstraint("id"),
-        sa.UniqueConstraint("scan_id", "control_id", name="uq_scan_result_scan_control"),
+        sa.UniqueConstraint(
+            "scan_id", "control_id", name="uq_scan_result_scan_control"
+        ),
     )
     op.create_index(
         op.f("ix_scan_result_scan_id"), "scan_result", ["scan_id"], unique=False
@@ -105,15 +107,11 @@ def upgrade() -> None:
     # Now make user_id NOT NULL
     op.alter_column("scan", "user_id", nullable=False)
 
-    op.create_foreign_key(
-        "fk_scan_user_id", "scan", "user", ["user_id"], ["id"]
-    )
+    op.create_foreign_key("fk_scan_user_id", "scan", "user", ["user_id"], ["id"])
     op.create_index(op.f("ix_scan_user_id"), "scan", ["user_id"], unique=False)
 
     # Add connection FKs with actual foreign key constraints
-    op.add_column(
-        "scan", sa.Column("azure_connection_id", sa.Integer(), nullable=True)
-    )
+    op.add_column("scan", sa.Column("azure_connection_id", sa.Integer(), nullable=True))
     op.create_foreign_key(
         "fk_scan_azure_connection_id",
         "scan",
@@ -122,9 +120,7 @@ def upgrade() -> None:
         ["id"],
     )
 
-    op.add_column(
-        "scan", sa.Column("gcp_connection_id", sa.Integer(), nullable=True)
-    )
+    op.add_column("scan", sa.Column("gcp_connection_id", sa.Integer(), nullable=True))
     op.create_foreign_key(
         "fk_scan_gcp_connection_id",
         "scan",
@@ -133,9 +129,7 @@ def upgrade() -> None:
         ["id"],
     )
 
-    op.add_column(
-        "scan", sa.Column("aws_connection_id", sa.Integer(), nullable=True)
-    )
+    op.add_column("scan", sa.Column("aws_connection_id", sa.Integer(), nullable=True))
     op.create_foreign_key(
         "fk_scan_aws_connection_id",
         "scan",

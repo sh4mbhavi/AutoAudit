@@ -18,7 +18,7 @@ Note:
 RESTART is required for type MySQL Generation 1 Instances (backendType:
 FIRST_GEN) to get this configuration in effect`
 
-deny := { v |  
+deny := { v |
   b := input[_]
   r := b.settings.ipConfiguration.requireSsl
   r != blocked_value

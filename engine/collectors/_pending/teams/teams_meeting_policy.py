@@ -47,8 +47,7 @@ class TeamsMeetingPolicyDataCollector(BasePowerShellCollector):
 
         # Find global policy
         global_policy = next(
-            (p for p in policies if p.get("Identity") == "Global"),
-            None
+            (p for p in policies if p.get("Identity") == "Global"), None
         )
 
         return {
@@ -56,12 +55,38 @@ class TeamsMeetingPolicyDataCollector(BasePowerShellCollector):
             "total_policies": len(policies),
             "global_policy": global_policy,
             # Key settings for CIS controls
-            "allow_anonymous_users_to_join": global_policy.get("AllowAnonymousUsersToJoinMeeting") if global_policy else None,
-            "allow_anonymous_users_to_start": global_policy.get("AllowAnonymousUsersToStartMeeting") if global_policy else None,
-            "auto_admitted_users": global_policy.get("AutoAdmittedUsers") if global_policy else None,
-            "allow_pstn_users_to_bypass_lobby": global_policy.get("AllowPSTNUsersToBypassLobby") if global_policy else None,
-            "meeting_chat_enabled_type": global_policy.get("MeetingChatEnabledType") if global_policy else None,
-            "designated_presenter_role_mode": global_policy.get("DesignatedPresenterRoleMode") if global_policy else None,
-            "allow_cloud_recording": global_policy.get("AllowCloudRecording") if global_policy else None,
-            "allow_external_participant_give_request_control": global_policy.get("AllowExternalParticipantGiveRequestControl") if global_policy else None,
+            "allow_anonymous_users_to_join": global_policy.get(
+                "AllowAnonymousUsersToJoinMeeting"
+            )
+            if global_policy
+            else None,
+            "allow_anonymous_users_to_start": global_policy.get(
+                "AllowAnonymousUsersToStartMeeting"
+            )
+            if global_policy
+            else None,
+            "auto_admitted_users": global_policy.get("AutoAdmittedUsers")
+            if global_policy
+            else None,
+            "allow_pstn_users_to_bypass_lobby": global_policy.get(
+                "AllowPSTNUsersToBypassLobby"
+            )
+            if global_policy
+            else None,
+            "meeting_chat_enabled_type": global_policy.get("MeetingChatEnabledType")
+            if global_policy
+            else None,
+            "designated_presenter_role_mode": global_policy.get(
+                "DesignatedPresenterRoleMode"
+            )
+            if global_policy
+            else None,
+            "allow_cloud_recording": global_policy.get("AllowCloudRecording")
+            if global_policy
+            else None,
+            "allow_external_participant_give_request_control": global_policy.get(
+                "AllowExternalParticipantGiveRequestControl"
+            )
+            if global_policy
+            else None,
         }

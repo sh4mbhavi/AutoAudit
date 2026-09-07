@@ -1,8 +1,7 @@
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
-from google.auth import default
-import json 
+import json
 import os
 
 service_account_info = json.loads(os.environ["GCP_CREDENTIALS"])
@@ -22,28 +21,29 @@ dnszone = build("dns", "v1beta2", credentials=creds)
 project_id = "coastal-stone-470308-a0"
 res_name = f"projects/{project_id}"
 
-policy = crm_policy.projects().getIamPolicy(
-    resource=res_name,
-    body={"options": {"requestedPolicyVersion": 3}}
-).execute()
+policy = (
+    crm_policy.projects()
+    .getIamPolicy(resource=res_name, body={"options": {"requestedPolicyVersion": 3}})
+    .execute()
+)
 
 buckets = []
 req = bucket_policy.buckets().list(project=project_id)
 while req is not None:
     resp = req.execute()
     buckets.extend(resp.get("items", []))
-    req = bucket_policy.buckets().list_next(previous_request=req, previous_response=resp)
+    req = bucket_policy.buckets().list_next(
+        previous_request=req, previous_response=resp
+    )
 bucket_iam_policies = []
 for b in buckets:
     name = b["name"]
-    policy = bucket_policy.buckets().getIamPolicy(
-        bucket=name,
-        optionsRequestedPolicyVersion=3
-    ).execute()
-    bucket_iam_policies.append({
-        "bucket": name,
-        "policy": policy
-    })
+    policy = (
+        bucket_policy.buckets()
+        .getIamPolicy(bucket=name, optionsRequestedPolicyVersion=3)
+        .execute()
+    )
+    bucket_iam_policies.append({"bucket": name, "policy": policy})
 
 networks = []
 req = crm_compute.networks().list(project=project_id)
@@ -57,15 +57,19 @@ req = crm_compute.firewalls().list(project=project_id)
 while req is not None:
     resp = req.execute()
     firewalls.extend(resp.get("items", []))
-    req = crm_compute.firewalls().list_next(previous_request=req, previous_response=resp)
+    req = crm_compute.firewalls().list_next(
+        previous_request=req, previous_response=resp
+    )
 
 instances = []
 req = crm_compute.instances().aggregatedList(project=project_id)
 while req is not None:
     resp = req.execute()
     for _, scoped in resp.get("items", {}).items():
-        instances.extend(scoped.get("instances", [])) 
-    req = crm_compute.instances().aggregatedList_next(previous_request=req, previous_response=resp)
+        instances.extend(scoped.get("instances", []))
+    req = crm_compute.instances().aggregatedList_next(
+        previous_request=req, previous_response=resp
+    )
 
 sqlinstances = []
 req = sqladmin.instances().list(project=project_id)
@@ -75,7 +79,7 @@ while req is not None:
     req = sqladmin.instances().list_next(previous_request=req, previous_response=resp)
 
 full_datasets = []
-req = bq.datasets().list(projectId=project_id, all=True) 
+req = bq.datasets().list(projectId=project_id, all=True)
 while req is not None:
     resp = req.execute()
     for ds in resp.get("datasets", []):
@@ -83,41 +87,68 @@ while req is not None:
         ds_id = ds_ref.get("datasetId")
         if not ds_id:
             continue
-        
+
         detail = bq.datasets().get(projectId=project_id, datasetId=ds_id).execute()
         full_datasets.append(detail)
 
     req = bq.datasets().list_next(previous_request=req, previous_response=resp)
 
 regions = [
-            "us-central1","us-east1","us-east4","us-west1","us-west2",
-            "northamerica-northeast1",
-            "europe-north1","europe-west1","europe-west2","europe-west3","europe-west4",
-            "europe-west6",
-            "asia-east1","asia-east2","asia-northeast1","asia-northeast2","asia-northeast3",
-            "asia-south1","asia-south2","asia-southeast1","asia-southeast2",
-            "australia-southeast1","australia-southeast2",
-            "southamerica-east1"
-        ]
+    "us-central1",
+    "us-east1",
+    "us-east4",
+    "us-west1",
+    "us-west2",
+    "northamerica-northeast1",
+    "europe-north1",
+    "europe-west1",
+    "europe-west2",
+    "europe-west3",
+    "europe-west4",
+    "europe-west6",
+    "asia-east1",
+    "asia-east2",
+    "asia-northeast1",
+    "asia-northeast2",
+    "asia-northeast3",
+    "asia-south1",
+    "asia-south2",
+    "asia-southeast1",
+    "asia-southeast2",
+    "australia-southeast1",
+    "australia-southeast2",
+    "southamerica-east1",
+]
 dataproc_clusters = []
 errors = []
 for region in regions:
     try:
-        req = Dataproc.projects().regions().clusters().list(
-            projectId=project_id,
-            region= region
+        req = (
+            Dataproc.projects()
+            .regions()
+            .clusters()
+            .list(projectId=project_id, region=region)
         )
         while req is not None:
             resp = req.execute()
             dataproc_clusters.extend(resp.get("clusters", []))
-            req = Dataproc.projects().regions().clusters().list_next(
-                previous_request=req,
-                previous_response=resp
+            req = (
+                Dataproc.projects()
+                .regions()
+                .clusters()
+                .list_next(previous_request=req, previous_response=resp)
             )
     except HttpError as e:
         if getattr(e, "resp", None) and e.resp.status in (403, 404):
             continue
-        errors.append({"region": region, "api": "regions", "status": getattr(e.resp, "status", None), "reason": str(e)})
+        errors.append(
+            {
+                "region": region,
+                "api": "regions",
+                "status": getattr(e.resp, "status", None),
+                "reason": str(e),
+            }
+        )
 
 zones = []
 try:
@@ -127,16 +158,16 @@ try:
         for zone in resp.get("managedZones", []):
             zone_name = zone["name"]
             try:
-                zone_config = dnszone.managedZones().get(
-                    project=project_id,
-                    managedZone=zone_name
-                ).execute()
+                zone_config = (
+                    dnszone.managedZones()
+                    .get(project=project_id, managedZone=zone_name)
+                    .execute()
+                )
                 zones.append(zone_config)
             except HttpError as e:
                 print(f"Failed to fetch zone {zone_name}: {e}")
         req = dnszone.managedZones().list_next(
-            previous_request=req,
-            previous_response=resp
+            previous_request=req, previous_response=resp
         )
 except HttpError as e:
     print(f"Failed to list managed zones: {e}")
@@ -160,8 +191,12 @@ with open("bigquery_datasets_full.json", "w") as f:
     json.dump(full_datasets, f, indent=2)
 
 with open("dataproc_clusters.json", "w") as f:
-    json.dump({"project": project_id, "clusters": dataproc_clusters, "errors": errors}, f, indent=2)
-    
+    json.dump(
+        {"project": project_id, "clusters": dataproc_clusters, "errors": errors},
+        f,
+        indent=2,
+    )
+
 with open("buckets.json", "w") as f:
     json.dump(buckets, f, indent=2)
 
@@ -170,4 +205,3 @@ with open("bucket_iam_policies.json", "w") as f:
 
 with open("dns_zones.json", "w") as f:
     json.dump(zones, f, indent=2)
-

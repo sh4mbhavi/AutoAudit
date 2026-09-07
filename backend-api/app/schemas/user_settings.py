@@ -22,4 +22,3 @@ class UserSettingsUpdate(BaseModel):
     """Schema for updating user settings."""
 
     confirm_delete_enabled: bool | None = None
-

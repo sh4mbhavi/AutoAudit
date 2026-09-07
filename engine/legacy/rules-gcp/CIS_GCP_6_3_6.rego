@@ -15,7 +15,7 @@ remediation := `1. Configure the 3625 database flag for every Cloud SQL SQL Serv
 instance using the below command.
 gcloud sql instances patch <INSTANCE_NAME> --database-flags "3625=on"`
 
-deny := { v |  
+deny := { v |
   b := input[_]
   r := b.settings.databaseFlags[_]
   q := r.value

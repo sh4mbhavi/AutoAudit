@@ -66,4 +66,3 @@ deny[v] {
 }
 
 report := H.build_report(deny, id, title, policy_group, verification, remediation)
-

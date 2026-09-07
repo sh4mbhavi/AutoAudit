@@ -18,7 +18,7 @@ database instance using the below command.
 gcloud sql instances patch INSTANCE_NAME --database-flags
 log_error_verbosity=<TERSE|DEFAULT|VERBOSE>`
 
-deny := { v |  
+deny := { v |
   b := input[_]
   r := b.settings.databaseFlags[_]
   q := r.value

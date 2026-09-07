@@ -111,7 +111,9 @@ async def test_collector(
     # Create collector and appropriate client
     collector = get_collector(collector_id)
     if isinstance(collector, BasePowerShellCollector):
-        client = PowerShellClient(tenant_id, client_id, client_secret, service_url=service_url)
+        client = PowerShellClient(
+            tenant_id, client_id, client_secret, service_url=service_url
+        )
     else:
         client = GraphClient(tenant_id, client_id, client_secret)
 
@@ -135,6 +137,7 @@ async def test_collector(
         print(f"Error during collection: {type(e).__name__}: {e}")
         if verbose:
             import traceback
+
             traceback.print_exc()
         sys.exit(1)
 
@@ -186,14 +189,16 @@ async def test_all_collectors(
         # Use appropriate client based on collector type
         if isinstance(collector, BasePowerShellCollector):
             if ps_client is None:
-                ps_client = PowerShellClient(tenant_id, client_id, client_secret, service_url=service_url)
+                ps_client = PowerShellClient(
+                    tenant_id, client_id, client_secret, service_url=service_url
+                )
             client = ps_client
         else:
             client = graph_client
 
         start = datetime.now()
         try:
-            result = await collector.collect(client)
+            await collector.collect(client)
             elapsed = (datetime.now() - start).total_seconds()
             status = "OK"
             error = None
@@ -202,7 +207,7 @@ async def test_all_collectors(
             status = "NOT_IMPLEMENTED"
             error = "Stub only"
             elapsed = 0
-            print(f"  Status: NOT_IMPLEMENTED (stub)")
+            print("  Status: NOT_IMPLEMENTED (stub)")
         except PowerShellExecutionError as e:
             status = "POWERSHELL_ERROR"
             error = str(e)
@@ -214,12 +219,14 @@ async def test_all_collectors(
             elapsed = 0
             print(f"  Status: ERROR - {e}")
 
-        results.append({
-            "collector_id": collector_id,
-            "status": status,
-            "elapsed_seconds": round(elapsed, 3) if elapsed else None,
-            "error": error,
-        })
+        results.append(
+            {
+                "collector_id": collector_id,
+                "status": status,
+                "elapsed_seconds": round(elapsed, 3) if elapsed else None,
+                "error": error,
+            }
+        )
 
     # Print summary
     print("\n" + "=" * 60)
@@ -236,18 +243,24 @@ async def test_all_collectors(
     # Save summary if output_dir specified
     if output_dir:
         output_dir.mkdir(parents=True, exist_ok=True)
-        filepath = output_dir / f"test_summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        filepath = (
+            output_dir / f"test_summary_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        )
         with open(filepath, "w") as f:
-            json.dump({
-                "timestamp": datetime.now().isoformat(),
-                "summary": {
-                    "ok": ok_count,
-                    "not_implemented": stub_count,
-                    "powershell_errors": ps_error_count,
-                    "errors": error_count,
+            json.dump(
+                {
+                    "timestamp": datetime.now().isoformat(),
+                    "summary": {
+                        "ok": ok_count,
+                        "not_implemented": stub_count,
+                        "powershell_errors": ps_error_count,
+                        "errors": error_count,
+                    },
+                    "results": results,
                 },
-                "results": results,
-            }, f, indent=2)
+                f,
+                indent=2,
+            )
         print(f"\nSummary saved to: {filepath}")
 
 
@@ -273,26 +286,31 @@ Environment Variables:
         """,
     )
     parser.add_argument(
-        "--collector", "-c",
+        "--collector",
+        "-c",
         help="Collector ID to run (e.g., 'entra.roles.cloud_only_admins')",
     )
     parser.add_argument(
-        "--output", "-o",
+        "--output",
+        "-o",
         type=Path,
         help="Output directory for JSON files",
     )
     parser.add_argument(
-        "--list", "-l",
+        "--list",
+        "-l",
         action="store_true",
         help="List available collectors",
     )
     parser.add_argument(
-        "--all", "-a",
+        "--all",
+        "-a",
         action="store_true",
         help="Test all collectors and report status",
     )
     parser.add_argument(
-        "--verbose", "-v",
+        "--verbose",
+        "-v",
         action="store_true",
         help="Show verbose output including credentials (masked) and stack traces",
     )
@@ -315,9 +333,13 @@ Environment Variables:
         return
 
     if not args.collector:
-        parser.error("--collector is required (or use --list to see available collectors)")
+        parser.error(
+            "--collector is required (or use --list to see available collectors)"
+        )
 
-    asyncio.run(test_collector(args.collector, args.output, args.verbose, args.use_service))
+    asyncio.run(
+        test_collector(args.collector, args.output, args.verbose, args.use_service)
+    )
 
 
 if __name__ == "__main__":

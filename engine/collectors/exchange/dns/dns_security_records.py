@@ -68,7 +68,9 @@ class DnsSecurityRecordsDataCollector(BaseDataCollector):
                 answers = dns.resolver.resolve(domain_id, "TXT")
                 for rdata in answers:
                     # TXT records may have multiple strings, join them
-                    txt_value = "".join(s.decode() if isinstance(s, bytes) else s for s in rdata.strings)
+                    txt_value = "".join(
+                        s.decode() if isinstance(s, bytes) else s for s in rdata.strings
+                    )
                     if txt_value.startswith("v=spf1"):
                         record["spf_record"] = txt_value
                         break
@@ -88,7 +90,9 @@ class DnsSecurityRecordsDataCollector(BaseDataCollector):
             try:
                 answers = dns.resolver.resolve(dmarc_domain, "TXT")
                 for rdata in answers:
-                    txt_value = "".join(s.decode() if isinstance(s, bytes) else s for s in rdata.strings)
+                    txt_value = "".join(
+                        s.decode() if isinstance(s, bytes) else s for s in rdata.strings
+                    )
                     if txt_value.startswith("v=DMARC1"):
                         record["dmarc_record"] = txt_value
                         # Parse DMARC policy

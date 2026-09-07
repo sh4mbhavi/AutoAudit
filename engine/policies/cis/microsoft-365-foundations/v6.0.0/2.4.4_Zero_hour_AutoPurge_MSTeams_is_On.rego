@@ -5,7 +5,7 @@
 #  and neutralizes malware and high-confidence phishing. When ZAP for Teams protection
 #  blocks a message, the message is blocked for everyone in the chat.
 #  The initial block happens right after delivery, but ZAP occurs up to 48 hours after delivery.
-#  
+#
 # related_resources:
 # - ref: https://www.cisecurity.org/benchmark/microsoft_365
 #   description: CIS Microsoft 365 Foundations Benchmark

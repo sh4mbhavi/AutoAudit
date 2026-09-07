@@ -7,13 +7,12 @@ from pytesseract import TesseractNotFoundError
 from PIL import Image, UnidentifiedImageError
 
 try:
-    import cv2
     _HAS_CV2 = True
 except Exception:
     _HAS_CV2 = False
 
 try:
-    import fitz  
+    import fitz
 except Exception:
     fitz = None
 
@@ -24,9 +23,20 @@ except Exception:
 
 # Filetype support
 SUPPORTED_IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".webp"}
-SUPPORTED_TEXT_EXTS  = {".txt", ".log", ".reg", ".csv", ".ini", ".json", ".xml", ".htm", ".html"}
-SUPPORTED_DOC_EXTS   = {".docx", ".pdf"}
-SUPPORTED_ALL_EXTS   = SUPPORTED_IMAGE_EXTS | SUPPORTED_TEXT_EXTS | SUPPORTED_DOC_EXTS
+SUPPORTED_TEXT_EXTS = {
+    ".txt",
+    ".log",
+    ".reg",
+    ".csv",
+    ".ini",
+    ".json",
+    ".xml",
+    ".htm",
+    ".html",
+}
+SUPPORTED_DOC_EXTS = {".docx", ".pdf"}
+SUPPORTED_ALL_EXTS = SUPPORTED_IMAGE_EXTS | SUPPORTED_TEXT_EXTS | SUPPORTED_DOC_EXTS
+
 
 def configure_tesseract() -> None:
     cmd = os.environ.get("TESSERACT_CMD") or which("tesseract")
@@ -38,6 +48,7 @@ def configure_tesseract() -> None:
     if "TESSDATA_PREFIX" in os.environ:
         print(f"[OCR] TESSDATA_PREFIX: {os.environ['TESSDATA_PREFIX']}")
 
+
 def _ocr_with_pillow(path: Path) -> str:
     try:
         with Image.open(path) as img:
@@ -45,11 +56,13 @@ def _ocr_with_pillow(path: Path) -> str:
     except (UnidentifiedImageError, OSError, TesseractNotFoundError):
         return ""
 
+
 def _ocr_with_cv2(path: Path) -> str:
     if not _HAS_CV2:
         return _ocr_with_pillow(path)
     try:
         import cv2
+
         img = cv2.imread(str(path), cv2.IMREAD_COLOR)
         if img is None:
             return ""
@@ -57,8 +70,7 @@ def _ocr_with_cv2(path: Path) -> str:
         gray = cv2.resize(gray, None, fx=1.5, fy=1.5, interpolation=cv2.INTER_CUBIC)
         gray = cv2.convertScaleAbs(gray, alpha=2.0, beta=15)
         thr = cv2.adaptiveThreshold(
-            gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C,
-            cv2.THRESH_BINARY, 35, 11
+            gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 35, 11
         )
         return pytesseract.image_to_string(thr, config="--psm 6")
     except TesseractNotFoundError:
@@ -66,17 +78,21 @@ def _ocr_with_cv2(path: Path) -> str:
     except Exception:
         return _ocr_with_pillow(path)
 
+
 def ocr_image(path: Path) -> str:
     txt = _ocr_with_cv2(path)
     return txt if txt.strip() else _ocr_with_pillow(path)
 
-def extract_text_and_preview(path: Path, previews_dir: Path) -> Tuple[str, Optional[Path]]:
+
+def extract_text_and_preview(
+    path: Path, previews_dir: Path
+) -> Tuple[str, Optional[Path]]:
     """
     Returns (text, preview_path_or_None)
     - For images: run OCR and ALWAYS create a PNG preview
     - For PDFs: text via PyMuPDF + page 1 preview
     - For DOCX: extract text via python-docx
-    - For Text-like files: return file text 
+    - For Text-like files: return file text
     """
     ext = path.suffix.lower()
 
@@ -99,7 +115,7 @@ def extract_text_and_preview(path: Path, previews_dir: Path) -> Tuple[str, Optio
             # If conversion fails, return text but no preview
             return text, None
 
-    # For PDFs 
+    # For PDFs
     if ext == ".pdf":
         if not fitz:
             print("⚠ PyMuPDF not installed; cannot parse PDF. pip install pymupdf")
@@ -149,6 +165,6 @@ def extract_text_and_preview(path: Path, previews_dir: Path) -> Tuple[str, Optio
                 return path.read_text(errors="ignore"), None
             except Exception:
                 return "", None
-                
+
     # If it does not meet any of the file type
     return "", None

@@ -26,7 +26,7 @@ assign-ip
 2. Confirm the changes using the following command::
 gcloud sql instances describe <INSTANCE_NAME>`
 
-deny := { v |  
+deny := { v |
   b := input[_]
   r := b.settings.ipConfiguration.ipv4Enabled
   r == blocked_value

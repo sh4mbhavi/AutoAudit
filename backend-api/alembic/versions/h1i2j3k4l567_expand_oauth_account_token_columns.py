@@ -101,16 +101,3 @@ def downgrade() -> None:
     op.drop_index(op.f("ix_oauth_account_account_id"), table_name="oauth_account")
     op.drop_index(op.f("ix_oauth_account_oauth_name"), table_name="oauth_account")
     op.drop_table("oauth_account")
-
-
-
-
-
-
-
-
-
-
-
-
-

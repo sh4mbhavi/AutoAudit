@@ -12,5 +12,3 @@ class ValidatorResult(BaseModel):
     matched: list[ValidatorMatch]
     missing: list[str]
     summary: ValidatorSummary
-
-

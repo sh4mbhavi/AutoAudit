@@ -27,10 +27,10 @@ const LandingHeader = ({
     <>
       {/* HEADER */}
       <header className="sticky top-0 z-50 flex items-center justify-between px-6 py-4 bg-slate-900">
-        
+
         {/* Left Section */}
         <div className="flex items-center gap-3">
-          
+
           {/* Hamburger Button - Mobile Only */}
           <button
             className="md:hidden text-white text-2xl"
@@ -80,7 +80,7 @@ const LandingHeader = ({
       {/* MOBILE SIDEBAR */}
       {isOpen && (
         <div className="fixed inset-0 z-[100] flex md:hidden">
-          
+
           {/* Overlay */}
           <div
             className="fixed inset-0 bg-black/50"
@@ -89,7 +89,7 @@ const LandingHeader = ({
 
           {/* Sidebar */}
           <div className="relative w-64 bg-slate-900 h-full p-6 z-50 shadow-lg transition-transform duration-300">
-            
+
             {/* Close Button */}
             <button
               className="text-white text-2xl absolute top-4 right-4"

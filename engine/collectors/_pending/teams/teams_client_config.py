@@ -51,5 +51,7 @@ class TeamsClientConfigDataCollector(BasePowerShellCollector):
             "allow_box": config.get("AllowBox") if config else None,
             "allow_google_drive": config.get("AllowGoogleDrive") if config else None,
             "allow_sharefile": config.get("AllowShareFile") if config else None,
-            "allow_email_into_channel": config.get("AllowEmailIntoChannel") if config else None,
+            "allow_email_into_channel": config.get("AllowEmailIntoChannel")
+            if config
+            else None,
         }

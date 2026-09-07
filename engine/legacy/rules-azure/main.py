@@ -9,8 +9,18 @@ _LEGACY_ENGINE_DIR = Path(__file__).resolve().parents[1] / "engine"
 if str(_LEGACY_ENGINE_DIR) not in sys.path:
     sys.path.insert(0, str(_LEGACY_ENGINE_DIR))
 
-from rule_helpers import match_value, match_in_list, match_regex, match_range
-from risk_rating import calculate_impact_level, calculate_risk_level
+# E402: these live in the legacy engine directory added to sys.path just above.
+from rule_helpers import (  # noqa: E402
+    match_value,
+    match_in_list,
+    match_regex,
+    match_range,
+)
+from risk_rating import (  # noqa: E402
+    calculate_impact_level,
+    calculate_risk_level,
+)
+
 
 def evaluate_rule(rule, config):
     value = get_value_from_path(config, rule.get("evaluation_path"))
@@ -36,12 +46,15 @@ def evaluate_rule(rule, config):
         reason = f"{rule['tags']} = {value}, expected {expected} | Severity: {severity}"
         return False, reason, severity
 
+
 def load_mock_config(path: str | os.PathLike | None = None):
     legacy_root = Path(__file__).resolve().parents[1]
-    config_path = Path(path) if path else (legacy_root / "test-configs" / "iam_policy.json")
+    config_path = (
+        Path(path) if path else (legacy_root / "test-configs" / "iam_policy.json")
+    )
     with open(config_path) as f:
         return json.load(f)
-    
+
 
 def load_rules(directory: str | os.PathLike | None = None):
     rules_dir = Path(directory) if directory else Path(__file__).resolve().parent
@@ -53,6 +66,7 @@ def load_rules(directory: str | os.PathLike | None = None):
                 rules.append(rule)
     return rules
 
+
 def get_value_from_path(config, path):
     placeholder_value = config
     for key in path.split("."):
@@ -61,10 +75,10 @@ def get_value_from_path(config, path):
         else:
             return None
     return placeholder_value
- 
+
 
 def main():
-    config = load_mock_config() 
+    config = load_mock_config()
     rules = load_rules()
 
     passed, failed = 0, 0
@@ -92,6 +106,7 @@ def main():
         failed += not result
 
     print(f"\nSummary: {passed} rules passed, {failed} rules failed")
-    
+
+
 if __name__ == "__main__":
     main()

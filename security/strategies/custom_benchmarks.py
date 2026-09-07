@@ -5,9 +5,10 @@ from typing import List, Sequence, Tuple
 import re
 
 from .overview import Strategy
-   
+
 
 # ---------------- helpers ----------------
+
 
 def _clean_line(text: str) -> str:
     line = text.strip().lstrip("#*")
@@ -24,6 +25,7 @@ def _extract_evidence_snippets(text: str, max_lines: int = 2) -> List[str]:
 
 # ---------------- metadata ----------------
 
+
 @dataclass
 class StrategyMeta:
     name: str
@@ -34,6 +36,7 @@ class StrategyMeta:
 
 
 # ---------------- base checker ----------------
+
 
 class BaseStrategyChecker:
     """
@@ -47,7 +50,9 @@ class BaseStrategyChecker:
     def __init__(self, metadata: StrategyMeta):
         self.metadata = metadata
 
-    def run_checks(self, text: str, filename: str | None = None, user_id: str | None = None):
+    def run_checks(
+        self, text: str, filename: str | None = None, user_id: str | None = None
+    ):
         if not text:
             return []
 
@@ -57,62 +62,91 @@ class BaseStrategyChecker:
         findings = []
         for test_id, sub, level, priority, rec, keywords in self.RULES:
             hit = any(k in text_l for k in keywords)
-            findings.append({
-                "test_id": test_id,
-                "sub_strategy": sub,
-                "detected_level": level,
-                "pass_fail": "FAIL" if hit else "PASS",
-                "priority": priority,
-                "recommendation": rec,
-                "evidence": evidence,
-            })
+            findings.append(
+                {
+                    "test_id": test_id,
+                    "sub_strategy": sub,
+                    "detected_level": level,
+                    "pass_fail": "FAIL" if hit else "PASS",
+                    "priority": priority,
+                    "recommendation": rec,
+                    "evidence": evidence,
+                }
+            )
 
         return findings
 
 
 # ---------------- concrete checkers ----------------
 
+
 class CISMicrosoft365Checker(BaseStrategyChecker):
     RULES = (
-        ("CIS-001", "Identity & Access", "High", "Critical",
-         "Enable MFA and disable legacy authentication.",
-         ("no mfa", "legacy auth", "basic auth")),
+        (
+            "CIS-001",
+            "Identity & Access",
+            "High",
+            "Critical",
+            "Enable MFA and disable legacy authentication.",
+            ("no mfa", "legacy auth", "basic auth"),
+        ),
     )
 
 
 class NISTComplianceChecker(BaseStrategyChecker):
     RULES = (
-        ("NIST-IR", "Incident Response", "High", "High",
-         "Document and test incident response procedures.",
-         ("no incident response", "untested ir")),
+        (
+            "NIST-IR",
+            "Incident Response",
+            "High",
+            "High",
+            "Document and test incident response procedures.",
+            ("no incident response", "untested ir"),
+        ),
     )
 
 
 class ISO27001Checker(BaseStrategyChecker):
     RULES = (
-        ("ISO-A.9", "Access Control", "Medium", "High",
-         "Apply least privilege and access reviews.",
-         ("shared account", "no mfa")),
+        (
+            "ISO-A.9",
+            "Access Control",
+            "Medium",
+            "High",
+            "Apply least privilege and access reviews.",
+            ("shared account", "no mfa"),
+        ),
     )
 
 
 class SOC2ReadinessChecker(BaseStrategyChecker):
     RULES = (
-        ("SOC2-AV", "Availability", "Medium", "Medium",
-         "Test backups and disaster recovery.",
-         ("no backup", "restore failed")),
+        (
+            "SOC2-AV",
+            "Availability",
+            "Medium",
+            "Medium",
+            "Test backups and disaster recovery.",
+            ("no backup", "restore failed"),
+        ),
     )
 
 
 class GDPRComplianceChecker(BaseStrategyChecker):
     RULES = (
-        ("GDPR-SEC", "Security", "Medium", "High",
-         "Encrypt personal data and restrict access.",
-         ("unencrypted", "pii exposed")),
+        (
+            "GDPR-SEC",
+            "Security",
+            "Medium",
+            "High",
+            "Encrypt personal data and restrict access.",
+            ("unencrypted", "pii exposed"),
+        ),
     )
 
 
 # ---------------- Strategy adapter ----------------
+
 
 class CheckerStrategy(Strategy):
     def __init__(self, meta: StrategyMeta, checker_cls):
@@ -124,7 +158,13 @@ class CheckerStrategy(Strategy):
     def description(self) -> str:
         return self.meta.description
 
-    def emit_hits(self, raw_text: str, source_file: str | None = None, user_id: str | None = None, **_):
+    def emit_hits(
+        self,
+        raw_text: str,
+        source_file: str | None = None,
+        user_id: str | None = None,
+        **_,
+    ):
         checker = self.checker_cls(self.meta)
         return checker.run_checks(raw_text, source_file, user_id)
 
@@ -171,6 +211,7 @@ STRATEGY_DEFS = [
 
 
 # ---------------- public API ----------------
+
 
 def get_strategy():
     """Return benchmark strategies as Strategy objects."""

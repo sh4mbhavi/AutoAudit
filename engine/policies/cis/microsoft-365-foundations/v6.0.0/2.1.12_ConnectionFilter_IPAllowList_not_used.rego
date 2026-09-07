@@ -7,7 +7,7 @@
 #   bad source email servers by IP addresses. The key components of the default connection
 #   filter policy are IP Allow List, IP Block List and Safe list.
 #   The recommended state is IP Allow List empty or undefined.
-#  
+#
 # related_resources:
 # - ref: https://www.cisecurity.org/benchmark/microsoft_365
 #   description: CIS Microsoft 365 Foundations Benchmark

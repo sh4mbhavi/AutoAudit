@@ -11,8 +11,8 @@ class Strategy(ABC):
     """
 
     # Class metadata
-    id: str = "GEN"          # short form e.g., AC, RAP
-    name: str = "Generic"    # visible name in menus
+    id: str = "GEN"  # short form e.g., AC, RAP
+    name: str = "Generic"  # visible name in menus
 
     # Detection configuration (immutable by default; override in subclasses)
     keywords: Sequence[str] = ()
@@ -72,13 +72,15 @@ class Strategy(ABC):
     def emit_hits(self, raw_text: str) -> List[dict]:
         rows: List[dict] = []
         for s in self.match(raw_text):
-            rows.append({
-                "test_id": "",
-                "sub_strategy": "",
-                "detected_level": "",
-                "pass_fail": "",
-                "priority": "",
-                "recommendation": "",
-                "evidence": [s],
-            })
+            rows.append(
+                {
+                    "test_id": "",
+                    "sub_strategy": "",
+                    "detected_level": "",
+                    "pass_fail": "",
+                    "priority": "",
+                    "recommendation": "",
+                    "evidence": [s],
+                }
+            )
         return rows

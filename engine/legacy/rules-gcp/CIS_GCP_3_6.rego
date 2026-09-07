@@ -28,7 +28,7 @@ blocked_value2 := "INGRESS"
 blocked_value3 := ["tcp", "ALL"]
 blocked_value4 := ["22", "Null"]
 
-deny := { v |  
+deny := { v |
   b := input[_]
   r := b.sourceRanges
   q := b.direction

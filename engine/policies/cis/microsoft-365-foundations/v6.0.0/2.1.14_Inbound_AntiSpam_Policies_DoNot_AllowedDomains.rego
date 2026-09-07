@@ -9,7 +9,7 @@
 #    • The blocked senders list
 #    • The blocked domains list
 #   The recommended state is: Do not define any Allowed domains
-#  
+#
 # related_resources:
 # - ref: https://www.cisecurity.org/benchmark/microsoft_365
 #   description: CIS Microsoft 365 Foundations Benchmark

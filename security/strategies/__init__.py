@@ -23,6 +23,7 @@ FUNC_CANDIDATES = [
     "strategy",
 ]
 
+
 def _load_one(module_name: str):
     mod = importlib.import_module(f"{__name__}.{module_name}")
 
@@ -35,6 +36,7 @@ def _load_one(module_name: str):
     raise ImportError(
         f"{module_name}.py does not define any of: {', '.join(FUNC_CANDIDATES)}"
     )
+
 
 def load_strategies() -> List[Any]:
     strategies: List[Any] = []
@@ -56,7 +58,11 @@ def load_strategies() -> List[Any]:
 
     return strategies
 
+
 def get_checker(strategy_name: str):
-    return next((s for s in load_strategies() if getattr(s, "name", "") == strategy_name), None)
+    return next(
+        (s for s in load_strategies() if getattr(s, "name", "") == strategy_name), None
+    )
+
 
 ##

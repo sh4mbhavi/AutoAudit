@@ -8,5 +8,3 @@ class ValidatorSummary(BaseModel):
 
     matchedCount: int = Field(..., description="Number of terms found")
     totalTerms: int = Field(..., description="Total terms checked")
-
-

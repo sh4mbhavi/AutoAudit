@@ -21,14 +21,15 @@ SharePoint REST API Reference:
 
 from typing import Any
 
-import httpx
 from msal import ConfidentialClientApplication
 
 
 class SharePointClient:
     """Client for SharePoint Online REST API using client secret auth."""
 
-    def __init__(self, tenant_id: str, client_id: str, client_secret: str, tenant_name: str):
+    def __init__(
+        self, tenant_id: str, client_id: str, client_secret: str, tenant_name: str
+    ):
         """Initialize SharePoint client.
 
         Args:

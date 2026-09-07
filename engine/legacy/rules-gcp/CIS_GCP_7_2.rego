@@ -16,7 +16,7 @@ be same in case copying to the original table.
 bq cp --destination_kms_key <customer_managed_key>
 source_dataset.source_table destination_dataset.destination_table`
 
-deny := { v |  
+deny := { v |
   b := input[_]
   r := b.tables[_]
   q := r.encryptionConfiguration.kmsKeyName

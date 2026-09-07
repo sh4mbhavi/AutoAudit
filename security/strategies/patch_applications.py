@@ -3,7 +3,9 @@ from __future__ import annotations
 from pathlib import Path
 from typing import List, Dict, Any, Iterable, Optional
 from .overview import Strategy
-import io, os, re
+import io
+import os
+import re
 
 # -------------------- Optional deps (no hard-crash) --------------------
 try:
@@ -19,7 +21,11 @@ except Exception:
 try:
     import pytesseract
     from PIL import Image, ImageOps, ImageFilter, ImageStat, UnidentifiedImageError
-    _TESS_PATH = os.environ.get("TESSERACT_CMD") or r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+
+    _TESS_PATH = (
+        os.environ.get("TESSERACT_CMD")
+        or r"C:\Program Files\Tesseract-OCR\tesseract.exe"
+    )
     if Path(_TESS_PATH).exists():
         pytesseract.pytesseract.tesseract_cmd = _TESS_PATH
 except Exception:
@@ -28,14 +34,33 @@ except Exception:
     ImageOps = None
     ImageFilter = None
     ImageStat = None
+
     class UnidentifiedImageError(Exception): ...
 # ----------------------------------------------------------------------
 
 # Evidence we consider
-EXTS = {".txt", ".log", ".pdf", ".docx", ".png", ".jpg", ".jpeg", ".bmp", ".tif", ".tiff", ".webp"}
+EXTS = {
+    ".txt",
+    ".log",
+    ".pdf",
+    ".docx",
+    ".png",
+    ".jpg",
+    ".jpeg",
+    ".bmp",
+    ".tif",
+    ".tiff",
+    ".webp",
+}
 
 # Filename hints
-FILENAME_HINTS = ("winget_upgrade", "winget-upgrade", "winget upgrades", "winget upg", "winget upgrade")
+FILENAME_HINTS = (
+    "winget_upgrade",
+    "winget-upgrade",
+    "winget upgrades",
+    "winget upg",
+    "winget upgrade",
+)
 
 # Apps to prioritise if pending (raise priority text, but Level stays ML1)
 CRITICAL_PATTERNS = [
@@ -48,9 +73,11 @@ CRITICAL_PATTERNS = [
     r"\b(Wireshark|PuTTY)\b",
 ]
 
+
 # ------------------------------------ helpers ------------------------------------
 def _project_root() -> Path:
     return Path(__file__).resolve().parents[2]
+
 
 def _resolve_evidence_dir() -> Path:
     env = os.environ.get("PATCH_APPLICATIONS_DIR")
@@ -59,11 +86,14 @@ def _resolve_evidence_dir() -> Path:
         if p.exists():
             return p
     root = _project_root()
-    for c in [root / "evidence" / "patch_applications",
-              root / "security" / "evidence" / "patch_applications"]:
+    for c in [
+        root / "evidence" / "patch_applications",
+        root / "security" / "evidence" / "patch_applications",
+    ]:
         if c.exists():
             return c
     return root / "evidence" / "patch_applications"
+
 
 def _iter_evidence_files(root: Path) -> Iterable[Path]:
     if not root.exists():
@@ -71,6 +101,7 @@ def _iter_evidence_files(root: Path) -> Iterable[Path]:
     for p in sorted(root.iterdir()):
         if p.is_file() and p.suffix.lower() in EXTS:
             yield p
+
 
 # ---------- OCR tuned for dark console screenshots ----------
 def _ocr_image_bytes(data: bytes) -> str:
@@ -93,7 +124,10 @@ def _ocr_image_bytes(data: bytes) -> str:
         return ""
     except Exception:
         return ""
+
+
 # -----------------------------------------------------------
+
 
 def _extract_text(path: Optional[Path]) -> str:
     if not path:
@@ -117,6 +151,7 @@ def _extract_text(path: Optional[Path]) -> str:
     except Exception:
         return ""
 
+
 def _looks_like_winget(text: str, fname: str) -> bool:
     low = fname.lower()
     if any(h in low for h in FILENAME_HINTS):
@@ -128,15 +163,19 @@ def _looks_like_winget(text: str, fname: str) -> bool:
         and re.search(r"\bAvailable\b", text)
     )
 
+
 # “No updates” vs “X upgrades available”
 NO_UPDATES_RE = re.compile(r"\bNo (applicable )?updates? (found|available)\b", re.I)
 FOOTER_COUNT_RE = re.compile(r"\b(\d+)\s+upgrades?\s+available\b", re.I)
 
+
 def _clean_ocr(text: str) -> str:
     return (
-        text.replace("—", "-").replace("–", "-")
-            .replace("I", "|")  # common OCR confusion for pipes
+        text.replace("—", "-")
+        .replace("–", "-")
+        .replace("I", "|")  # common OCR confusion for pipes
     )
+
 
 def _parse_winget_upgrade(text: str) -> List[Dict[str, str]]:
     """
@@ -150,14 +189,18 @@ def _parse_winget_upgrade(text: str) -> List[Dict[str, str]]:
     # Find header (order may vary)
     header_idx = -1
     for i, ln in enumerate(lines):
-        if re.search(r"\b(Name|Package)\b", ln) and re.search(r"\bVersion\b", ln) and re.search(r"\bAvailable\b", ln):
+        if (
+            re.search(r"\b(Name|Package)\b", ln)
+            and re.search(r"\bVersion\b", ln)
+            and re.search(r"\bAvailable\b", ln)
+        ):
             header_idx = i
             break
     if header_idx == -1:
         return rows
 
     # Parse body until footer
-    for ln in lines[header_idx + 1:]:
+    for ln in lines[header_idx + 1 :]:
         if re.match(r"^[\-\=_]{5,}$", ln):
             continue
         if FOOTER_COUNT_RE.search(ln):
@@ -172,13 +215,15 @@ def _parse_winget_upgrade(text: str) -> List[Dict[str, str]]:
         source = parts[4] if len(parts) >= 5 else ""
         if not name or not (version or available):
             continue
-        rows.append({
-            "name": name,
-            "id": pkg_id,
-            "version": version,
-            "available": available,
-            "source": source,
-        })
+        rows.append(
+            {
+                "name": name,
+                "id": pkg_id,
+                "version": version,
+                "available": available,
+                "source": source,
+            }
+        )
 
     # Deduplicate by (name, available)
     dedup: Dict[tuple, Dict[str, str]] = {}
@@ -186,6 +231,7 @@ def _parse_winget_upgrade(text: str) -> List[Dict[str, str]]:
         key = (r["name"], r["available"])
         dedup[key] = r
     return list(dedup.values())
+
 
 def _fallback_names(text: str) -> List[str]:
     """
@@ -205,6 +251,7 @@ def _fallback_names(text: str) -> List[str]:
         if m and len(m[0]) >= 3:
             names.append(m[0][:80])
     return names[:12]
+
 
 def _find_critical(rows: List[Dict[str, str]], text: str) -> List[str]:
     crit = []
@@ -231,8 +278,11 @@ def _find_critical(rows: List[Dict[str, str]], text: str) -> List[str]:
             out.append(c)
     return out
 
+
 # ---------------------------------- core builder ----------------------------------
-def _build_hit(ev_text: str, ev_name: str, ev_path: Optional[Path]) -> Dict[str, Any] | None:
+def _build_hit(
+    ev_text: str, ev_name: str, ev_path: Optional[Path]
+) -> Dict[str, Any] | None:
     if not _looks_like_winget(ev_text, ev_name):
         return None
 
@@ -245,7 +295,6 @@ def _build_hit(ev_text: str, ev_name: str, ev_path: Optional[Path]) -> Dict[str,
         rows: List[Dict[str, str]] = []
         pending_count = 0
         parsed_row_count = 0
-        detection_notes = "Explicit 'No updates found/available' detected."
     else:
         rows = _parse_winget_upgrade(ev_text)
         parsed_row_count = len(rows)
@@ -256,15 +305,15 @@ def _build_hit(ev_text: str, ev_name: str, ev_path: Optional[Path]) -> Dict[str,
             pending_count = footer_count
             # Try to salvage sample names
             sample_names = _fallback_names(ev_text)
-            rows = [{"name": n, "id": "", "version": "", "available": "", "source": ""} for n in sample_names]
-            detection_notes = f"Footer fail-safe used (saw '{footer_count} upgrades available')."
-        else:
-            detection_notes = "Parsed rows from table." if pending_count > 0 else "Parsed table with zero rows."
+            rows = [
+                {"name": n, "id": "", "version": "", "available": "", "source": ""}
+                for n in sample_names
+            ]
 
     critical = _find_critical(rows, ev_text) if pending_count > 0 else []
 
     # ---- Output fields ----
-    passed = (pending_count == 0)  # PASS only when zero updates
+    passed = pending_count == 0  # PASS only when zero updates
     # Level column should show ML1 as requested
     level = "ML1"
     # Keep priority higher if critical apps pending
@@ -295,7 +344,7 @@ def _build_hit(ev_text: str, ev_name: str, ev_path: Optional[Path]) -> Dict[str,
     return {
         "test_id": "E8-PA-ML1-001",
         "sub_strategy": "Patch Applications — Winget Pending Updates",
-        "detected_level": level,                 # ← ML1 as requested
+        "detected_level": level,  # ← ML1 as requested
         "pass_fail": "pass" if passed else "fail",
         "priority": priority,
         "recommendation": recommendation,
@@ -312,14 +361,16 @@ def _build_hit(ev_text: str, ev_name: str, ev_path: Optional[Path]) -> Dict[str,
         },
     }
 
+
 # ---------------------------------- Strategy ----------------------------------
 class PatchApplicationsML1(Strategy):
     """
     ML1 detector for pending application updates based on 'winget upgrade' output.
     PASS only when no updates remain. Level column is set to 'ML1'.
     """
+
     name = "Patch Applications (ML1)"
-    key  = "patch_applications_ml1"
+    key = "patch_applications_ml1"
     EVIDENCE_DIR = _resolve_evidence_dir()
 
     def description(self) -> str:
@@ -329,7 +380,9 @@ class PatchApplicationsML1(Strategy):
             "Includes a footer fail-safe so 'X upgrades available' can never pass."
         )
 
-    def emit_hits(self, text: str = "", source_file: str = "", **kwargs) -> List[Dict[str, Any]]:
+    def emit_hits(
+        self, text: str = "", source_file: str = "", **kwargs
+    ) -> List[Dict[str, Any]]:
         hits: List[Dict[str, Any]] = []
 
         # ---- SINGLE-FILE MODE (UI uploads) ----
@@ -341,7 +394,9 @@ class PatchApplicationsML1(Strategy):
                     ev_path = Path(fp)
                 except Exception:
                     ev_path = None
-            ev_text = text or (_extract_text(ev_path) if ev_path and ev_path.exists() else "")
+            ev_text = text or (
+                _extract_text(ev_path) if ev_path and ev_path.exists() else ""
+            )
             h = _build_hit(ev_text, source_file, ev_path)
             return [h] if h else []
 

@@ -40,12 +40,22 @@ class AuthorizationPolicyDataCollector(BaseDataCollector):
             "authorization_policy": policy,
             "default_user_role_permissions": default_permissions,
             "allowed_to_create_apps": default_permissions.get("allowedToCreateApps"),
-            "allowed_to_create_security_groups": default_permissions.get("allowedToCreateSecurityGroups"),
-            "allowed_to_create_tenants": default_permissions.get("allowedToCreateTenants"),
-            "allowed_to_read_bitlocker_keys_for_owned_device": default_permissions.get("allowedToReadBitlockerKeysForOwnedDevice"),
-            "allowed_to_read_other_users": default_permissions.get("allowedToReadOtherUsers"),
+            "allowed_to_create_security_groups": default_permissions.get(
+                "allowedToCreateSecurityGroups"
+            ),
+            "allowed_to_create_tenants": default_permissions.get(
+                "allowedToCreateTenants"
+            ),
+            "allowed_to_read_bitlocker_keys_for_owned_device": default_permissions.get(
+                "allowedToReadBitlockerKeysForOwnedDevice"
+            ),
+            "allowed_to_read_other_users": default_permissions.get(
+                "allowedToReadOtherUsers"
+            ),
             "guest_user_role_id": policy.get("guestUserRoleId"),
             "allow_invites_from": policy.get("allowInvitesFrom"),
-            "allow_email_verified_users_to_join_organization": policy.get("allowEmailVerifiedUsersToJoinOrganization"),
+            "allow_email_verified_users_to_join_organization": policy.get(
+                "allowEmailVerifiedUsersToJoinOrganization"
+            ),
             "block_msol_power_shell": policy.get("blockMsolPowerShell"),
         }

@@ -17,7 +17,7 @@ gcloud sql instances patch <INSTANCE_NAME> --authorized-
 networks=IP_ADDR1,IP_ADDR2...`
 
 
-deny := { v |  
+deny := { v |
   b := input[_]
   r := b.settings.ipConfiguration.authorizedNetworks[_]
   q := r.value

@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 
 class Role(str, Enum):
     """User roles for role-based access control."""
+
     ADMIN = "admin"
     AUDITOR = "auditor"
     VIEWER = "viewer"
@@ -25,6 +26,7 @@ class Role(str, Enum):
 
 class User(SQLAlchemyBaseUserTable[int], Base):
     """User model for authentication and authorization."""
+
     __tablename__ = "user"
 
     # Override id to use integer primary key
@@ -32,25 +34,14 @@ class User(SQLAlchemyBaseUserTable[int], Base):
 
     # Add custom role field
     role: Mapped[str] = mapped_column(
-        String(20),
-        default=Role.VIEWER.value,
-        nullable=False
+        String(20), default=Role.VIEWER.value, nullable=False
     )
 
-    first_name: Mapped[str | None] = mapped_column(
-            String(100),
-            nullable=True
-        )
+    first_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
-    last_name: Mapped[str | None] = mapped_column(
-            String(100),
-            nullable=True
-    )
+    last_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
 
-    organization_name: Mapped[str | None] = mapped_column(
-        String(255),
-        nullable=True
-    )
+    organization_name: Mapped[str | None] = mapped_column(String(255), nullable=True)
 
     # Inherited from SQLAlchemyBaseUserTable:
     # - email: str

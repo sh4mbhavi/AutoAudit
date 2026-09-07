@@ -70,4 +70,3 @@ result := output if {
     },
   }
 }
-

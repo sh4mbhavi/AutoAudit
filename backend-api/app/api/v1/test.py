@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends
 from app.core.auth import get_current_user
-from app.core.permissions import require_admin, require_auditor_or_above, RoleChecker
-from app.models.user import User, Role
+from app.core.permissions import require_admin, require_auditor_or_above
+from app.models.user import User
 
 router = APIRouter(prefix="/test", tags=["Test"])
 
@@ -16,7 +16,7 @@ async def public_endpoint():
     return {
         "message": "This is a public endpoint",
         "requires_auth": False,
-        "description": "Anyone can access this endpoint without authentication"
+        "description": "Anyone can access this endpoint without authentication",
     }
 
 
@@ -38,11 +38,14 @@ async def protected_endpoint(current_user: User = Depends(get_current_user)):
             "is_active": current_user.is_active,
             "is_superuser": current_user.is_superuser,
         },
-        "description": "You successfully accessed a protected endpoint!"
+        "description": "You successfully accessed a protected endpoint!",
     }
 
 
-@router.get("/protected-admin", summary="Test endpoint that requires authentication AND authorization (admin role)")
+@router.get(
+    "/protected-admin",
+    summary="Test endpoint that requires authentication AND authorization (admin role)",
+)
 async def protected_admin_endpoint(current_user: User = Depends(require_admin)):
     """
     Admin-only endpoint - requires authentication AND admin role.
@@ -66,13 +69,15 @@ async def protected_admin_endpoint(current_user: User = Depends(require_admin)):
         "admin_features": [
             "Manage users",
             "View all audit logs",
-            "Configure system settings"
-        ]
+            "Configure system settings",
+        ],
     }
 
 
 @router.get("/protected-auditor")
-async def protected_auditor_endpoint(current_user: User = Depends(require_auditor_or_above)):
+async def protected_auditor_endpoint(
+    current_user: User = Depends(require_auditor_or_above),
+):
     """
     Auditor or Admin endpoint - requires authentication AND auditor/admin role.
 
@@ -95,6 +100,6 @@ async def protected_auditor_endpoint(current_user: User = Depends(require_audito
         "auditor_features": [
             "Run compliance scans",
             "Generate audit reports",
-            "View scan results"
-        ]
+            "View scan results",
+        ],
     }

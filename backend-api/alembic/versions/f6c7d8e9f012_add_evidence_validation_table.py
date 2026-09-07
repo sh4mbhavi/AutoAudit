@@ -32,7 +32,9 @@ def upgrade() -> None:
         sa.Column("source_filename", sa.String(length=512), nullable=True),
         sa.Column("text_hash", sa.String(length=64), nullable=True),
         sa.Column("extracted_text_encrypted", sa.Text(), nullable=True),
-        sa.Column("matches_json", postgresql.JSONB(astext_type=sa.Text()), nullable=True),
+        sa.Column(
+            "matches_json", postgresql.JSONB(astext_type=sa.Text()), nullable=True
+        ),
         sa.Column(
             "status", sa.String(length=25), server_default="success", nullable=False
         ),
@@ -63,7 +65,9 @@ def upgrade() -> None:
 
 def downgrade() -> None:
     """Downgrade schema."""
-    op.drop_index(op.f("ix_evidence_validation_user_id"), table_name="evidence_validation")
+    op.drop_index(
+        op.f("ix_evidence_validation_user_id"), table_name="evidence_validation"
+    )
     op.drop_index(
         op.f("ix_evidence_validation_created_at"), table_name="evidence_validation"
     )
@@ -73,5 +77,3 @@ def downgrade() -> None:
         type_="foreignkey",
     )
     op.drop_table("evidence_validation")
-
-

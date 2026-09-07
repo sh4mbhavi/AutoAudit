@@ -17,7 +17,7 @@ remediation := `Create a new instance with Confidential Compute enabled.
 gcloud compute instances create <INSTANCE_NAME> --zone <ZONE> --
 confidential-compute --maintenance-policy=TERMINATE`
 
-deny := { v |  
+deny := { v |
   b := input[_]
   r := b.confidentialInstanceConfig.enableConfidentialCompute
   q := b.confidentialInstanceConfig.confidentialInstanceType

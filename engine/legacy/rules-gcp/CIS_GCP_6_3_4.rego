@@ -20,7 +20,7 @@ database instance using either of the below commands.
 Clearing all flags to their default value
 gcloud sql instances patch <INSTANCE_NAME> --clear-database-flags`
 
-deny := { v |  
+deny := { v |
   b := input[_]
   r := b.settings.databaseFlags[_]
   q := r.value
