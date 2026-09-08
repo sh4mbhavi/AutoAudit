@@ -1,10 +1,16 @@
 """Scan API endpoints."""
 
+from collections import defaultdict
+from copy import deepcopy
+from datetime import datetime, timezone
+import hashlib
+import json
+from uuid import uuid4
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from collections import defaultdict
 
 from app.core.auth import get_current_user
 from app.db.session import get_async_session
@@ -13,6 +19,7 @@ from app.models.m365_connection import M365Connection
 from app.models.scan_result import ScanResult
 from app.models.user import User
 from app.schemas.scan import (
+    ResultStatus,
     ScanCreate,
     ScanCreatedResponse,
     ControlCategoryBreakdown,
@@ -34,7 +41,9 @@ from app.services.scan_readiness import (
 router = APIRouter(prefix="/scans", tags=["Scans"])
 
 
-@router.post("/", response_model=ScanCreatedResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=ScanCreatedResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_scan(
     scan_data: ScanCreate,
     current_user: User = Depends(get_current_user),
@@ -50,7 +59,7 @@ async def create_scan(
         select(M365Connection).where(
             M365Connection.id == scan_data.m365_connection_id,
             M365Connection.user_id == current_user.id,
-            M365Connection.is_active == True,
+            M365Connection.is_active.is_(True),
         )
     )
     connection = result.scalar_one_or_none()
@@ -63,9 +72,12 @@ async def create_scan(
     # Load benchmark metadata to get all controls
     file_reader = get_file_reader()
     try:
-        all_controls = file_reader.list_controls(
-            scan_data.framework, scan_data.benchmark, scan_data.version
+        metadata = deepcopy(
+            file_reader.get_benchmark_metadata(
+                scan_data.framework, scan_data.benchmark, scan_data.version
+            )
         )
+        all_controls = metadata.get("controls", [])
     except FileNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -73,16 +85,41 @@ async def create_scan(
         )
 
     # Validate platform matches (benchmark must be for m365)
-    metadata = file_reader.get_benchmark_metadata(
-        scan_data.framework, scan_data.benchmark, scan_data.version
-    )
     if metadata.get("platform", "").lower() != "m365":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Benchmark platform '{metadata.get('platform')}' does not match M365 connection",
         )
 
-    # Create scan record
+    available_ids = {control["control_id"] for control in all_controls}
+    if not available_ids or scan_data.control_ids == []:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "empty_selection",
+                "message": "Select at least one control from a non-empty benchmark.",
+            },
+        )
+    selected_ids = (
+        available_ids if scan_data.control_ids is None else set(scan_data.control_ids)
+    )
+    unknown_ids = sorted(selected_ids - available_ids)
+    if unknown_ids:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "unknown_control_ids",
+                "unknown_control_ids": unknown_ids,
+                "message": "Some selected controls do not exist in this benchmark.",
+            },
+        )
+    metadata_digest = hashlib.sha256(
+        json.dumps(
+            metadata, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        ).encode("utf-8")
+    ).hexdigest()
+
+    # Create scan record only after validating the complete selection.
     scan = Scan(
         user_id=current_user.id,
         m365_connection_id=scan_data.m365_connection_id,
@@ -91,15 +128,19 @@ async def create_scan(
         version=scan_data.version,
         status="pending",
         total_controls=len(all_controls),
+        selected_count=len(selected_ids),
+        semantics_version="phase3-v1",
+        metadata_snapshot=metadata,
+        metadata_digest=metadata_digest,
+        correlation_id=str(uuid4()),
     )
     db.add(scan)
     await db.flush()  # Get scan.id
 
     # Create ScanResult records for ALL controls
-    selected_ids = set(scan_data.control_ids) if scan_data.control_ids else None
     skipped = 0
     for control in all_controls:
-        is_selected = selected_ids is None or control["control_id"] in selected_ids
+        is_selected = control["control_id"] in selected_ids
         result_status = "pending" if is_selected else "skipped"
         if result_status == "skipped":
             skipped += 1
@@ -107,6 +148,36 @@ async def create_scan(
             scan_id=scan.id,
             control_id=control["control_id"],
             status=result_status,
+            selected=is_selected,
+            reason_code=None if is_selected else "unselected",
+            provenance=(
+                None
+                if is_selected
+                else {
+                    "schema_version": 1,
+                    "framework": scan.framework,
+                    "benchmark": scan.benchmark,
+                    "benchmark_version": scan.version,
+                    "metadata_digest": metadata_digest,
+                    "correlation_id": scan.correlation_id,
+                    "control_id": control["control_id"],
+                    "collector_id": control.get("data_collector_id"),
+                    "policy_file": control.get("policy_file"),
+                    "policy_digest": None,
+                    "policy_source": None,
+                    "engine_git_sha": None,
+                    "engine_image_digest": None,
+                    "input_digest": None,
+                    "evaluation_started_at": None,
+                    "opa_version": None,
+                    "collection_started_at": None,
+                    "collection_completed_at": None,
+                    "evaluated_at": None,
+                    "recorded_at": datetime.now(timezone.utc).isoformat(),
+                    "provenance_status": "not_executed",
+                    "reason_code": "unselected",
+                }
+            ),
         )
         db.add(scan_result)
 
@@ -142,6 +213,7 @@ async def list_scans(
     )
     return list(result.scalars().all())
 
+
 # Get scan readiness status for a given M365 connection and benchmark. This is used by the frontend before starting a scan to validate the connection and provide feedback on any issues that might cause the scan to fail or have incomplete results.
 @router.get("/readiness", response_model=ScanReadinessResponse)
 async def get_scan_readiness(
@@ -158,7 +230,7 @@ async def get_scan_readiness(
         select(M365Connection).where(
             M365Connection.id == m365_connection_id,
             M365Connection.user_id == current_user.id,
-            M365Connection.is_active == True,
+            M365Connection.is_active.is_(True),
         )
     )
     connection = result.scalar_one_or_none()
@@ -233,6 +305,7 @@ async def get_scan(
         )
     return scan
 
+
 @router.get("/{scan_id}/summary", response_model=ScanSummary)
 async def get_scan_summary(
     scan_id: int,
@@ -261,13 +334,20 @@ async def get_scan_summary(
     rows = results.all()
 
     buckets: dict[str, dict[str, int]] = defaultdict(
-        lambda: {"total": 0, "passed": 0, "failed": 0, "skipped": 0, "error": 0}
+        lambda: {
+            "total": 0,
+            "pending": 0,
+            "passed": 0,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "indeterminate": 0,
+            "not_assessable": 0,
+        }
     )
     for control_id, status_ in rows:
         prefix = (
-            control_id.split(".")[0]
-            if "." in control_id
-            else control_id.split("-")[0]
+            control_id.split(".")[0] if "." in control_id else control_id.split("-")[0]
         )
         buckets[prefix]["total"] += 1
         if status_ in buckets[prefix]:
@@ -292,19 +372,28 @@ async def get_scan_summary(
         failed_count=scan.failed_count,
         skipped_count=scan.skipped_count,
         error_count=scan.error_count,
+        pending_count=scan.pending_count,
+        indeterminate_count=scan.indeterminate_count,
+        not_assessable_count=scan.not_assessable_count,
+        selected_count=scan.selected_count,
+        coverage_score=scan.coverage_score,
+        semantics_version=scan.semantics_version,
+        metadata_digest=scan.metadata_digest,
+        correlation_id=scan.correlation_id,
         categories=categories,
     )
+
 
 @router.get("/{scan_id}/results", response_model=list[ScanResultRead])
 async def get_scan_results(
     scan_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_session),
-    status_filter: str | None = None,
+    status_filter: ResultStatus | None = None,
 ) -> list[ScanResult]:
     """Get results for a scan.
 
-    Optionally filter by status (pending, passed, failed, error, skipped).
+    Optionally filter by any pending or terminal result status.
     """
     # Verify scan exists and user has access
     scan_result = await db.execute(

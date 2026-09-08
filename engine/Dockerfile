@@ -1,4 +1,12 @@
+FROM openpolicyagent/opa:1.20.2 AS opa
+
 FROM python:3.11-slim
+
+COPY --from=opa /opa /usr/local/bin/opa
+
+ARG ENGINE_GIT_SHA
+ENV ENGINE_GIT_SHA=${ENGINE_GIT_SHA}
+RUN python -c 'import os,re; assert re.fullmatch("[0-9a-f]{40}", os.environ.get("ENGINE_GIT_SHA", "")), "Build requires --build-arg ENGINE_GIT_SHA=<full source commit>"'
 
 WORKDIR /app
 

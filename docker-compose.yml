@@ -110,7 +110,7 @@ services:
       - BACKEND_PUBLIC_URL=http://localhost:8000
       - FRONTEND_URL=http://localhost:3000
 
-      # Google OAuth (SSO) 
+      # Google OAuth (SSO)
       - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID:-}
       - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET:-}
 
@@ -146,6 +146,8 @@ services:
     build:
       context: ./engine
       dockerfile: Dockerfile
+      args:
+        ENGINE_GIT_SHA: ${ENGINE_GIT_SHA:-}
     deploy:
       resources:
         limits:
@@ -159,8 +161,8 @@ services:
       # Required: Redis URL for Celery broker
       - REDIS_URL=redis://redis:6379
 
-      # Required: OPA server URL for policy evaluation
-      - OPA_URL=http://opa:8181
+      # Phase 3 evaluates retained policy snapshots with the image's pinned OPA CLI.
+      - OPA_BINARY=/usr/local/bin/opa
 
       # Required: Must match ENCRYPTION_KEY in backend-api for credential decryption
       - ENCRYPTION_KEY=Ps-HiS3ww5QzQPc_Mdu5-JyA_jCNbdFHMdiwWSlAfgM=

@@ -5,6 +5,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import ForeignKey, Numeric, String, Text
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
@@ -61,6 +62,37 @@ class Scan(Base):
     skipped_count: Mapped[int] = mapped_column(default=0)
     error_count: Mapped[int] = mapped_column(default=0)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+
+    # Phase 3 attribution is unknown for legacy scans.
+    selected_count: Mapped[Optional[int]] = mapped_column(nullable=True)
+    coverage_score: Mapped[Optional[Decimal]] = mapped_column(
+        Numeric(5, 2), nullable=True
+    )
+    indeterminate_count: Mapped[int] = mapped_column(default=0, server_default="0")
+    not_assessable_count: Mapped[int] = mapped_column(default=0, server_default="0")
+    semantics_version: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    metadata_snapshot: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+    metadata_digest: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    correlation_id: Mapped[Optional[str]] = mapped_column(String(36), nullable=True)
+
+    @property
+    def pending_count(self) -> int:
+        """Remaining results without inferring legacy selection or scores."""
+        return max(
+            0,
+            (self.total_controls or 0)
+            - sum(
+                getattr(self, name) or 0
+                for name in (
+                    "passed_count",
+                    "failed_count",
+                    "skipped_count",
+                    "error_count",
+                    "indeterminate_count",
+                    "not_assessable_count",
+                )
+            ),
+        )
 
     # Relationships
     user: Mapped["User"] = relationship(back_populates="scans")

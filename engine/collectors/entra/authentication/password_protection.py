@@ -4,7 +4,7 @@ CIS Microsoft 365 Foundations Benchmark Controls:
     v6.0.0: 5.2.3.2, 5.2.3.3
 
 Connection Method: Microsoft Graph API
-Required Scopes: Directory.Read.All
+Required Scopes: GroupSettings.Read.All
 Graph Endpoint: /settings (directory settings)
 """
 

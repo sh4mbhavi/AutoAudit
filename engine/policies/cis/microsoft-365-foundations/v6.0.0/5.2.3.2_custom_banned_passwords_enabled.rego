@@ -12,7 +12,7 @@
 #   severity: medium
 #   service: EntraID
 #   requires_permissions:
-#   - Directory.Read.All
+#   - GroupSettings.Read.All
 
 package cis.microsoft_365_foundations.v6_0_0.control_5_2_3_2
 
@@ -32,7 +32,7 @@ banned_list_present := true if { input.banned_password_list != null; input.banne
 
 result := output if {
   enabled := input.banned_password_list_enabled
-  list := input.banned_password_list
+  _ = input.banned_password_list
 
   output := {
     "compliant": compliant_value,

@@ -32,7 +32,7 @@ msg := "Guest user access reviews are configured" if { compliant }
 msg := "No guest user access reviews are configured" if { not compliant }
 
 result := output if {
-  has := input.has_guest_reviews
+  _ = input.has_guest_reviews
 
   output := {
     "compliant": compliant,

@@ -56,8 +56,6 @@ result := out if {
   perms := input.default_user_role_permissions
   assigned := perms.permissionGrantPoliciesAssigned
 
-  is_empty := assigned == []  # strict: disabled
-  ok := is_empty
 
   out := {
     "compliant": compliant_value,
