@@ -1,0 +1,595 @@
+{
+  "observed_date": "2026-09-05",
+  "timezone": "Australia/Melbourne",
+  "repository": "Hardhat-Enterprises/AutoAudit",
+  "open_count": 45,
+  "merged_count": 183,
+  "count_scope": "All repository PRs, any base branch; GitHub search/issues is:pr is:open and is:pr is:merged",
+  "open_pull_requests": [
+    {
+      "author": {
+        "id": "U_kgDODEAFKw",
+        "is_bot": false,
+        "login": "shaniashina",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "232f7570980902661e5a2bf5e6d7be7a6fa8243c",
+      "number": 356,
+      "title": "test: add CIS 5.1.2.3 policy tests",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/356"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjg3NjI2NjIx",
+        "is_bot": false,
+        "login": "peibingg",
+        "name": "PeibingGu"
+      },
+      "baseRefName": "main",
+      "headRefOid": "9e2a5786b8275126b734c6834ea890d1ecae7b0d",
+      "number": 355,
+      "title": "Improve backend-api test coverage and CI coverage check",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/355"
+    },
+    {
+      "author": {
+        "id": "U_kgDOCc-cBw",
+        "is_bot": false,
+        "login": "egrayy",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "7f9edc6fa3c5097a7589d4c9cb02645e70927503",
+      "number": 354,
+      "title": "Add E8-PA-1.1 Patch Applications control",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/354"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjQ1MDYxMjg1",
+        "is_bot": false,
+        "login": "akshitpatel1732",
+        "name": "Akshit Patel"
+      },
+      "baseRefName": "main",
+      "headRefOid": "1a4f79b4e33190be6acf305838a910c689a7a700",
+      "number": 353,
+      "title": "Added an automated PR labeling system for AutoAudit.",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/353"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjQ1MDYxMjg1",
+        "is_bot": false,
+        "login": "akshitpatel1732",
+        "name": "Akshit Patel"
+      },
+      "baseRefName": "main",
+      "headRefOid": "1cb1399f05f032c6d214429407c16f8c66a3ea09",
+      "number": 352,
+      "title": "Merge Alembic migration heads",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/352"
+    },
+    {
+      "author": {
+        "id": "U_kgDOCc-cBw",
+        "is_bot": false,
+        "login": "egrayy",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "c64c18a0f3e50ea010513023307683b4fb491a23",
+      "number": 351,
+      "title": "Add multi-client collector support for controls needing multiple APIs",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/351"
+    },
+    {
+      "author": {
+        "id": "U_kgDOEH09ww",
+        "is_bot": false,
+        "login": "s225645819",
+        "name": "Pratiyush"
+      },
+      "baseRefName": "main",
+      "headRefOid": "9bcb2272f9eb3925bdf56ebde0f378c9dca582f3",
+      "number": 350,
+      "title": "Feature/google sso auth",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/350"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjgyMjYxNjM4",
+        "is_bot": false,
+        "login": "Kshitij1905",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "a0526a74aecd00528830e67244fc50b38e11b7dd",
+      "number": 349,
+      "title": "Add E8-POS-1.1 Operating System Patching control",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/349"
+    },
+    {
+      "author": {
+        "id": "U_kgDODZA1iA",
+        "is_bot": false,
+        "login": "UmerA3653",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "1545c6b7d7d98f6be4d21c3b283cd4617fcf11b0",
+      "number": 348,
+      "title": "Implement CIS 7.2.1 - Modern authentication required for SharePoint",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/348"
+    },
+    {
+      "author": {
+        "id": "U_kgDOCc-cBw",
+        "is_bot": false,
+        "login": "egrayy",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "1b0a6f69ef598c6923a1e25b0bab0b4884b0d173",
+      "number": 347,
+      "title": "Add E8-BAK-1.1 Regular Backups control",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/347"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjc0NjAyODE3",
+        "is_bot": false,
+        "login": "SidharthSabu",
+        "name": ""
+      },
+      "baseRefName": "feature/26T2-BE-SS-001_settings-catalog-collector",
+      "headRefOid": "fd164bc3ee0cbbe7e87c068dae247e9cda382c54",
+      "number": 346,
+      "title": "Feature/E8-MAC-1.1 Office macros disabled by default",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/346"
+    },
+    {
+      "author": {
+        "id": "U_kgDODpWygg",
+        "is_bot": false,
+        "login": "karansoni15-create",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "f4f951e5aba5bc4f271dfd997360c31b234eeb4f",
+      "number": 345,
+      "title": "test: add CIS 1.1.3 global admin count tests",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/345"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjY4NDY4NDMz",
+        "is_bot": false,
+        "login": "yergaliev98",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "848c422df22ce148c91868f1c192e3b648a611d5",
+      "number": 344,
+      "title": "Feature/cis 7 2 9 guest access expiration",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/344"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjY4NDY4NDMz",
+        "is_bot": false,
+        "login": "yergaliev98",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "a7e032e2b0b429d1a2a685962443b40e12f26315",
+      "number": 342,
+      "title": "feat(2.4.2): add Priority account Strict protection preset collector …",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/342"
+    },
+    {
+      "author": {
+        "id": "U_kgDODfvTng",
+        "is_bot": false,
+        "login": "maivinhau2601-rgb",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "69d9eab2e727fb1cb9f370b9d88f0a6d6b5d747b",
+      "number": 336,
+      "title": "Feature/task 7.2.2 sharepoint b2b clean",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/336"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjY4NDY4NDMz",
+        "is_bot": false,
+        "login": "yergaliev98",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "5960bf6a74a8a59fce36cd18818c2c87d96a190b",
+      "number": 334,
+      "title": "feat(tooling): add SharePoint collector support to test_collector.py",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/334"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjY4NDY4NDMz",
+        "is_bot": false,
+        "login": "yergaliev98",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "f6ec26e84ff3585c22407a49c16a634313724c8a",
+      "number": 333,
+      "title": "feat(compliance): implement CIS 1.3.9 shared bookings restriction",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/333"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjc0OTc1NTcx",
+        "is_bot": false,
+        "login": "Ericliu-uz",
+        "name": "Liu Jiuqi"
+      },
+      "baseRefName": "main",
+      "headRefOid": "9f54eaaf16f1247ccb7a8b9ce6c9023066ccdd0d",
+      "number": 332,
+      "title": "feat(compliance): add compose policy checks",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/332"
+    },
+    {
+      "author": {
+        "id": "U_kgDOBdTMxQ",
+        "is_bot": false,
+        "login": "raaidrushdy",
+        "name": "Raaid "
+      },
+      "baseRefName": "main",
+      "headRefOid": "ce33d52496ae02e653ea9474b69bcfb99f824698",
+      "number": 331,
+      "title": "sec: add gitleaks CI job scanning full commit history",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/331"
+    },
+    {
+      "author": {
+        "id": "U_kgDOBdTMxQ",
+        "is_bot": false,
+        "login": "raaidrushdy",
+        "name": "Raaid "
+      },
+      "baseRefName": "main",
+      "headRefOid": "aeb83a4b8b449d0d7ebf109a8f935842b08d2bab",
+      "number": 330,
+      "title": "sec: externalize hardcoded secrets in docker-compose.yml",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/330"
+    },
+    {
+      "author": {
+        "id": "U_kgDOBdTMxQ",
+        "is_bot": false,
+        "login": "raaidrushdy",
+        "name": "Raaid "
+      },
+      "baseRefName": "main",
+      "headRefOid": "ffb4b5516b3f9d7b996b022ea1c42777d693999e",
+      "number": 329,
+      "title": "docs: add baseline security audit for Workstream 4",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/329"
+    },
+    {
+      "author": {
+        "id": "U_kgDODpWygg",
+        "is_bot": false,
+        "login": "karansoni15-create",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "ba9d11bfb7c3f873a7bba8ca9b2dbd7a91bfedd3",
+      "number": 328,
+      "title": "feat(cis): automate control 5.1.4.2 device limit",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/328"
+    },
+    {
+      "author": {
+        "id": "U_kgDOCpn36w",
+        "is_bot": false,
+        "login": "SharkChar0255",
+        "name": "Shival Chatiar"
+      },
+      "baseRefName": "main",
+      "headRefOid": "743df2be32a7e53c06b5782149184a587b1e0ef2",
+      "number": 326,
+      "title": "Grype Severity-based CI enforcement",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/326"
+    },
+    {
+      "author": {
+        "id": "U_kgDOCNnM2g",
+        "is_bot": false,
+        "login": "Meetphoenix1309",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "b00dc6f70d748651b08c305ecb04fd9f22d0eb81",
+      "number": 325,
+      "title": "WIP: Control 7.2.4 - implement SharePoint collector, fix registry and…",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/325"
+    },
+    {
+      "author": {
+        "id": "U_kgDOBbJTBg",
+        "is_bot": false,
+        "login": "TrustBucket",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "3f23d072fd994fda9541d7b1f05b553f20a51e1d",
+      "number": 320,
+      "title": "feature: add new collector to compliance engine | priority account protection | CIS 2.4.1 and 2.4.2",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/320"
+    },
+    {
+      "author": {
+        "id": "U_kgDOC6r3EQ",
+        "is_bot": false,
+        "login": "Pushpindersingh-2027",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "5374d366a5b832c91db0a234a89dd91c44e92704",
+      "number": 318,
+      "title": "feat(api): add security response headers",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/318"
+    },
+    {
+      "author": {
+        "id": "U_kgDODCD-gg",
+        "is_bot": false,
+        "login": "s225090522",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "e347b191f39cac1b86ba56e6b5ddabb31d14e703",
+      "number": 317,
+      "title": "feat: implement Azure connection CRUD endpoints",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/317"
+    },
+    {
+      "author": {
+        "id": "U_kgDODY-ucA",
+        "is_bot": false,
+        "login": "alishapulva",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "61b6bbcbf33383bc4a01ba656c3c52a2abbcc1ec",
+      "number": 315,
+      "title": "GCP Rego files - CIS v8 Control 7: Vulnerability Management",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/315"
+    },
+    {
+      "author": {
+        "id": "U_kgDODZnHZA",
+        "is_bot": false,
+        "login": "Gitanshi2211",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "87723da4c1712e9ba3e183fc638960647f22c204",
+      "number": 313,
+      "title": "ci: Add top-level permissions block to workflows missing explicit permissions",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/313"
+    },
+    {
+      "author": {
+        "id": "U_kgDOBossdg",
+        "is_bot": false,
+        "login": "Brook4747",
+        "name": ""
+      },
+      "baseRefName": "feature/26T2-BE-SS-001_settings-catalog-collector",
+      "headRefOid": "9c0cb6ce874de0541a40b2c5e63e8dabf2d457c2",
+      "number": 311,
+      "title": "feat(policy): add AMSI macro scanning control",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/311"
+    },
+    {
+      "author": {
+        "id": "U_kgDOBZbrdA",
+        "is_bot": false,
+        "login": "Collando",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "20a4f0cd2aabf896d057160a7798449a9409c2cd",
+      "number": 307,
+      "title": "Implement CIS 1.3.6 Customer Lockbox policy and tests",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/307"
+    },
+    {
+      "author": {
+        "id": "U_kgDODDJ2MA",
+        "is_bot": false,
+        "login": "Heet27",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "f87f319d26d58ab9f053db287827fca266c2ba58",
+      "number": 305,
+      "title": " Configure secure CORS",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/305"
+    },
+    {
+      "author": {
+        "id": "U_kgDODZnHZA",
+        "is_bot": false,
+        "login": "Gitanshi2211",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "2e68b9e83ed173f1b19c798d4e96ef6e31718334",
+      "number": 304,
+      "title": "docs: Secure coding guide for DevSecOps stream (WIP)",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/304"
+    },
+    {
+      "author": {
+        "id": "U_kgDOBossdg",
+        "is_bot": false,
+        "login": "Brook4747",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "00a67a36e5d9c2dde7b15399fc621453161becc9",
+      "number": 302,
+      "title": "feat(api): add readiness & health endpoint ",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/302"
+    },
+    {
+      "author": {
+        "id": "U_kgDODCD-gg",
+        "is_bot": false,
+        "login": "s225090522",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "06b69e2d7aa091e977cf499fe93c298b240a36a2",
+      "number": 301,
+      "title": "feat: implement AWS connection CRUD endpoints",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/301"
+    },
+    {
+      "author": {
+        "id": "U_kgDODCD-gg",
+        "is_bot": false,
+        "login": "s225090522",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "3f945ddccca5254a31f974d1aa119875ce4e3517",
+      "number": 300,
+      "title": "Feat/add version endpoint",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/300"
+    },
+    {
+      "author": {
+        "id": "U_kgDODCD-gg",
+        "is_bot": false,
+        "login": "s225090522",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "82d1e1ee136da3956a3084d42e1e3229305b9061",
+      "number": 299,
+      "title": "Fix/cleanup init files",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/299"
+    },
+    {
+      "author": {
+        "id": "U_kgDOCFDpHw",
+        "is_bot": false,
+        "login": "Trunaw",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "05a9632cd9e6e53f700491f70890f9de87eca991",
+      "number": 297,
+      "title": "Implement CIS control 1.3.3: Ensure 'External sharing' of calendars is not available",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/297"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjc0OTc1NTcx",
+        "is_bot": false,
+        "login": "Ericliu-uz",
+        "name": "Liu Jiuqi"
+      },
+      "baseRefName": "main",
+      "headRefOid": "a79e35a44f6d70fd757721a1825d2d98de20904b",
+      "number": 296,
+      "title": "Feature/fix ci starter task 1",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/296"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjg3NjI2NjIx",
+        "is_bot": false,
+        "login": "peibingg",
+        "name": "PeibingGu"
+      },
+      "baseRefName": "main",
+      "headRefOid": "e1e4882bf51c1d4dd451cfe3508d5d01a0b721bb",
+      "number": 294,
+      "title": "Bootstrap a backend test suite",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/294"
+    },
+    {
+      "author": {
+        "id": "MDQ6VXNlcjg3NjI2NjIx",
+        "is_bot": false,
+        "login": "peibingg",
+        "name": "PeibingGu"
+      },
+      "baseRefName": "main",
+      "headRefOid": "ca8b387e6547f791b10d67619a9488de977456ba",
+      "number": 292,
+      "title": "Enforce RBAC on scan and M365 connection mutations (26T2-BE-PG-001).",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/292"
+    },
+    {
+      "author": {
+        "id": "U_kgDODVSc5g",
+        "is_bot": false,
+        "login": "du-dhartley",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "6f5473c4cc28897308fb2a3190a102d15e0dfcd1",
+      "number": 266,
+      "title": "Implement HPA/KEDA scaling and prove with demo runs on synthetic load endpoints, with J6",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/266"
+    },
+    {
+      "author": {
+        "id": "U_kgDODCD-gg",
+        "is_bot": false,
+        "login": "s225090522",
+        "name": ""
+      },
+      "baseRefName": "main",
+      "headRefOid": "1846a59514bfaad7040bd5fe76e3d308f27921d9",
+      "number": 234,
+      "title": "feature/ email validation to signup form",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/234"
+    },
+    {
+      "author": {
+        "id": "U_kgDOBdTMxQ",
+        "is_bot": false,
+        "login": "raaidrushdy",
+        "name": "Raaid "
+      },
+      "baseRefName": "main",
+      "headRefOid": "a219a4c662d8c2d548c3ee312736c2d7774d9336",
+      "number": 230,
+      "title": "feat: update report service and report generation template [26T1-DOC-RR-001]",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/230"
+    },
+    {
+      "author": {
+        "id": "U_kgDODEf45w",
+        "is_bot": false,
+        "login": "AaronAlijani",
+        "name": "Aaron Alijani"
+      },
+      "baseRefName": "main",
+      "headRefOid": "aa9a667e015e7dfa9c0f37d6783995ca28a0549c",
+      "number": 229,
+      "title": "feat(backend): add ControlVerificationTemplate table and CRUD endpoints",
+      "url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/229"
+    }
+  ]
+}
