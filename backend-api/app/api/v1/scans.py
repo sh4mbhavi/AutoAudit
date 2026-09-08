@@ -100,11 +100,14 @@ async def create_scan(
     # Create ScanResult records for ALL controls
     selected_ids = set(scan_data.control_ids) if scan_data.control_ids else None
     skipped = 0
+    selected = 0
     for control in all_controls:
         is_selected = selected_ids is None or control["control_id"] in selected_ids
         result_status = "pending" if is_selected else "skipped"
         if result_status == "skipped":
             skipped += 1
+        else:
+            selected += 1
         scan_result = ScanResult(
             scan_id=scan.id,
             control_id=control["control_id"],
@@ -113,6 +116,10 @@ async def create_scan(
         db.add(scan_result)
 
     scan.skipped_count = skipped
+    # GRC-D05 coverage denominator: freeze the number of controls actually
+    # selected for assessment now, not at finalisation, because skipped_count
+    # later mixes these unselected controls with controls skipped mid-run.
+    scan.selected_count = selected
     await db.commit()
     await db.refresh(scan)
 
@@ -289,11 +296,16 @@ async def get_scan_summary(
         started_at=scan.started_at,
         finished_at=scan.finished_at,
         compliance_score=scan.compliance_score,
+        coverage_score=scan.coverage_score,
         total_controls=scan.total_controls,
+        selected_count=scan.selected_count,
         passed_count=scan.passed_count,
         failed_count=scan.failed_count,
         skipped_count=scan.skipped_count,
         error_count=scan.error_count,
+        indeterminate_count=scan.indeterminate_count,
+        not_assessable_count=scan.not_assessable_count,
+        semantics_version=scan.semantics_version,
         categories=categories,
     )
 

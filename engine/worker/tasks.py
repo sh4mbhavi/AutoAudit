@@ -2,8 +2,6 @@
 
 import asyncio
 import json
-from datetime import datetime
-from decimal import Decimal
 from pathlib import Path
 
 from worker.celery_app import celery_app
@@ -85,15 +83,12 @@ def run_scan(scan_id: int) -> dict:
     total_pending = len(pending_results)
 
     if total_pending == 0:
-        # No controls to evaluate - scan was created with all controls skipped
+        # No controls to evaluate - scan was created with all controls skipped.
+        # GRC-D05: a scan that assessed nothing has no compliance to report, so
+        # it must finalise through the shared scorer (NULL compliance and
+        # coverage, "not assessed"), not with a hardcoded 100%.
         with get_db_session() as session:
-            update_scan_status(
-                session,
-                scan_id,
-                status="completed",
-                finished_at=datetime.utcnow(),
-                compliance_score=Decimal("100.00"),
-            )
+            finalize_scan_if_complete(session, scan_id)
             session.commit()
         return {"scan_id": scan_id, "status": "completed", "total_pending": 0}
 
@@ -269,26 +264,30 @@ def evaluate_control(
 
         # Update database based on result
         with get_db_session() as session:
-            if result.get("compliant", False):
-                # Control passed
-                update_scan_result(
-                    session,
-                    result_id=result_id,
-                    status="passed",
-                    message=result.get("message", "Control is compliant"),
-                    evidence=result.get("details"),
-                )
-                increment_scan_progress(session, scan_id, passed=True)
+            # GRC-D05: only an explicit boolean is a determinate assessment. A
+            # null verdict means the evidence was insufficient to decide, which
+            # is indeterminate, not a failure. main folded null into the failed
+            # branch here, manufacturing a tenant failure out of missing
+            # evidence; indeterminate keeps it out of the compliance denominator.
+            compliant = result.get("compliant")
+            if compliant is True:
+                status = "passed"
+                default_message = "Control is compliant"
+            elif compliant is False:
+                status = "failed"
+                default_message = "Control is non-compliant"
             else:
-                # Control failed
-                update_scan_result(
-                    session,
-                    result_id=result_id,
-                    status="failed",
-                    message=result.get("message", "Control is non-compliant"),
-                    evidence=result.get("details"),
-                )
-                increment_scan_progress(session, scan_id, passed=False)
+                status = "indeterminate"
+                default_message = "Evidence was insufficient to assess this control"
+
+            update_scan_result(
+                session,
+                result_id=result_id,
+                status=status,
+                message=result.get("message", default_message),
+                evidence=result.get("details"),
+            )
+            increment_scan_progress(session, scan_id, status)
 
             # Check if this was the last control and finalize scan if complete
             finalize_scan_if_complete(session, scan_id)
@@ -296,7 +295,7 @@ def evaluate_control(
 
         return {
             "control_id": control_id,
-            "compliant": result.get("compliant", False),
+            "compliant": compliant,
             "message": result.get("message"),
         }
 

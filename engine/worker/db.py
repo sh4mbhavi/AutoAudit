@@ -42,6 +42,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from worker.config import settings
+from worker.result_contract import calculate_scores
 
 # Convert async URL to sync URL for worker
 sync_database_url = settings.DATABASE_URL.replace(
@@ -221,22 +222,35 @@ def update_scan_status(
     )
 
 
+# GRC-D05: an assessed result is one of these; the count it lands in decides
+# whether it enters coverage (passed/failed) or sits outside it (indeterminate,
+# not_assessable). Column names are a fixed allowlist, never interpolated input.
+_ASSESSMENT_COUNTERS = {
+    "passed": "passed_count",
+    "failed": "failed_count",
+    "indeterminate": "indeterminate_count",
+    "not_assessable": "not_assessable_count",
+}
+
+
 def increment_scan_progress(
     session: Session,
     scan_id: int,
-    passed: bool,
+    status: str,
 ) -> None:
-    """Increment the passed or failed count for a scan."""
-    if passed:
-        session.execute(
-            text("UPDATE scan SET passed_count = passed_count + 1 WHERE id = :scan_id"),
-            {"scan_id": scan_id},
-        )
-    else:
-        session.execute(
-            text("UPDATE scan SET failed_count = failed_count + 1 WHERE id = :scan_id"),
-            {"scan_id": scan_id},
-        )
+    """Increment the counter for an assessed result's status.
+
+    ``status`` is one of ``passed``, ``failed``, ``indeterminate`` or
+    ``not_assessable``. A ``null`` policy verdict is ``indeterminate``, not
+    ``failed``: counting it as failed is the false-fail GRC-D05 removes.
+    """
+    column = _ASSESSMENT_COUNTERS.get(status)
+    if column is None:
+        raise ValueError(f"not an assessment status: {status!r}")
+    session.execute(
+        text(f"UPDATE scan SET {column} = {column} + 1 WHERE id = :scan_id"),  # noqa: S608
+        {"scan_id": scan_id},
+    )
 
 
 def increment_scan_error_count(session: Session, scan_id: int) -> None:
@@ -320,7 +334,8 @@ def finalize_scan_if_complete(session: Session, scan_id: int) -> bool:
     # Use SELECT FOR UPDATE to prevent race condition
     result = session.execute(
         text("""
-            SELECT id, status, passed_count, failed_count
+            SELECT id, status, passed_count, failed_count,
+                   selected_count, total_controls
             FROM scan
             WHERE id = :scan_id
             FOR UPDATE
@@ -333,15 +348,17 @@ def finalize_scan_if_complete(session: Session, scan_id: int) -> bool:
         # Already finalized by another task
         return False
 
-    # Calculate compliance score
-    passed = row.passed_count or 0
-    failed = row.failed_count or 0
-    total = passed + failed
-
-    if total > 0:
-        compliance_score = Decimal(str(round(passed / total * 100, 2)))
-    else:
-        compliance_score = Decimal("0.00")
+    # GRC-D05: compliance is passed / (passed + failed); coverage is
+    # (passed + failed) / selected scope. Each is None when its denominator is
+    # zero, so a scan that assessed nothing reads "not assessed" rather than 0%.
+    # The frozen scope is selected_count where recorded, else total_controls.
+    selected = row.selected_count
+    if selected is None:
+        selected = row.total_controls
+    compliance_score, coverage_score = calculate_scores(
+        {"passed": row.passed_count or 0, "failed": row.failed_count or 0},
+        selected,
+    )
 
     # Update scan to completed
     session.execute(
@@ -349,10 +366,19 @@ def finalize_scan_if_complete(session: Session, scan_id: int) -> bool:
             UPDATE scan
             SET status = 'completed',
                 finished_at = now(),
-                compliance_score = :compliance_score
+                compliance_score = :compliance_score,
+                coverage_score = :coverage_score,
+                selected_count = :selected_count,
+                semantics_version = :semantics_version
             WHERE id = :scan_id
         """),
-        {"scan_id": scan_id, "compliance_score": compliance_score},
+        {
+            "scan_id": scan_id,
+            "compliance_score": compliance_score,
+            "coverage_score": coverage_score,
+            "selected_count": selected,
+            "semantics_version": "phase3-v1",
+        },
     )
 
     return True

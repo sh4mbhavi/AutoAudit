@@ -61,11 +61,16 @@ class ScanRead(BaseModel):
     started_at: datetime
     finished_at: datetime | None
     compliance_score: Decimal | None
+    coverage_score: Decimal | None = None
     total_controls: int
+    selected_count: int | None = None
     passed_count: int
     failed_count: int
     skipped_count: int
     error_count: int
+    indeterminate_count: int = 0
+    not_assessable_count: int = 0
+    semantics_version: str | None = None
     notes: str | None
     results: list[ScanResultRead] | None = None
 
@@ -86,11 +91,16 @@ class ScanListItem(BaseModel):
     started_at: datetime
     finished_at: datetime | None
     compliance_score: Decimal | None
+    coverage_score: Decimal | None = None
     total_controls: int
+    selected_count: int | None = None
     passed_count: int
     failed_count: int
     skipped_count: int
     error_count: int
+    indeterminate_count: int = 0
+    not_assessable_count: int = 0
+    semantics_version: str | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -124,11 +134,16 @@ class ScanSummary(BaseModel):
     started_at: datetime
     finished_at: datetime | None
     compliance_score: Decimal | None
+    coverage_score: Decimal | None = None
     total_controls: int
+    selected_count: int | None = None
     passed_count: int
     failed_count: int
     skipped_count: int
     error_count: int
+    indeterminate_count: int = 0
+    not_assessable_count: int = 0
+    semantics_version: str | None = None
     categories: list[ControlCategoryBreakdown]
 
     model_config = ConfigDict(from_attributes=True)

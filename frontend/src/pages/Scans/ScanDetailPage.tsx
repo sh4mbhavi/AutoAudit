@@ -44,6 +44,8 @@ type ScanDetail = {
 	failed_count?: number;
 	error_count?: number;
 	skipped_count?: number;
+	indeterminate_count?: number;
+	not_assessable_count?: number;
 	results?: ScanResult[];
 	error?: string;
 };
@@ -106,6 +108,18 @@ const resultStatusColors: Record<
 		badgeBg: "bg-orange-500/15",
 	},
 	skipped: {
+		border: "border-l-slate-400",
+		icon: "text-slate-400",
+		badge: "text-slate-400",
+		badgeBg: "bg-slate-500/15",
+	},
+	indeterminate: {
+		border: "border-l-amber-500",
+		icon: "text-amber-500",
+		badge: "text-amber-500",
+		badgeBg: "bg-amber-500/15",
+	},
+	not_assessable: {
 		border: "border-l-slate-400",
 		icon: "text-slate-400",
 		badge: "text-slate-400",
@@ -239,6 +253,10 @@ const ScanDetailPage: React.FC<ScanDetailPageProps> = ({
 				return "Fail";
 			case "error":
 				return "Error";
+			case "indeterminate":
+				return "Indeterminate";
+			case "not_assessable":
+				return "Not assessable";
 			case "pending":
 				return "Pending";
 			case "skipped":
@@ -332,11 +350,15 @@ const ScanDetailPage: React.FC<ScanDetailPageProps> = ({
 		passed: scan.passed_count || 0,
 		failed: scan.failed_count || 0,
 		errors: scan.error_count || 0,
+		indeterminate: scan.indeterminate_count || 0,
+		notAssessable: scan.not_assessable_count || 0,
 		pending:
 			(scan.total_controls || 0) -
 			(scan.passed_count || 0) -
 			(scan.failed_count || 0) -
 			(scan.error_count || 0) -
+			(scan.indeterminate_count || 0) -
+			(scan.not_assessable_count || 0) -
 			(scan.skipped_count || 0),
 	};
 
@@ -344,6 +366,8 @@ const ScanDetailPage: React.FC<ScanDetailPageProps> = ({
 		summary.passed +
 		summary.failed +
 		summary.errors +
+		summary.indeterminate +
+		summary.notAssessable +
 		(scan.skipped_count || 0);
 
 	const progressPercent =

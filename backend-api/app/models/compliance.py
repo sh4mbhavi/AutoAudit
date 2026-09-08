@@ -62,6 +62,19 @@ class Scan(Base):
     error_count: Mapped[int] = mapped_column(default=0)
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
+    # GRC-D05 result semantics: coverage is reported beside compliance, and a
+    # result whose evidence was insufficient is counted as indeterminate rather
+    # than folded into failed. selected_count is the scan's frozen scope (the
+    # coverage denominator); it and coverage_score are nullable because a legacy
+    # scan created before this migration has no such attribution.
+    selected_count: Mapped[Optional[int]] = mapped_column(nullable=True)
+    coverage_score: Mapped[Optional[Decimal]] = mapped_column(
+        Numeric(5, 2), nullable=True
+    )
+    indeterminate_count: Mapped[int] = mapped_column(default=0, server_default="0")
+    not_assessable_count: Mapped[int] = mapped_column(default=0, server_default="0")
+    semantics_version: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+
     # Relationships
     user: Mapped["User"] = relationship(back_populates="scans")
     m365_connection: Mapped[Optional["M365Connection"]] = relationship(
