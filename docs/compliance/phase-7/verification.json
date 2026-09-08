@@ -115,8 +115,8 @@
     "Any live Microsoft 365 tenant call. No tenant, credential, deployment, repository setting or public PR was touched."
   ],
   "independent_review": {
-    "sub_agent_streams": "Each of the six implementation streams was reviewed read-only by Codex; findings were folded in.",
-    "integration_work": "NOT independently reviewed. The Codex account hit its usage limit (resets 2026-09-07) before the migration, models, config, mapping artifact, Compose/Dockerfile and CI changes could be reviewed.",
+    "sub_agent_streams": "Each of the six implementation streams was reviewed by the designated second reviewer (an external, automated, read-only code review); findings were folded in.",
+    "integration_work": "NOT independently reviewed. The designated second reviewer's usage quota was exhausted (resets 2026-09-07) before the migration, models, config, mapping artifact, Compose/Dockerfile and CI changes could be reviewed.",
     "substituted_self_verification": [
       "mapping.json validates structurally: 47 points of focus, 44 unique control ids, every rating in rating_vocabulary, no 'No' row carrying evidence, both reference directions closed, CC1-CC9 covered, approval.approved false with null reviewer fields.",
       "alembic revision --autogenerate against a freshly migrated database proposes no change to evidence_artifact, evidence_audit_event, manual_evidence_record or manual_evidence_revision, so the models and the migration agree.",

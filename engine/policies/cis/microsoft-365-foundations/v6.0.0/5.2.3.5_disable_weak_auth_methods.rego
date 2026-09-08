@@ -41,6 +41,7 @@ assessed_result := output if {
 	output := {
 		"compliant": compliant,
 		"message": msg,
+		"affected_resources": ["authenticationMethodsPolicy" | not compliant],
 		"details": {
 			"sms_enabled": sms,
 			"voice_enabled": voice,

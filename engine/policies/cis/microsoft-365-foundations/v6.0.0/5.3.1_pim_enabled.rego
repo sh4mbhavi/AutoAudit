@@ -37,6 +37,7 @@ assessed_result := output if {
 	output := {
 		"compliant": compliant,
 		"message": msg,
+		"affected_resources": ["privilegedIdentityManagement" | not compliant],
 		"details": {
 			"total_policies": input.total_policies,
 		},

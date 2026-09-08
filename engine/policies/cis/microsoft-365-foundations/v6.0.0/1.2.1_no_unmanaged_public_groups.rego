@@ -40,6 +40,7 @@ assessed_result := output if {
 	output := {
 		"compliant": compliant_value,
 		"message": msg,
+		"affected_resources": [g.id | some g in publics],
 		"details": {
 			"total_groups": input.total_groups,
 			"public_groups_count": count(publics),

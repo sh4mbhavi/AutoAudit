@@ -38,6 +38,7 @@ assessed_result := output if {
 	output := {
 		"compliant": compliant,
 		"message": msg,
+		"affected_resources": ["roleManagementPolicy" | not compliant],
 		"details": {
 			"privileged_role_admin_policy": input.privileged_role_admin_policy,
 			"approval_required": required,

@@ -40,6 +40,7 @@ assessed_result := out if {
 	out := {
 		"compliant": compliant_value,
 		"message": msg,
+		"affected_resources": ["authorizationPolicy" | not compliant_value],
 		"details": {
 			"allowed_to_create_apps": value,
 		},

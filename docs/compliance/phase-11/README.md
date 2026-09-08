@@ -276,7 +276,8 @@ six LOW `DS-0026` findings, so the gate could be turned on gating from day one.
 from here, so this is an absence of an *explicit* IaC gate.)
 
 SAST coverage is **better than it first appeared**, and this phase got it wrong
-before Codex refuted it. `ci.security.yml` is path-filtered to `security/**`, but
+before the designated second reviewer (an external, automated, read-only code
+review) refuted it. `ci.security.yml` is path-filtered to `security/**`, but
 it is not the repository's only CodeQL workflow: `ci.backend-api.yml:36-43`,
 `ci.engine.yml:31-37` and `ci.frontend.yml:31-38` each run
 `codeql-action/init` and `analyze` on every pull request to `main` **with no path
@@ -295,12 +296,12 @@ product:
   were equivalent. `engine/policies/` holds only
   `cis/microsoft-365-foundations` and `essential-eight`; there is no NIST or ISO
   27001 policy, collector, metadata record or benchmark, and `GET /v1/benchmarks`
-  cannot return one. What *does* exist — and this phase missed it until Codex
-  refuted the blanket claim — is `security/strategies/custom_benchmarks.py:83`
-  and `:91`: keyword checkers over an uploaded document, **one rule each**
-  (`NIST-IR`, `ISO-A.9`), inside the unmaintained TPRM module. Two of the four
-  entries are a 140-control automated benchmark; the other two are a keyword
-  search of a file the customer supplies.
+  cannot return one. What *does* exist — and this phase missed it until the
+  designated second reviewer refuted the blanket claim — is
+  `security/strategies/custom_benchmarks.py:83` and `:91`: keyword checkers over
+  an uploaded document, **one rule each** (`NIST-IR`, `ISO-A.9`), inside the
+  unmaintained TPRM module. Two of the four entries are a 140-control automated
+  benchmark; the other two are a keyword search of a file the customer supplies.
 - `FAQSection.tsx:43` promises *"comprehensive compliance reports in PDF, Excel,
   or CSV formats"* that are *"audit-ready"*. No PDF, spreadsheet or CSV
   generation exists in `backend-api/app`; the report surfaces are a JSON endpoint
@@ -374,7 +375,7 @@ generator exists" and "no scan is re-derivable from provenance" as overstated.
 Those are carried as unmet criteria and as a documented break in the traceability
 chain, not as defects. They also disagreed with each other on how many policies
 break the `affected_resources` contract, offering 20 and 12; Phase 11 counted it
-directly and Codex reproduced the count.
+directly and the designated second reviewer reproduced the count.
 
 ## What is genuinely ready
 
@@ -428,14 +429,16 @@ and cannot see the other 25.
 
 ## Independent review
 
-**Codex was available for the first time in five phases.** Phases 7, 8, 9 and 10
-each recorded it rate-limited and substituted Gemini; Phase 10's handoff said
-outright that four consecutive phases was not an accident and that this stack
-should get an independent human or Codex review before merge. It got one.
+**The designated second reviewer was available for the first time in five
+phases.** Phases 7, 8, 9 and 10 each recorded it rate-limited and substituted the
+fallback reviewer; Phase 10's handoff said outright that four consecutive phases
+was not an accident and that this stack should get an independent human review,
+or a pass by the designated second reviewer, before merge. It got one.
 
-Codex was given fourteen of Phase 11's own claims across three rounds, prompted
-to refute by default. It **confirmed eight, refuted five as written, and one of
-those was withdrawn outright.** The refutations are the valuable half:
+The designated second reviewer was given fourteen of Phase 11's own claims across
+three rounds, prompted to refute by default. It **confirmed eight, refuted five
+as written, and one of those was withdrawn outright.** The refutations are the
+valuable half:
 
 - **Refuted:** *"nothing declares or asserts"* the engine-identity precondition.
   It does — `engine/worker_entrypoint.sh:6` calls `engine_identity()` before
@@ -450,8 +453,8 @@ those was withdrawn outright.** The refutations are the valuable half:
 - **Corrected:** the CIS 1.2.2 mechanism. Rego produces **no bindings** for
   string membership rather than iterating four characters; the fabricated "4"
   comes from `count()` over the string's length on a different line. The observed
-  false pass is unchanged, and Codex reproduced it — including under the worker's
-  `--strict-builtin-errors`.
+  false pass is unchanged, and the designated second reviewer reproduced it —
+  including under the worker's `--strict-builtin-errors`.
 - **Corrected:** *"on any input"* for the contract-broken controls. A collection
   failure or non-object evidence fails those controls earlier, for a different
   reason, without reaching the policy. The accurate statement is *whenever
@@ -467,9 +470,9 @@ those was withdrawn outright.** The refutations are the valuable half:
   unmaintained TPRM module. Restated to say exactly that; severity high → medium.
 - **Corrected:** *"merged, Alembic refuses to load the versions directory"*.
   `alembic/script/revision.py:212` warns on a duplicate revision id and loads
-  anyway; the failure is at **head resolution** on the combined graph, which
-  Codex reproduced in memory. `alembic upgrade head` still fails, and with it
-  `entrypoint.sh:5`.
+  anyway; the failure is at **head resolution** on the combined graph, which the
+  designated second reviewer reproduced in memory. `alembic upgrade head` still
+  fails, and with it `entrypoint.sh:5`.
 
 It confirmed the rest, reproducing all nine always-invalid contract failures
 under OPA 1.20.2 and the 19 ruff errors under ruff 0.8.0 independently, and added
@@ -481,9 +484,9 @@ verifiable from here, and that it could not check plan item 19.1.13's exact
 wording **because the execution plan is not in this branch**, which is the
 decision-register finding demonstrating itself.
 
-Gemini reviewed the same headline claims in parallel and confirmed the PEP 604
-mechanism, the `OPAResult` contract path (finding no normalisation between the
-OPA output and `model_validate`), and both supply-chain gaps.
+The fallback reviewer reviewed the same headline claims in parallel and confirmed
+the PEP 604 mechanism, the `OPAResult` contract path (finding no normalisation
+between the OPA output and `model_validate`), and both supply-chain gaps.
 
 Full record in [review.json](review.json).
 

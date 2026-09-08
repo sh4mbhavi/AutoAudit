@@ -344,8 +344,8 @@ automatic cleanup is authorized by it.
 
 ## Defects this phase found and fixed in its own work
 
-Two independent passes ran over the code that landed: Gemini on the two
-highest-risk modules, then a six-dimension adversarial review — 60 candidate
+Two independent passes ran over the code that landed: the fallback reviewer on
+the two highest-risk modules, then a six-dimension adversarial review — 60 candidate
 findings, three independent refuters each, 186 agents. **15 survived all three
 refuters and every one is fixed**; 45 were refuted; none were left unverified.
 [review.json](review.json) records all of them with their verdict counts.
@@ -467,12 +467,14 @@ Inherited and unchanged from earlier phases:
 
 ## Independent review
 
-**Codex was unavailable for the fourth consecutive phase** — rate-limited, with
-the limit resetting at 12:38 on 2026-09-07. Gemini substituted on the two
-highest-risk modules and found the `--check` lockout, the exporter blindness and
-three other real defects, all fixed above. That substitution is weaker than the
-standing instruction, and four consecutive phases is not an accident: **this
-stack should get an independent human or Codex review before merge.**
+**The designated second reviewer (an external, automated, read-only code review)
+was unavailable for the fourth consecutive phase** — rate-limited, with
+the limit resetting at 12:38 on 2026-09-07. The fallback reviewer substituted on
+the two highest-risk modules and found the `--check` lockout, the exporter
+blindness and three other real defects, all fixed above. That substitution is
+weaker than the standing instruction, and four consecutive phases is not an
+accident: **this stack should get an independent human review, or a pass by the
+designated second reviewer, before merge.**
 
 ## Verification
 

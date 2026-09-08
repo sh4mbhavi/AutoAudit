@@ -180,10 +180,11 @@ not their request count.
 
 ## Defects this phase found and fixed in its own work
 
-Two independent passes ran over the code that actually landed: Gemini on the two
-highest-risk modules, then a six-dimension adversarial review with three
-independent refuters per finding. 38 candidate findings; [review.json](review.json)
-records all of them and what was done. The most serious:
+Two independent passes ran over the code that actually landed: the fallback
+reviewer on the two highest-risk modules, then a six-dimension adversarial
+review with three independent refuters per finding. 38 candidate findings;
+[review.json](review.json) records all of them and what was done. The most
+serious:
 
 - **A group failure took the FIRST member's reason code and retryability.** A
   control whose policy file was missing was recorded as `evaluation_error`
@@ -272,11 +273,14 @@ Inherited and unchanged from earlier phases:
 
 ## Independent review
 
-**Codex was unavailable for the third consecutive phase** — rate-limited until
-2026-09-07 12:38, the same limit Phase 7 and Phase 8 recorded. Gemini substituted
-on the two highest-risk modules and found three real defects. That substitution is
-weaker than the standing instruction, and three phases is a pattern rather than an
-accident: this stack should get an independent human or Codex review before merge.
+**The designated second reviewer (an external, automated, read-only code review)
+was unavailable for the third consecutive phase** — rate-limited until
+2026-09-07 12:38, the same limit Phase 7 and Phase 8 recorded. The fallback
+reviewer substituted on the two highest-risk modules and found three real
+defects. That substitution is weaker than the standing instruction, and three
+phases is a pattern rather than an accident: this stack should get an
+independent human review, or a pass by the designated second reviewer, before
+merge.
 
 Twelve of the 120 review agents hit a session limit, leaving three findings with
 no refuter verdict. All three were adjudicated by hand, all three were real, and

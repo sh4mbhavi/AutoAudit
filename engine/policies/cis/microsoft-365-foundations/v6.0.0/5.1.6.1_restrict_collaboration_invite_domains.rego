@@ -49,6 +49,7 @@ assessed_result := output if {
 	output := {
 		"compliant": compliant_value,
 		"message": msg,
+		"affected_resources": ["crossTenantAccessPolicy" | not compliant_value],
 		"details": {
 			"partners_count": partners_count,
 			"partner_tenant_ids": [p.tenantId | some p in partners; p.tenantId != null],

@@ -48,6 +48,7 @@ assessed_result := output if {
 	output := {
 		"compliant": compliant_value,
 		"message": msg,
+		"affected_resources": ["passwordProtectionPolicy" | not compliant_value],
 		"details": {
 			"banned_password_list_enabled": enabled,
 			"banned_password_list_present": banned_list_present,

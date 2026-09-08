@@ -42,6 +42,7 @@ assessed_result := output if {
 	output := {
 		"compliant": compliant_value,
 		"message": msg,
+		"affected_resources": ["authenticationMethodsPolicy" | not compliant_value],
 		"details": {
 			"state": input.state,
 			"number_matching_enabled": number_matching,

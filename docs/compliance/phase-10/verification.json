@@ -150,9 +150,9 @@
     "additional": "engine/tests/test_phase10_metrics.py and tools/tests/test_phase10_retention_report.py each parametrise their arithmetic over UTC, Australia/Melbourne and America/New_York explicitly, with boundary rows two hours either side of expiry, so the check does not depend on the cluster's configuration."
   },
   "independent_review": {
-    "codex": "UNAVAILABLE for the FOURTH consecutive phase. Rate-limited; the limit resets at 12:38 on 2026-09-07. Phases 7, 8 and 9 recorded the same unavailability.",
-    "substitute": "Gemini, on the two highest-risk modules (the encryption key ring and rotation pass; the metrics exporter and dispatcher loop).",
-    "gemini_findings_fixed": [
+    "designated_reviewer": "UNAVAILABLE for the FOURTH consecutive phase. Rate-limited; the limit resets at 12:38 on 2026-09-07. Phases 7, 8 and 9 recorded the same unavailability.",
+    "substitute": "The fallback reviewer, on the two highest-risk modules (the encryption key ring and rotation pass; the metrics exporter and dispatcher loop).",
+    "fallback_reviewer_findings_fixed": [
       "tools/ops/rotate_encryption_key.py: --check could never return 0, because it gated on evidence excerpts that are deliberately never rotated and so never reach zero. The tool's own documented step 3 was unreachable.",
       "engine/worker/dispatcher.py: metrics were refreshed only after a SUCCESSFUL tick, so a database outage left a stale collector_exporter_up=1 and ScanExporterDown — the alert that exists to catch a dead dispatcher — could never fire.",
       "engine/worker/metrics.py: scans_past_deadline filtered on deadline_at IS NOT NULL while the reconciler expires on COALESCE(deadline_at, last_progress_at + deadline), so a scan the reconciler considers overdue reported zero.",
@@ -162,12 +162,12 @@
       "tools/ops/rotate_encryption_key.py: `del plaintext` implied a memory wipe CPython does not perform; removed.",
       "engine/worker/dispatcher.py: the metrics exporter bound 0.0.0.0 implicitly; now explicit and configurable."
     ],
-    "gemini_findings_refuted": [
+    "fallback_reviewer_findings_refuted": [
       "'last_progress_at IS NULL reports age 0': the column is NOT NULL with a server default, so the case cannot arise.",
       "'absent() strips labels and breaks Alertmanager inhibition': an alerting rule's `labels:` are attached to the alert regardless of the expression's output labels, so ScanExporterDown does carry service=dispatcher."
     ],
     "adversarial_pass": "six independent reviewers over the landed Phase 10 diff, then three independent refuters per finding with distinct lenses (is it true / is it reachable / is it already handled), defaulting to refuted when uncertain. Recorded in review.json.",
-    "honest_limitation": "Four consecutive phases without the standing independent review is a pattern, not an accident. Gemini is a weaker substitute and found real defects that six internal reviewers had not yet surfaced, which is itself the argument for the external pass. This stack should get an independent human or Codex review before merge."
+    "honest_limitation": "Four consecutive phases without the standing independent review is a pattern, not an accident. The fallback reviewer is a weaker substitute and found real defects that six internal reviewers had not yet surfaced, which is itself the argument for the external pass. This stack should get an independent human review, or a pass by the designated second reviewer (an external, automated, read-only code review), before merge."
   },
   "not_run": [
     "Any live Microsoft 365 tenant operation. No tenant was contacted.",

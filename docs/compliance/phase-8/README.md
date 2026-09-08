@@ -257,9 +257,10 @@ Inherited and unchanged from earlier phases:
 
 ## Independent review
 
-**Codex was unavailable for this phase** — rate-limited until 2026-09-07 12:38,
-the same limit Phase 7 recorded. No Codex review was performed for any Phase 8
-stream. Gemini (Antigravity CLI, gemini-3.5-flash) substituted on the two
+**The designated second reviewer (an external, automated, read-only code review)
+was unavailable for this phase** — rate-limited until 2026-09-07 12:38,
+the same limit Phase 7 recorded. No designated second review was performed for
+any Phase 8 stream. The fallback reviewer substituted on the two
 highest-risk new modules and returned five candidate defects: two were confirmed
 and fixed (cross-tenant digest comparability; `canonical_sorted` never called),
 one was a documentation issue, and two were adjudicated as not defects with the
@@ -269,8 +270,9 @@ false verdict.
 
 A six-dimension adversarial review of the landed code, with independent refuters
 per finding, produced 34 findings; the three criticals and most highs are fixed
-above. **That substitution is weaker than the standing Codex instruction, and
-this phase should get an independent human or Codex review before merge.** Phase
+above. **That substitution is weaker than the standing instruction to use the
+designated second reviewer, and this phase should get an independent human
+review, or a pass by the designated second reviewer, before merge.** Phase
 7's integration work also went un-reviewed for the same reason; that has now
 happened twice and should not be allowed to become routine.
 

@@ -47,6 +47,7 @@ assessed_result := out if {
 	out := {
 		"compliant": compliant_value,
 		"message": msg,
+		"affected_resources": ["authorizationPolicy" | not compliant_value],
 		"details": {
 			"allow_invites_from": v,
 		},

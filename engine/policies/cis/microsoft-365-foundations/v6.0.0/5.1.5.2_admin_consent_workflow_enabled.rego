@@ -43,6 +43,7 @@ assessed_result := output if {
 	output := {
 		"compliant": compliant_value,
 		"message": msg,
+		"affected_resources": ["adminConsentRequestPolicy" | not compliant_value],
 		"details": {
 			"is_enabled": enabled,
 			"reviewers_count": count(reviewers),

@@ -111,12 +111,12 @@
     "excluded": "2 of 43 collectors reject the synthetic tenant's shape outright (entra.governance.pim_role_policies, entra.groups.groups, plus entra.roles.admin_license_footprint at larger sizes). They are named in the report and excluded from BOTH columns equally, so the delta stays meaningful and the exclusion is visible."
   },
   "independent_review": {
-    "codex": "UNAVAILABLE. Rate-limited until 2026-09-07 12:38 -- the same limit Phase 7 and Phase 8 recorded. This is the THIRD consecutive phase with no Codex review, and it should not be treated as normal.",
-    "substitute": "Gemini (Antigravity CLI, gemini-3.5-flash) reviewed engine/worker/tasks.py and engine/worker/dispatcher.py, the two highest-risk modules.",
+    "designated_reviewer": "UNAVAILABLE. Rate-limited until 2026-09-07 12:38 -- the same limit Phase 7 and Phase 8 recorded. This is the THIRD consecutive phase with no designated second review, and it should not be treated as normal.",
+    "substitute": "The fallback reviewer reviewed engine/worker/tasks.py and engine/worker/dispatcher.py, the two highest-risk modules.",
     "substitute_outcome": "4 candidate defects returned; 3 confirmed and fixed (a group failure took the FIRST member's reason code and retryability; a rolling deploy could create both a per-result row and a collection row for the same control; a pending non-ready control could become an unpublishable collection row that failed the whole scan on retry exhaustion). The fourth, a message inconsistency between the single-control and grouped shapes, was confirmed as a narrower defect and fixed: the terminal message said 'after retries' even when no retry was attempted.",
     "in_session": "A six-dimension adversarial review of the landed code, with three independent refuters per finding on distinct lenses. 38 candidate findings; see review.json.",
     "verification_gap": "12 of 120 agents hit a session limit, leaving three findings with zero refuter verdicts. All three were adjudicated by hand, all three were real, and all three are fixed.",
-    "honest_limitation": "This substitution is weaker than the standing Codex instruction. Phase 7's and Phase 8's integration work also went un-reviewed for the same reason. Three phases is a pattern, not an accident, and this stack should get an independent human or Codex review before merge."
+    "honest_limitation": "This substitution is weaker than the standing instruction to use the designated second reviewer (an external, automated, read-only code review). Phase 7's and Phase 8's integration work also went un-reviewed for the same reason. Three phases is a pattern, not an accident, and this stack should get an independent human review, or a pass by the designated second reviewer, before merge."
   },
   "not_run": [
     "Any live Microsoft 365 tenant load test. No tenant was contacted, no token was acquired against Microsoft, and no PowerShell session was opened against a tenant. The before/after numbers are request counts against a synthetic transport.",

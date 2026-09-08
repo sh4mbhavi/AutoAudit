@@ -57,6 +57,7 @@ assessed_result := output if {
 	output := {
 		"compliant": compliant,
 		"message": msg,
+		"affected_resources": ["accessReviewScheduleDefinition" | not compliant],
 		"details": {
 			"total_reviews": input.total_reviews,
 			"role_reviews_count": count(role_reviews),

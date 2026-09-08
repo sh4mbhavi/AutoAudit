@@ -48,6 +48,7 @@ assessed_result := output if {
 	output := {
 		"compliant": compliant,
 		"message": msg,
+		"affected_resources": ["authenticationMethodsPolicy" | not compliant],
 		"details": {
 			"system_credential_preferences_state": state,
 		},

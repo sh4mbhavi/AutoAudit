@@ -10,7 +10,7 @@
     "The API contract and the frontend (backend-api/app/api/v1/scans.py, schemas/provenance.py, main.py; frontend api/client.ts, hooks/usePoll.ts, Scans/ScanDetailPage.tsx, Scans/ScansPage.tsx)",
     "Gates, claims and what the tests actually prove (Phase 9 \u2014 performance and maintainability)"
   ],
-  "note": "The review ran while fixes from an earlier Gemini pass were still landing, so many findings were fixed BEFORE their refuters read the file. A 'refuted' verdict here therefore means 'the refuter could not find the defect in the code as it stood', which for most of these is because it had just been fixed -- not that the finding was wrong. Every finding is listed with what was actually done.",
+  "note": "The review ran while fixes from an earlier fallback-reviewer pass were still landing, so many findings were fixed BEFORE their refuters read the file. A 'refuted' verdict here therefore means 'the refuter could not find the defect in the code as it stood', which for most of these is because it had just been fixed -- not that the finding was wrong. Every finding is listed with what was actually done.",
   "survived_all_three_refuters": [
     {
       "severity": "high",

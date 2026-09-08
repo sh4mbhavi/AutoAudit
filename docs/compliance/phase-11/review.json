@@ -1,14 +1,14 @@
 {
  "phase": 11,
  "date": "2026-09-07",
- "codex": {
+ "designated_reviewer": {
   "available": true,
-  "note": "AVAILABLE for the first time in five phases. Phases 7, 8, 9 and 10 each recorded it rate-limited and substituted Gemini; Phase 10's handoff stated that four consecutive phases was not an accident and that this stack should get an independent human or Codex review before merge.",
-  "method": "Three batches of Phase 11's own claims, each prompted to REFUTE by default and to correct any claim that was real but overstated. Codex ran read-only in the worktree and reproduced results independently rather than reading alone.",
+  "note": "The designated second reviewer (an external, automated, read-only code review) was AVAILABLE for the first time in five phases. Phases 7, 8, 9 and 10 each recorded it rate-limited and substituted the fallback reviewer; Phase 10's handoff stated that four consecutive phases was not an accident and that this stack should get an independent human review, or a pass by the designated second reviewer, before merge.",
+  "method": "Three batches of Phase 11's own claims, each prompted to REFUTE by default and to correct any claim that was real but overstated. The designated second reviewer ran read-only in the worktree and reproduced results independently rather than reading alone.",
   "refuted_as_written": [
    {
     "claim": "P11-OWN-02 - 'nothing declares or asserts' the engine-identity precondition",
-    "correction": "False. engine/worker_entrypoint.sh:6 calls engine_identity() before starting Celery and docs/compliance/phase-3/README.md:121 documents the identity sources. Verified. The accurate finding is that the TEST suites lack an identity fixture or preflight for a source export. Severity reduced high -> medium. Codex also corrected the failure attribution: the two non-engine failures span backend-api/tests and tools/tests, not two backend tests."
+    "correction": "False. engine/worker_entrypoint.sh:6 calls engine_identity() before starting Celery and docs/compliance/phase-3/README.md:121 documents the identity sources. Verified. The accurate finding is that the TEST suites lack an identity fixture or preflight for a source export. Severity reduced high -> medium. The designated second reviewer also corrected the failure attribution: the two non-engine failures span backend-api/tests and tools/tests, not two backend tests."
    },
    {
     "claim": "P11-OWN-21 - 'no phase of this programme has verified' v3.1.0, v4.0.0 or essential-eight",
@@ -24,13 +24,13 @@
    },
    {
     "claim": "P11-OWN-03 - merged, Alembic refuses to load the versions directory at all",
-    "correction": "Wrong mechanism. alembic/script/revision.py:212 WARNS on a duplicate revision id and loads anyway; the failure is at head resolution on the combined graph, which Codex reproduced in memory. `alembic upgrade head` still fails, and with it entrypoint.sh:5. Explicit revision targets remain resolvable. Corrected."
+    "correction": "Wrong mechanism. alembic/script/revision.py:212 WARNS on a duplicate revision id and loads anyway; the failure is at head resolution on the combined graph, which the designated second reviewer reproduced in memory. `alembic upgrade head` still fails, and with it entrypoint.sh:5. Explicit revision targets remain resolvable. Corrected."
    }
   ],
   "corrected": [
    {
     "claim": "P11-OWN-16 - the CIS 1.2.2 mechanism",
-    "correction": "Rego produces ZERO bindings for string membership; it does not iterate the string's four characters. The fabricated 4 comes from count(shared_mailboxes) over the string's length on a different line. The observed false pass is unchanged and Codex reproduced it, including under the worker's --strict-builtin-errors."
+    "correction": "Rego produces ZERO bindings for string membership; it does not iterate the string's four characters. The fabricated 4 comes from count(shared_mailboxes) over the string's length on a different line. The observed false pass is unchanged and the designated second reviewer reproduced it, including under the worker's --strict-builtin-errors."
    },
    {
     "claim": "P11-OWN-14 - 'on any input'",
@@ -38,7 +38,7 @@
    },
    {
     "claim": "P11-OWN-01 - '19 errors that have no auto-fix'",
-    "correction": "No SAFE auto-fix; six carry unsafe fixes ruff will not apply without --unsafe-fixes. Codex independently reproduced the same 19 errors and distribution under ruff 0.8.0. Its read-only replay predicted 223 modified files against the 221 observed by actually running the hooks."
+    "correction": "No SAFE auto-fix; six carry unsafe fixes ruff will not apply without --unsafe-fixes. The designated second reviewer independently reproduced the same 19 errors and distribution under ruff 0.8.0. Its read-only replay predicted 223 modified files against the 221 observed by actually running the hooks."
    }
   ],
   "confirmed": [
@@ -49,12 +49,12 @@
    "P11-OWN-17 - the PowerShell image's floating base, remote installer and unpinned modules, covered by no supply-chain test, SBOM step or scan.",
    "P11-OWN-04 - and added two refinements: keeping both /readiness decorators makes the first-registered handler win deterministically by registration order (starlette/routing.py:730) with the second shadowed, and this stack's timeout branch reports the literal string 'timeout' rather than an exception type.",
    "P11-OWN-19 - the export promise is unsupported: the API generates bounded plain-text reports (evidence.py:1234, :1575) and no PDF/Excel/CSV report generator exists under backend-api/app.",
-   "P11-OWN-08 - all three Phase 0 paths are absent from the worktree, from HEAD and from upstream/main, checked by filesystem and by `git cat-file -e`. Codex counted 82 D01-D10 occurrences across docs/compliance/phase-*/ including Phase 11's own 20, i.e. 62 across the Phase 1-10 handoffs, which is the figure recorded."
+   "P11-OWN-08 - all three Phase 0 paths are absent from the worktree, from HEAD and from upstream/main, checked by filesystem and by `git cat-file -e`. The designated second reviewer counted 82 D01-D10 occurrences across docs/compliance/phase-*/ including Phase 11's own 20, i.e. 62 across the Phase 1-10 handoffs, which is the figure recorded."
   ],
   "found_independently": [
    "tools/tests/test_phase10_supply_chain.py:27 declares POWERSHELL_DOCKERFILE as a constant and no test in the file ever uses it."
   ],
-  "caveat_raised": "Codex noted that keyword absence cannot prove no IaC scanner runs: Super-Linter is invoked in ci.backend-api.yml and its bundled linters were not verified from here. P11-OWN-09 is therefore stated as the absence of an EXPLICIT IaC gate. It also could not verify plan item 19.1.13's exact wording, because the execution plan is not in this branch - which is P11-OWN-08 demonstrating itself.",
+  "caveat_raised": "The designated second reviewer noted that keyword absence cannot prove no IaC scanner runs: Super-Linter is invoked in ci.backend-api.yml and its bundled linters were not verified from here. P11-OWN-09 is therefore stated as the absence of an EXPLICIT IaC gate. It also could not verify plan item 19.1.13's exact wording, because the execution plan is not in this branch - which is P11-OWN-08 demonstrating itself.",
   "scorecard": {
    "claims_put_to_it": 14,
    "confirmed": 8,
@@ -63,7 +63,7 @@
    "note": "Three rounds. Five of Phase 11's own claims did not survive review as written, and one was withdrawn entirely."
   }
  },
- "gemini": {
+ "fallback_reviewer": {
   "note": "Reviewed the headline claims in parallel, also prompted to refute by default.",
   "confirmed": [
    "The PEP 604 / Python 3.9 mechanism at engine/powershell/service/main.py:63.",
@@ -71,7 +71,7 @@
    "ci.supply-chain.yml:53-64 builds both images, :87-101 SBOMs both, :112-127 scans only the worker.",
    "test_phase10_supply_chain.py:67-71 inspects only ENGINE_DOCKERFILE and skips python:3.11-slim by name."
   ],
-  "note_on_failures": "Two of five Gemini calls failed with an agy transcript-extraction error and were not retried; the claims they covered were settled directly or by Codex."
+  "note_on_failures": "Two of five fallback-reviewer calls failed with a transcript-extraction error in its harness and were not retried; the claims they covered were settled directly or by the designated second reviewer."
  },
  "adversarial_pass": {
   "method": "Fourteen independent verification dimensions ran in parallel over the integrated stack. Every candidate finding then faced three refuters with distinct lenses - code truth, test-and-config truth, and scenario reachability - each defaulting to REFUTED. A finding survives only if fewer than two of its three refuters refute it.",
@@ -203,7 +203,7 @@
     "reason": "Refuted on its causal mechanism and its 'the site contradicts itself' hook, NOT on its facts: both refuters confirmed the page lists NIST and ISO 27001 and that neither is implemented. Phase 11 verified that directly and carries the fact alone as P11-OWN-18."
    }
   ],
-  "counts_the_pass_got_wrong": "Two survivors disagreed on how many ready policies violate the affected_resources contract - one said 20, another said 12. Phase 11 counted it directly: NINE never emit the field, and NINE MORE omit it only from their `default result`, giving 18 that can emit a contract-invalid result. Codex reproduced the first nine independently. The register carries the verified figure and folds both survivors into P11-OWN-14."
+  "counts_the_pass_got_wrong": "Two survivors disagreed on how many ready policies violate the affected_resources contract - one said 20, another said 12. Phase 11 counted it directly: NINE never emit the field, and NINE MORE omit it only from their `default result`, giving 18 that can emit a contract-invalid result. The designated second reviewer reproduced the first nine independently. The register carries the verified figure and folds both survivors into P11-OWN-14."
  },
  "phase_11_own_findings": {
   "count": 22,

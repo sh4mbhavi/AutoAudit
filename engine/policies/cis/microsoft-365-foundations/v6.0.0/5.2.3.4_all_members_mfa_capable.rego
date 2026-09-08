@@ -34,6 +34,16 @@ compliant if {
 msg := "All users are MFA capable" if compliant
 msg := sprintf("%d of %d users are MFA capable", [input.mfa_capable_count, input.total_users]) if not compliant
 
+# Prefer the actual users who are not MFA capable when the registration report
+# carries per-user detail; a compliant tenant yields []. Count-only evidence
+# (no registration_details) yields [] because no identity is available to name.
+not_mfa_capable_users := [id |
+	some user in object.get(input, "registration_details", [])
+	user.isMfaCapable == false
+	id := object.get(user, "userPrincipalName", object.get(user, "id", null))
+	id != null
+]
+
 assessed_result := output if {
 	total := input.total_users
 	capable := input.mfa_capable_count
@@ -41,6 +51,7 @@ assessed_result := output if {
 	output := {
 		"compliant": compliant,
 		"message": msg,
+		"affected_resources": not_mfa_capable_users,
 		"details": {
 			"total_users": total,
 			"mfa_capable_count": capable,

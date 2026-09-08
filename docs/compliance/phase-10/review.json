@@ -490,8 +490,8 @@
       "verdicts": 3
     }
   ],
-  "gemini_pass": {
-    "why": "Codex was unavailable for the fourth consecutive phase (rate-limited, resetting 12:38 on 2026-09-07).",
+  "fallback_reviewer_pass": {
+    "why": "The designated second reviewer (an external, automated, read-only code review) was unavailable for the fourth consecutive phase (rate-limited, resetting 12:38 on 2026-09-07).",
     "scope": "the two highest-risk modules: the encryption key ring with its rotation pass, and the metrics exporter with the dispatcher loop",
     "fixed": [
       "tools/ops/rotate_encryption_key.py: --check could never return 0, because it gated on evidence excerpts that are deliberately never rotated. The tool's own documented step 3 was unreachable.",

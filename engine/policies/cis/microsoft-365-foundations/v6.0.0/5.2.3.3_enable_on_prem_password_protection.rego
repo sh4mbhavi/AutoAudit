@@ -39,6 +39,7 @@ assessed_result := output if {
 	output := {
 		"compliant": compliant,
 		"message": msg,
+		"affected_resources": ["passwordProtectionPolicy" | not compliant],
 		"details": {
 			"on_prem_protection_enabled": enabled,
 			"enforce_custom_banned_passwords": input.enforce_custom_banned_passwords,

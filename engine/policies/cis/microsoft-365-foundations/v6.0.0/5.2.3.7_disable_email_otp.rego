@@ -38,6 +38,7 @@ assessed_result := output if {
 	output := {
 		"compliant": compliant,
 		"message": msg,
+		"affected_resources": ["authenticationMethodsPolicy" | not compliant],
 		"details": {
 			"email_otp_enabled": email,
 		},

@@ -40,6 +40,7 @@ assessed_result := output if {
 	output := {
 		"compliant": compliant_value,
 		"message": msg,
+		"affected_resources": ["deviceEnrollmentConfiguration" | not compliant_value],
 		"details": {
 			"personal_devices_blocked": blocked,
 			"total_configurations": input.total_configurations,

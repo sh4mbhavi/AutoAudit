@@ -37,6 +37,7 @@ assessed_result := output if {
 	output := {
 		"compliant": compliant,
 		"message": msg,
+		"affected_resources": ["accessReviewScheduleDefinition" | not compliant],
 		"details": {
 			"total_reviews": input.total_reviews,
 			"guest_reviews_count": input.guest_reviews_count,

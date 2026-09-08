@@ -61,6 +61,7 @@ assessed_result := out if {
 	out := {
 		"compliant": compliant_value,
 		"message": msg,
+		"affected_resources": ["authorizationPolicy" | not compliant_value],
 		"details": {
 			"permission_grant_policies_assigned": assigned,
 			"permission_grant_policies_assigned_count": assigned_count,

@@ -111,19 +111,21 @@ engine **1,375 passed, 1 skipped, 11 xfailed**; `opa check --strict` clean and
 warnings) and build; the documentation gate; Bandit clean over `backend-api/app`
 and `backend-api/tests`; all **8** pre-commit hooks; actionlint; `git diff --check`.
 
-Each of the six implementation streams was independently reviewed by Codex
-read-only, per the standing review instruction. Those reviews found and drove
-fixes for 12 evidence defects (including an unbounded ingress that spooled a body
+Each of the six implementation streams was independently reviewed by the
+designated second reviewer (an external, automated, read-only code review), per
+the standing review instruction. Those reviews found and drove fixes for 12
+evidence defects (including an unbounded ingress that spooled a body
 to disk before authentication, a cross-tenant folder read, and a delete that
 tombstoned a row whose bytes had not actually been removed), 10 manual-evidence
 defects (including a reviewer able to read another account's draft, and caller
 free text copied into provenance), 6 SOC 2 projection defects, and 7 crosswalk
 defects. Engineering review is not GRC approval.
 
-**The integration work itself was not Codex-reviewed.** The migration, the three
-new models, the config block, the mapping artifact, the Compose/Dockerfile and CI
-changes were written by the orchestrating session, and the Codex account hit its
-usage limit before that review could run (it resets 2026-09-07). Deterministic
+**The integration work itself got no designated second review.** The migration,
+the three new models, the config block, the mapping artifact, the
+Compose/Dockerfile and CI changes were written by the orchestrating session, and
+the designated second reviewer's usage quota was exhausted before that review
+could run (it resets 2026-09-07). Deterministic
 self-verification was substituted and is recorded in
 [verification.json](verification.json): the mapping validates structurally
 (47 points of focus, 44 unique ids, ratings in vocabulary, no `No` row carrying
@@ -174,8 +176,9 @@ weaker than an independent reviewer and this work should get one before merge.
   review as a CHECK constraint; manual evidence never alters automated scoring;
   documentation generated from metadata.
 - **Tests:** see [verification.json](verification.json).
-- **Security/GRC review:** local code and Codex reviews performed. GRC approval,
-  maintainer integration and deployment validation remain external.
+- **Security/GRC review:** local code review and designated-second-reviewer
+  passes performed. GRC approval, maintainer integration and deployment
+  validation remain external.
 - **Known gaps:**
   - **Item 15.1.9 is not finished.** Report generation and OCR still run
     synchronously in the API. They are now fully bounded and time-limited, and the
