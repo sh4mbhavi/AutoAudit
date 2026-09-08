@@ -12,7 +12,7 @@
 #   severity: high
 #   service: EntraID
 #   requires_permissions:
-#   - RoleManagementPolicy.Read.Directory
+#   - RoleManagement.Read.Directory
 
 package cis.microsoft_365_foundations.v6_0_0.control_5_3_1
 
@@ -32,7 +32,7 @@ msg := "PIM is enabled (role management policies present)" if { compliant }
 msg := "PIM does not appear to be enabled (no role management policies found)" if { not compliant }
 
 result := output if {
-  enabled := input.pim_enabled
+  _ = input.pim_enabled
 
   output := {
     "compliant": compliant,

@@ -60,5 +60,5 @@ generate_message(file_filter_enabled) := msg if {
 }
 
 generate_affected_resources(true, _) := []
-generate_affected_resources(false, data_input) := ["Common attachments filter is disabled"]
+generate_affected_resources(false, _) := ["Common attachments filter is disabled"]
 generate_affected_resources(null, _) := ["Common attachments filter status unknown"]

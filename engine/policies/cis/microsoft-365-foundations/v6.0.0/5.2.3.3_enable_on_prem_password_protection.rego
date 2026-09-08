@@ -12,7 +12,7 @@
 #   severity: medium
 #   service: EntraID
 #   requires_permissions:
-#   - Directory.Read.All
+#   - GroupSettings.Read.All
 
 package cis.microsoft_365_foundations.v6_0_0.control_5_2_3_3
 

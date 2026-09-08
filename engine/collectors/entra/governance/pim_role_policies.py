@@ -4,11 +4,11 @@ CIS Microsoft 365 Foundations Benchmark Controls:
     v6.0.0: 5.3.1, 5.3.3, 5.3.4, 5.3.5
 
 Connection Method: Microsoft Graph API
-Required Scopes: RoleManagementPolicy.Read.Directory
+Required Scopes: RoleManagement.Read.Directory
 Graph Endpoints:
     - /policies/roleManagementPolicies
     - /policies/roleManagementPolicies/{id}/rules
-    - /policies/roleManagementPolicies/{id}/rules/Approval_EndUser_Assignment
+    - /roleManagement/directory/roleDefinitions
 
 Controls covered:
     - 5.3.1: Ensure 'Privileged Identity Management' is used to manage roles

@@ -94,7 +94,7 @@
       "automation_status": "ready",
       "data_collector_id": "exchange.mailbox.mailboxes",
       "policy_file": "1.2.2_shared_mailbox_signin_blocked.rego",
-      "requires_permissions": ["Exchange.Manage"],
+      "requires_permissions": ["Exchange.ManageAsApp"],
       "notes": "Collector and policy implemented"
     },
     {
@@ -619,7 +619,7 @@
       "automation_status": "ready",
       "data_collector_id": "entra.devices.enrollment_restrictions",
       "policy_file": "4.2_block_personal_device_enrollment.rego",
-      "requires_permissions": ["DeviceManagementConfiguration.Read.All"],
+      "requires_permissions": ["DeviceManagementServiceConfig.Read.All"],
       "notes": null
     },
     {
@@ -754,7 +754,7 @@
       "automation_status": "ready",
       "data_collector_id": "entra.devices.device_registration_policy",
       "policy_file": "5.1.4.1_restrict_device_join.rego",
-      "requires_permissions": ["Policy.Read.All"],
+      "requires_permissions": ["Policy.Read.DeviceConfiguration"],
       "notes": null
     },
     {
@@ -1129,7 +1129,7 @@
       "automation_status": "ready",
       "data_collector_id": "entra.authentication.password_protection",
       "policy_file": "5.2.3.2_custom_banned_passwords_enabled.rego",
-      "requires_permissions": ["Policy.Read.All"],
+      "requires_permissions": ["GroupSettings.Read.All"],
       "notes": null
     },
     {
@@ -1144,7 +1144,7 @@
       "automation_status": "ready",
       "data_collector_id": "entra.authentication.password_protection",
       "policy_file": "5.2.3.3_enable_on_prem_password_protection.rego",
-      "requires_permissions": ["Policy.Read.All"],
+      "requires_permissions": ["GroupSettings.Read.All"],
       "notes": null
     },
     {

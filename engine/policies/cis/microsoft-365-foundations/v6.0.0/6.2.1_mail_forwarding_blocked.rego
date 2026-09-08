@@ -88,7 +88,7 @@ is_compliant(fwd_rules, wl_rules, blocked) := true if {
 } else := false
 
 # Build message - all compliant
-build_message(fwd, wl, policies, blocked) := "All forms of mail forwarding are blocked and no domain whitelist rules exist" if {
+build_message(fwd, wl, _, blocked) := "All forms of mail forwarding are blocked and no domain whitelist rules exist" if {
     count(fwd) == 0
     count(wl) == 0
     blocked == true

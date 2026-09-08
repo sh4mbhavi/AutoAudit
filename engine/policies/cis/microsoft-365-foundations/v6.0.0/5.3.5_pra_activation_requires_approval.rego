@@ -12,7 +12,7 @@
 #   severity: critical
 #   service: EntraID
 #   requires_permissions:
-#   - RoleManagementPolicy.Read.Directory
+#   - RoleManagement.Read.Directory
 
 package cis.microsoft_365_foundations.v6_0_0.control_5_3_5
 
