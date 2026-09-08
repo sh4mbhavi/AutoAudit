@@ -23,52 +23,83 @@ package cis.microsoft_365_foundations.v6_0_0.control_1_1_3
 
 import rego.v1
 
-default result := {
-  "compliant": false,
-  "message": "Evaluation failed: unable to retrieve Global Administrator role membership",
-  "details": {}
+default assessed_result := {
+	"compliant": null,
+	"message": "Evaluation failed: unable to retrieve Global Administrator role membership",
+	"details": {},
 }
 
 default compliant := false
 
 compliant if {
-  admin_count := input.global_admin_count
-  admin_count >= 2
-  admin_count <= 4
+	admin_count := input.global_admin_count
+	admin_count >= 2
+	admin_count <= 4
 }
 
-result := output if {
-  admin_count := input.global_admin_count
-  admins := get_array(input, "global_admins")
+assessed_result := output if {
+	admin_count := input.global_admin_count
+	admins := get_array(input, "global_admins")
 
-  output := {
-    "compliant": compliant,
-    "message": generate_message(admin_count),
-    "affected_resources": admins,
-    "details": {
-      "global_admin_count": admin_count,
-      "recommended_min": 2,
-      "recommended_max": 4
-    }
-  }
-}
-
-generate_message(admin_count) := msg if {
-  admin_count < 2
-  msg := sprintf("Only %d global admin(s) found. Minimum 2 recommended for continuity.", [admin_count])
+	output := {
+		"compliant": compliant,
+		"message": generate_message(admin_count),
+		"affected_resources": admins,
+		"details": {
+			"global_admin_count": admin_count,
+			"recommended_min": 2,
+			"recommended_max": 4,
+		},
+	}
 }
 
 generate_message(admin_count) := msg if {
-  admin_count > 4
-  msg := sprintf("%d global admins found. Maximum 4 recommended to minimize attack surface.", [admin_count])
+	admin_count < 2
+	msg := sprintf("Only %d global admin(s) found. Minimum 2 recommended for continuity.", [admin_count])
 }
 
 generate_message(admin_count) := msg if {
-  admin_count >= 2
-  admin_count <= 4
-  msg := sprintf("%d global admins configured (within recommended range of 2-4)", [admin_count])
+	admin_count > 4
+	msg := sprintf("%d global admins found. Maximum 4 recommended to minimize attack surface.", [admin_count])
+}
+
+generate_message(admin_count) := msg if {
+	admin_count >= 2
+	admin_count <= 4
+	msg := sprintf("%d global admins configured (within recommended range of 2-4)", [admin_count])
 }
 
 get_array(obj, key) := value if {
-  value := obj[key]
+	value := obj[key]
 } else := []
+
+# Typed, complete collector evidence is required before an assessed result is emitted.
+# Kept in this module so captured-source evaluation remains self-contained.
+default result := {
+	"compliant": null,
+	"message": "Unable to evaluate: required evidence is missing, malformed, or incomplete",
+	"affected_resources": [],
+	"details": {"evaluation_status": "indeterminate"},
+}
+
+result := assessed_result if evidence_complete
+
+evidence_complete if {
+	is_object(input)
+	not evidence_error
+	is_number(input.global_admin_count)
+	input.global_admin_count >= 0
+	input.global_admin_count == floor(input.global_admin_count)
+	is_array(input.global_admins)
+	every value in input.global_admins { is_string(value) }
+	input.global_admin_count == count(input.global_admins)
+}
+
+# A nested collector error invalidates a partial response as well as a top-level error.
+evidence_error if {
+	some path, value
+	walk(input, [path, value])
+	count(path) > 0
+	path[count(path) - 1] in {"collector_error", "error"}
+	value != null
+}

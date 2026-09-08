@@ -33,7 +33,9 @@ class PnpTenantDataCollector(BasePowerShellCollector):
             - tenant: Full Get-PnPTenant result
             - disallow_infected_file_download: Infected-file download status (CIS 7.3.1)
         """
-        tenant = await client.run_cmdlet("SharePointOnline", "Get-PnPTenant")
+        tenant = await client.run_operation(
+            "sharepoint.pnp.tenant.read", "sharepoint.pnp.tenant"
+        )
 
         return {
             "tenant": tenant,

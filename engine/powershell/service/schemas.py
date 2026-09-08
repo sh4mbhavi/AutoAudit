@@ -1,11 +1,16 @@
 """Pydantic schemas for PowerShell service API."""
 
 import re
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from executor import validate_tenant_id
+if __package__:
+    from .executor import validate_tenant_id
+    from .operations import validate_operation
+else:
+    from executor import validate_tenant_id
+    from operations import validate_operation
 
 _GUID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
@@ -16,17 +21,16 @@ _SHAREPOINT_ADMIN_URL_RE = re.compile(
     r"^https://[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?-admin\.sharepoint\.com$",
     re.IGNORECASE,
 )
+_ONMICROSOFT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9-]{0,62}\.onmicrosoft\.com$")
 
 
 class ExecuteRequest(BaseModel):
     """Request to execute a PowerShell cmdlet."""
 
-    module: Literal["ExchangeOnline", "Compliance", "Teams", "SharePointOnline"] = (
-        Field(description="PowerShell module to use")
-    )
-    cmdlet: str = Field(
-        description="PowerShell cmdlet to execute (e.g., Get-OrganizationConfig)"
-    )
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    operation_id: str
+    collector_id: str
     params: Dict[str, Any] = Field(
         default_factory=dict,
         description="Parameters to pass to the cmdlet",
@@ -51,6 +55,14 @@ class ExecuteRequest(BaseModel):
     certificate_alias: Optional[str] = Field(
         default=None,
         description="Certificate alias resolved by the service (required for SharePointOnline)",
+    )
+    compliance_certificate_alias: Optional[str] = Field(
+        default=None,
+        description="Certificate alias resolved by the service (required for Compliance)",
+    )
+    compliance_organization: Optional[str] = Field(
+        default=None,
+        description="Connect-IPPSSession -Organization primary .onmicrosoft.com domain (required for Compliance)",
     )
 
     @field_validator("tenant_id")
@@ -97,8 +109,48 @@ class ExecuteRequest(BaseModel):
             )
         return stripped
 
+    @field_validator("compliance_certificate_alias")
+    @classmethod
+    def check_compliance_certificate_alias(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        stripped = v.strip()
+        if not _CERT_ALIAS_RE.match(stripped):
+            raise ValueError(
+                "Invalid compliance_certificate_alias format. "
+                "Must be an alias name (letters, digits, underscore, hyphen)."
+            )
+        return stripped
+
+    @field_validator("compliance_organization")
+    @classmethod
+    def check_compliance_organization(cls, v: Optional[str]) -> Optional[str]:
+        if v is None:
+            return v
+        stripped = v.strip()
+        # The GUID branch is checked first so a tenant GUID always gets the
+        # message that names the .onmicrosoft.com form it must be replaced with.
+        if _GUID_RE.match(stripped):
+            raise ValueError(
+                "compliance_organization must be the tenant primary "
+                ".onmicrosoft.com domain, not a tenant GUID."
+            )
+        if not _ONMICROSOFT_RE.match(stripped):
+            raise ValueError(
+                "Invalid compliance_organization format. "
+                "Must be the tenant primary domain, e.g. contoso.onmicrosoft.com."
+            )
+        return stripped
+
+    @property
+    def module(self) -> str:
+        return validate_operation(
+            self.operation_id, self.collector_id, self.params
+        ).module
+
     @model_validator(mode="after")
     def check_module_auth_fields(self) -> "ExecuteRequest":
+        validate_operation(self.operation_id, self.collector_id, self.params)
         if self.module == "SharePointOnline":
             missing = [
                 name
@@ -117,8 +169,55 @@ class ExecuteRequest(BaseModel):
                 raise ValueError("SharePointOnline must not include token.")
             if self.graph_token:
                 raise ValueError("SharePointOnline must not include graph_token.")
+            if self.compliance_certificate_alias or self.compliance_organization:
+                raise ValueError(
+                    "Compliance authentication fields are only permitted for Compliance."
+                )
             return self
 
+        elif self.module == "Compliance":
+            missing = [
+                name
+                for name, value in (
+                    ("client_id", self.client_id),
+                    (
+                        "compliance_certificate_alias",
+                        self.compliance_certificate_alias,
+                    ),
+                    ("compliance_organization", self.compliance_organization),
+                )
+                if not value
+            ]
+            if missing:
+                raise ValueError("Compliance requires " + ", ".join(missing) + ".")
+            if self.token:
+                raise ValueError("Compliance must not include token.")
+            if self.graph_token:
+                raise ValueError("Compliance must not include graph_token.")
+            if self.sharepoint_admin_url:
+                raise ValueError("Compliance must not include sharepoint_admin_url.")
+            if self.certificate_alias:
+                raise ValueError(
+                    "Compliance must not include certificate_alias; "
+                    "use compliance_certificate_alias."
+                )
+            return self
+
+        if any(
+            value is not None
+            for value in (
+                self.client_id,
+                self.sharepoint_admin_url,
+                self.certificate_alias,
+                self.compliance_certificate_alias,
+                self.compliance_organization,
+            )
+        ):
+            raise ValueError(
+                "Certificate authentication fields are only permitted for SharePointOnline and Compliance"
+            )
+        if self.module != "Teams" and self.graph_token is not None:
+            raise ValueError("graph_token is only permitted for Teams")
         if not self.token:
             raise ValueError("token is required")
         if self.module == "Teams" and not self.graph_token:

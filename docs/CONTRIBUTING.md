@@ -121,17 +121,23 @@ When you finish implementing a data collector:
 
    File: `engine/policies/cis/microsoft-365-foundations/vX.X.X/metadata.json`
 
-3. **Update the controls documentation**:
-   - Set the Status column to "Automated" or "Deferred"
-   - Add the Collector ID
+3. **Regenerate the controls documentation** — never hand-edit it:
 
-   File: `docs/engine/policies/cis/microsoft-365-foundations/vX.X.X/controls.md`
+   ```bash
+   python tools/docs/generate_control_status.py
+   ```
 
-4. **Document your collector output** in the analysis document:
-   - Add example JSON output
-   - Note what the OPA policy can evaluate
+   Every status page is generated from `metadata.json`, so the status, collector ID and
+   totals come from step 2. Commit the regenerated file with your metadata change. CI runs
+   `python tools/docs/generate_control_status.py --check` and fails on any drift.
 
-   File: `docs/engine/policies/cis/microsoft-365-foundations/vX.X.X/controls.md`
+   Generated file: `docs/engine/policies/cis/microsoft-365-foundations/vX.X.X/controls.md`
+
+4. **Record why the control sits where it does** in the `notes` field of its metadata entry
+   (for example the API gap or auth blocker). The generator publishes those notes, so this is
+   how implementation detail reaches the documentation.
+
+   File: `engine/policies/cis/microsoft-365-foundations/vX.X.X/metadata.json`
 
 5. **Test your collector** against a live M365 tenant (see Testing Your Collector below)
 
@@ -231,7 +237,7 @@ When you finish implementing a Rego policy:
 A control is scannable when both its collector and policy are implemented:
 
 1. Set `automation_status` to `ready` in metadata.json
-2. Update the controls.md Status column to "Automated"
+2. Run `python tools/docs/generate_control_status.py` to regenerate the status documents
 3. Verify the control works end-to-end with the test harness
 
 #### Control Metadata Schema
@@ -379,4 +385,3 @@ Good pull requests make the review process smoother for everyone:
 - **Microsoft Planner items** - Check what's on the board, add tasks for things you're working on and keep them updated so the team is aware
 - **Code Review** - Ask questions in your PR if you're unsure about something
 - **Team Leads** - Reach out to the relevant module or team lead for guidance
-

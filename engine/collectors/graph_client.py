@@ -4,6 +4,7 @@ from typing import Any
 
 import httpx
 from msal import ConfidentialClientApplication
+from worker.correlation import headers, event
 
 
 class GraphClient:
@@ -36,8 +37,7 @@ class GraphClient:
         )
 
         if "access_token" not in result:
-            error = result.get("error_description", result.get("error", "Unknown error"))
-            raise Exception(f"Failed to acquire token: {error}")
+            raise RuntimeError("Graph token acquisition failed")
 
         self._access_token = result["access_token"]
         return self._access_token
@@ -50,21 +50,37 @@ class GraphClient:
         params: dict | None = None,
         json_data: dict | None = None,
     ) -> dict[str, Any]:
-        """Make a request to the Graph API."""
+        """Make a read-only request to the Graph API."""
+        if method != "GET" or json_data is not None:
+            raise ValueError("Collectors permit GET requests without a body only")
+        if (
+            not isinstance(endpoint, str)
+            or not endpoint.startswith("/")
+            or endpoint.startswith("//")
+        ):
+            raise ValueError("Graph endpoint must be an API-relative path")
         token = await self._get_access_token()
         base_url = self.GRAPH_BETA_URL if beta else self.GRAPH_BASE_URL
+        event("graph_request")
 
         async with httpx.AsyncClient() as client:
             response = await client.request(
                 method=method,
                 url=f"{base_url}{endpoint}",
-                headers={"Authorization": f"Bearer {token}"},
+                headers={"Authorization": f"Bearer {token}", **headers()},
                 params=params,
                 json=json_data,
                 timeout=60.0,
             )
             response.raise_for_status()
-            return response.json() if response.content else {}
+            payload = response.json() if response.content else {}
+            if not isinstance(payload, dict):
+                raise ValueError("Graph response must be an object")
+            if any(
+                payload.get(key) is not None for key in ("error", "collector_error")
+            ):
+                raise ValueError("Graph response contains a collection error")
+            return payload
 
     async def get(
         self, endpoint: str, beta: bool = False, params: dict | None = None
@@ -85,27 +101,49 @@ class GraphClient:
         current_params = params
 
         for _ in range(max_pages):
-            response = await self.get(current_endpoint, beta=beta, params=current_params)
-            items = response.get("value", [])
+            response = await self.get(
+                current_endpoint, beta=beta, params=current_params
+            )
+            items = response.get("value")
+            if not isinstance(items, list) or not all(
+                isinstance(item, dict) for item in items
+            ):
+                raise ValueError(
+                    "Graph collection response must contain an object list"
+                )
+            if any(
+                item.get(key) is not None
+                for item in items
+                for key in ("error", "collector_error")
+            ):
+                raise ValueError("Graph collection record contains an error")
             all_items.extend(items)
 
             # Check for next page
             next_link = response.get("@odata.nextLink")
-            if not next_link:
-                break
+            if next_link is None:
+                return all_items
 
             # Parse next link - it's a full URL
             base_url = self.GRAPH_BETA_URL if beta else self.GRAPH_BASE_URL
-            current_endpoint = next_link.replace(base_url, "")
+            if not isinstance(next_link, str) or not next_link.startswith(
+                base_url + "/"
+            ):
+                raise ValueError(
+                    "Graph nextLink must use the requested Graph API origin and version"
+                )
+            current_endpoint = next_link[len(base_url) :]
             current_params = None  # Params are in the URL
 
-        return all_items
+        raise ValueError("Graph collection incomplete: pagination limit reached")
 
     async def get_users(self) -> list[dict[str, Any]]:
         """Get all users."""
         return await self.get_all_pages(
             "/users",
-            params={"$select": "id,userPrincipalName,displayName,accountEnabled,userType"},
+            params={
+                "$select": "id,userPrincipalName,displayName,accountEnabled,userType"
+            },
         )
 
     async def get_directory_roles(self) -> list[dict[str, Any]]:
@@ -122,9 +160,7 @@ class GraphClient:
 
     async def get_authentication_methods(self, user_id: str) -> list[dict[str, Any]]:
         """Get authentication methods for a user."""
-        response = await self.get(
-            f"/users/{user_id}/authentication/methods", beta=True
-        )
+        response = await self.get(f"/users/{user_id}/authentication/methods", beta=True)
         return response.get("value", [])
 
     async def get_domains(self) -> list[dict[str, Any]]:

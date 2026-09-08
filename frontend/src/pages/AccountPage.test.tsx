@@ -26,7 +26,7 @@ function setupAuth(user: Record<string, unknown> | null, token = 'test-token') {
   vi.mocked(mockUseAuth).mockReturnValue({
     user,
     token,
-    logout: vi.fn(),
+    logout: mockApiLogout,
   } as unknown as ReturnType<typeof mockUseAuth>);
 }
 
@@ -70,6 +70,14 @@ describe('primaryLabel', () => {
     expect(screen.getByText('Signed in')).toBeInTheDocument();
   });
 
+  it('preserves a zero-valued account id and labels it as an account', () => {
+    setupAuth({ id: 0 });
+    renderPage();
+    expect(screen.getByText('0')).toBeInTheDocument();
+    expect(screen.getAllByText('Account')).toHaveLength(2);
+    expect(screen.queryByText('Email')).not.toBeInTheDocument();
+  });
+
   it('shows "Signed in" when all user fields are null or undefined', () => {
     setupAuth({ email: null, username: null, name: null, id: null });
     renderPage();
@@ -80,21 +88,21 @@ describe('primaryLabel', () => {
 // --- handleLogout ---
 
 describe('handleLogout', () => {
-  it('calls apiLogout with the current token', async () => {
+  it('calls context logout without token credentials', async () => {
     setupAuth({ email: 'u@test.com' }, 'my-token');
     vi.mocked(mockApiLogout).mockResolvedValue(undefined);
 
     renderPage();
     await userEvent.click(screen.getByRole('button', { name: /log out/i }));
 
-    expect(mockApiLogout).toHaveBeenCalledWith('my-token');
+    expect(mockApiLogout).toHaveBeenCalledWith();
   });
 
   it('calls clearAuth and navigates to / after successful logout', async () => {
     const clearAuth = vi.fn();
     vi.mocked(mockUseAuth).mockReturnValue({
       user: { email: 'u@test.com' },
-      token: 'tok',
+
       logout: clearAuth,
     } as unknown as ReturnType<typeof mockUseAuth>);
     vi.mocked(mockApiLogout).mockResolvedValue(undefined);
@@ -108,21 +116,13 @@ describe('handleLogout', () => {
     });
   });
 
-  it('still clears auth and navigates when apiLogout fails (best-effort)', async () => {
-    const clearAuth = vi.fn();
-    vi.mocked(mockUseAuth).mockReturnValue({
-      user: { email: 'u@test.com' },
-      token: 'tok',
-      logout: clearAuth,
-    } as unknown as ReturnType<typeof mockUseAuth>);
+  it('keeps the page and shows a retryable error when logout fails', async () => {
+    setupAuth({email:'u@test.com'});
     vi.mocked(mockApiLogout).mockRejectedValue(new Error('Network error'));
-
     renderPage();
-    await userEvent.click(screen.getByRole('button', { name: /log out/i }));
-
-    await waitFor(() => {
-      expect(clearAuth).toHaveBeenCalled();
-      expect(mockNavigate).toHaveBeenCalledWith('/');
-    });
+    await userEvent.click(screen.getByRole('button', {name: /log out/i}));
+    expect(await screen.findByRole('alert')).toHaveTextContent(/could not log out/i);
+    expect(mockNavigate).not.toHaveBeenCalled();
+    expect(screen.getByRole('button', {name: /log out/i})).toBeEnabled();
   });
 });

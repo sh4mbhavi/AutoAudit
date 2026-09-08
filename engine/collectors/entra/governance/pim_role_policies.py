@@ -4,11 +4,11 @@ CIS Microsoft 365 Foundations Benchmark Controls:
     v6.0.0: 5.3.1, 5.3.3, 5.3.4, 5.3.5
 
 Connection Method: Microsoft Graph API
-Required Scopes: RoleManagementPolicy.Read.Directory
+Required Scopes: RoleManagement.Read.Directory
 Graph Endpoints:
     - /policies/roleManagementPolicies
     - /policies/roleManagementPolicies/{id}/rules
-    - /policies/roleManagementPolicies/{id}/rules/Approval_EndUser_Assignment
+    - /roleManagement/directory/roleDefinitions
 
 Controls covered:
     - 5.3.1: Ensure 'Privileged Identity Management' is used to manage roles
@@ -51,12 +51,11 @@ class PimRolePoliciesDataCollector(BaseDataCollector):
         """
         # Step 1: Get all role management policies
         # Note: This endpoint requires beta API for full policy details
-        policies_response = await client.get(
+        policies = await client.get_all_pages(
             "/policies/roleManagementPolicies",
             beta=True,
             params={"$filter": "scopeId eq '/' and scopeType eq 'DirectoryRole'"},
         )
-        policies = policies_response.get("value", [])
 
         # Step 2: Get role definitions to map scope to role names
         role_definitions = await client.get_all_pages(
@@ -73,12 +72,21 @@ class PimRolePoliciesDataCollector(BaseDataCollector):
         for policy in policies:
             policy_id = policy.get("id")
             # scopeId format: /DirectoryRoles/{roleTemplateId}
-            scope_id = policy.get("scopeId", "")
+            scope_id = policy.get("scopeId")
+            if (
+                not isinstance(policy_id, str)
+                or not policy_id
+                or not isinstance(scope_id, str)
+                or not scope_id
+            ):
+                raise ValueError("Incomplete PIM policy identity or scope evidence")
 
             # Extract role template ID from scope
             role_template_id = None
             if scope_id.startswith("/"):
-                role_template_id = scope_id.split("/")[-1] if "/" in scope_id else scope_id
+                role_template_id = (
+                    scope_id.split("/")[-1] if "/" in scope_id else scope_id
+                )
 
             policy_data = {
                 "id": policy_id,
@@ -93,11 +101,10 @@ class PimRolePoliciesDataCollector(BaseDataCollector):
                 self.GLOBAL_ADMIN_ROLE_TEMPLATE_ID,
                 self.PRIVILEGED_ROLE_ADMIN_TEMPLATE_ID,
             ]:
-                rules_response = await client.get(
+                rules = await client.get_all_pages(
                     f"/policies/roleManagementPolicies/{policy_id}/rules",
                     beta=True,
                 )
-                rules = rules_response.get("value", [])
                 policy_data["rules"] = rules
 
                 # Extract key settings from rules
@@ -117,7 +124,9 @@ class PimRolePoliciesDataCollector(BaseDataCollector):
             "global_admin_policy": global_admin_policy,
             "privileged_role_admin_policy": privileged_role_admin_policy,
             "global_admin_approval_required": (
-                global_admin_policy.get("approval_required") if global_admin_policy else None
+                global_admin_policy.get("approval_required")
+                if global_admin_policy
+                else None
             ),
             "privileged_role_admin_approval_required": (
                 privileged_role_admin_policy.get("approval_required")
@@ -128,10 +137,14 @@ class PimRolePoliciesDataCollector(BaseDataCollector):
                 global_admin_policy.get("mfa_required") if global_admin_policy else None
             ),
             "global_admin_justification_required": (
-                global_admin_policy.get("justification_required") if global_admin_policy else None
+                global_admin_policy.get("justification_required")
+                if global_admin_policy
+                else None
             ),
             "global_admin_max_activation_duration": (
-                global_admin_policy.get("max_activation_duration") if global_admin_policy else None
+                global_admin_policy.get("max_activation_duration")
+                if global_admin_policy
+                else None
             ),
         }
 
@@ -163,14 +176,20 @@ class PimRolePoliciesDataCollector(BaseDataCollector):
             if "unifiedRoleManagementPolicyApprovalRule" in rule_type:
                 if "EndUser_Assignment" in rule_id:
                     setting = rule.get("setting", {})
-                    settings["approval_required"] = setting.get("isApprovalRequired", False)
+                    settings["approval_required"] = setting.get(
+                        "isApprovalRequired", False
+                    )
 
             # Enablement rule (MFA and justification)
             elif "unifiedRoleManagementPolicyEnablementRule" in rule_type:
                 if "EndUser_Assignment" in rule_id:
                     enabled_rules = rule.get("enabledRules", [])
-                    settings["mfa_required"] = "MultiFactorAuthentication" in enabled_rules
-                    settings["justification_required"] = "Justification" in enabled_rules
+                    settings["mfa_required"] = (
+                        "MultiFactorAuthentication" in enabled_rules
+                    )
+                    settings["justification_required"] = (
+                        "Justification" in enabled_rules
+                    )
 
             # Expiration rule (max duration)
             elif "unifiedRoleManagementPolicyExpirationRule" in rule_type:

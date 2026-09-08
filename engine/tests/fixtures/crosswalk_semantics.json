@@ -1,0 +1,5557 @@
+{
+  "phase4_crosswalk": {
+    "benchmark": "cis/microsoft-365-foundations/v6.0.0",
+    "controls": {
+      "1.1.1": {
+        "cases": {
+          "pass": {
+            "input": {
+              "admin_accounts": [
+                {
+                  "userPrincipalName": "admin@example.test",
+                  "on_premises_sync_enabled": false
+                }
+              ]
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "admin_accounts": [
+                {
+                  "userPrincipalName": "admin@example.test",
+                  "on_premises_sync_enabled": true
+                }
+              ]
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "admin_accounts": "malformed"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "admin_accounts": []
+            },
+            "expected": null
+          },
+          "partial": {
+            "input": {
+              "admin_accounts": null
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "admin_accounts": [
+                {
+                  "userPrincipalName": "admin@example.test",
+                  "on_premises_sync_enabled": false
+                }
+              ],
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          },
+          "partial_population": {
+            "input": {
+              "admin_accounts": [
+                {
+                  "userPrincipalName": "admin@example.test",
+                  "on_premises_sync_enabled": false
+                },
+                {}
+              ]
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "An empty administrator population provides no evidence.",
+        "policy_file": "1.1.1_admin_cloud_only.rego",
+        "collector_id": "entra.roles.cloud_only_admins"
+      },
+      "1.1.3": {
+        "cases": {
+          "pass": {
+            "input": {
+              "global_admin_count": 2,
+              "global_admins": [
+                "a",
+                "b"
+              ]
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "global_admin_count": 1,
+              "global_admins": [
+                "a"
+              ]
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "global_admin_count": "malformed",
+              "global_admins": [
+                "a",
+                "b"
+              ]
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "global_admin_count": 4,
+              "global_admins": [
+                "a",
+                "b",
+                "c",
+                "d"
+              ]
+            },
+            "expected": true
+          },
+          "partial": {
+            "input": {
+              "global_admin_count": 2
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "global_admin_count": 2,
+              "global_admins": [
+                "a",
+                "b"
+              ],
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          },
+          "count_0": {
+            "input": {
+              "global_admin_count": 0,
+              "global_admins": []
+            },
+            "expected": false
+          },
+          "count_3": {
+            "input": {
+              "global_admin_count": 3,
+              "global_admins": [
+                "a0",
+                "a1",
+                "a2"
+              ]
+            },
+            "expected": true
+          },
+          "count_5": {
+            "input": {
+              "global_admin_count": 5,
+              "global_admins": [
+                "a0",
+                "a1",
+                "a2",
+                "a3",
+                "a4"
+              ]
+            },
+            "expected": false
+          },
+          "fractional": {
+            "input": {
+              "global_admin_count": 2.5,
+              "global_admins": [
+                "a",
+                "b"
+              ]
+            },
+            "expected": null
+          },
+          "inconsistent_count": {
+            "input": {
+              "global_admin_count": 2,
+              "global_admins": []
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "Both endpoints of the permitted two-to-four range pass.",
+        "policy_file": "1.1.3_global_admin_count.rego",
+        "collector_id": "entra.roles.privileged_roles"
+      },
+      "1.1.4": {
+        "cases": {
+          "pass": {
+            "input": {
+              "admin_accounts": [
+                {
+                  "userPrincipalName": "admin@example.test",
+                  "uses_reduced_license_footprint": true
+                }
+              ]
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "admin_accounts": [
+                {
+                  "userPrincipalName": "admin@example.test",
+                  "uses_reduced_license_footprint": false
+                }
+              ]
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "admin_accounts": "malformed"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "admin_accounts": []
+            },
+            "expected": null
+          },
+          "partial": {
+            "input": {
+              "admin_accounts": null
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "admin_accounts": [
+                {
+                  "userPrincipalName": "admin@example.test",
+                  "uses_reduced_license_footprint": true
+                }
+              ],
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          },
+          "partial_population": {
+            "input": {
+              "admin_accounts": [
+                {
+                  "userPrincipalName": "admin@example.test",
+                  "uses_reduced_license_footprint": true
+                },
+                {}
+              ]
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "An empty administrator population provides no evidence.",
+        "policy_file": "1.1.4_admin_license_footprint.rego",
+        "collector_id": "entra.roles.admin_license_footprint"
+      },
+      "1.2.1": {
+        "cases": {
+          "pass": {
+            "input": {
+              "total_groups": 0,
+              "public_groups": []
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "total_groups": 1,
+              "public_groups": [
+                {
+                  "id": "g",
+                  "displayName": "Public"
+                }
+              ]
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "total_groups": "malformed",
+              "public_groups": []
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "total_groups": 1,
+              "public_groups": []
+            },
+            "expected": true
+          },
+          "partial": {
+            "input": {
+              "total_groups": 1
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "total_groups": 0,
+              "public_groups": [],
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          },
+          "malformed_population": {
+            "input": {
+              "total_groups": 1,
+              "public_groups": {}
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "Private groups do not violate the public-group check.",
+        "policy_file": "1.2.1_no_unmanaged_public_groups.rego",
+        "collector_id": "entra.groups.groups"
+      },
+      "1.3.1": {
+        "cases": {
+          "pass": {
+            "input": {
+              "domains": [
+                {
+                  "domain_name": "example.test",
+                  "is_managed": true,
+                  "password_validity_days": 2147483647
+                }
+              ]
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "domains": [
+                {
+                  "domain_name": "example.test",
+                  "is_managed": true,
+                  "password_validity_days": 90
+                }
+              ]
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "domains": "malformed"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "domains": [
+                {
+                  "domain_name": "example.test",
+                  "is_managed": true,
+                  "password_validity_days": 2147483646
+                }
+              ]
+            },
+            "expected": false
+          },
+          "partial": {
+            "input": {
+              "domains": null
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "domains": [
+                {
+                  "domain_name": "example.test",
+                  "is_managed": true,
+                  "password_validity_days": 2147483647
+                }
+              ],
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          },
+          "partial_population": {
+            "input": {
+              "domains": [
+                {
+                  "domain_name": "example.test",
+                  "is_managed": true,
+                  "password_validity_days": 2147483647
+                },
+                {}
+              ]
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "Only the exact never-expire sentinel passes.",
+        "policy_file": "1.3.1_password_expiration.rego",
+        "collector_id": "entra.domains.password_policy"
+      },
+      "1.3.4": {
+        "cases": {
+          "pass": {
+            "input": {
+              "is_office_store_enabled": false,
+              "is_app_and_services_trial_enabled": false,
+              "user_owned_apps_enabled": null,
+              "collector_error": null
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "is_office_store_enabled": true,
+              "is_app_and_services_trial_enabled": false,
+              "user_owned_apps_enabled": null,
+              "collector_error": null
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "is_office_store_enabled": "malformed",
+              "is_app_and_services_trial_enabled": false,
+              "user_owned_apps_enabled": null,
+              "collector_error": null
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "is_office_store_enabled": false,
+              "is_app_and_services_trial_enabled": true,
+              "user_owned_apps_enabled": null,
+              "collector_error": null
+            },
+            "expected": false
+          },
+          "partial": {
+            "input": {
+              "is_app_and_services_trial_enabled": false,
+              "user_owned_apps_enabled": null,
+              "collector_error": null
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "is_office_store_enabled": false,
+              "is_app_and_services_trial_enabled": false,
+              "user_owned_apps_enabled": null,
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          },
+          "legacy_fallback": {
+            "input": {
+              "is_office_store_enabled": null,
+              "is_app_and_services_trial_enabled": null,
+              "user_owned_apps_enabled": false,
+              "collector_error": null
+            },
+            "expected": true
+          }
+        },
+        "boundary_reason": "Both modern settings must be disabled.",
+        "policy_file": "1.3.4_user_owned_apps_restricted.rego",
+        "collector_id": "entra.applications.apps_and_services_settings"
+      },
+      "2.1.1": {
+        "cases": {
+          "pass": {
+            "input": {
+              "safe_links_policies": [
+                {
+                  "Name": "Default",
+                  "EnableSafeLinksForOffice": true
+                }
+              ]
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "safe_links_policies": [
+                {
+                  "Name": "Default",
+                  "EnableSafeLinksForOffice": false
+                }
+              ]
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "safe_links_policies": "malformed"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "safe_links_policies": []
+            },
+            "expected": false
+          },
+          "partial": {
+            "input": {
+              "safe_links_policies": [
+                {}
+              ]
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "safe_links_policies": [
+                {
+                  "Name": "Default",
+                  "EnableSafeLinksForOffice": true
+                }
+              ],
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          },
+          "partial_population": {
+            "input": {
+              "safe_links_policies": [
+                {
+                  "Name": "Default",
+                  "EnableSafeLinksForOffice": true
+                },
+                {}
+              ]
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "A successfully collected empty policy population is a failed configuration.",
+        "policy_file": "2.1.1_SafeLinks_OfficeApplications_Enabled.rego",
+        "collector_id": "exchange.protection.safe_links_policy"
+      },
+      "2.1.2": {
+        "cases": {
+          "pass": {
+            "input": {
+              "enable_file_filter": true
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "enable_file_filter": false
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "enable_file_filter": "malformed"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "default_policy": {
+                "EnableFileFilter": true
+              }
+            },
+            "expected": true
+          },
+          "partial": {
+            "input": {
+              "enable_file_filter": null
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "enable_file_filter": true,
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "The raw default-policy fallback is supported.",
+        "policy_file": "2.1.2_Common_AttachmentTypes_Filter_Enabled.rego",
+        "collector_id": "exchange.protection.malware_filter_policy"
+      },
+      "2.1.3": {
+        "cases": {
+          "pass": {
+            "input": {
+              "malware_filter_policies": [
+                {
+                  "Name": "Default",
+                  "EnableInternalSenderAdminNotifications": true,
+                  "InternalSenderAdminAddress": "admin@example.test"
+                }
+              ]
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "malware_filter_policies": [
+                {
+                  "Name": "Default",
+                  "EnableInternalSenderAdminNotifications": false,
+                  "InternalSenderAdminAddress": "admin@example.test"
+                }
+              ]
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "malware_filter_policies": "malformed"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "malware_filter_policies": [
+                {
+                  "Name": "Default",
+                  "EnableInternalSenderAdminNotifications": true,
+                  "InternalSenderAdminAddress": ""
+                }
+              ]
+            },
+            "expected": false
+          },
+          "partial": {
+            "input": {
+              "malware_filter_policies": [
+                {
+                  "EnableInternalSenderAdminNotifications": true
+                }
+              ]
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "malware_filter_policies": [
+                {
+                  "Name": "Default",
+                  "EnableInternalSenderAdminNotifications": true,
+                  "InternalSenderAdminAddress": "admin@example.test"
+                }
+              ],
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          },
+          "default_policy_fallback": {
+            "input": {
+              "default_policy": {
+                "Name": "Default",
+                "EnableInternalSenderAdminNotifications": true,
+                "InternalSenderAdminAddress": "admin@example.test"
+              }
+            },
+            "expected": true
+          },
+          "malformed_address": {
+            "input": {
+              "malware_filter_policies": [
+                {
+                  "Name": "Default",
+                  "EnableInternalSenderAdminNotifications": true,
+                  "InternalSenderAdminAddress": []
+                }
+              ]
+            },
+            "expected": null
+          },
+          "partial_population": {
+            "input": {
+              "malware_filter_policies": [
+                {
+                  "Name": "Default",
+                  "EnableInternalSenderAdminNotifications": true,
+                  "InternalSenderAdminAddress": "admin@example.test"
+                },
+                {}
+              ]
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "Enabled notifications still need a destination.",
+        "policy_file": "2.1.3_Notifications_InternalUsers_sendingMalware_Enabled.rego",
+        "collector_id": "exchange.protection.malware_filter_policy"
+      },
+      "2.1.4": {
+        "cases": {
+          "pass": {
+            "input": {
+              "safe_attachment_policies": [
+                {
+                  "Name": "Built-In Protection Policy",
+                  "Enable": true,
+                  "Action": "Block",
+                  "QuarantineTag": "AdminOnlyAccessPolicy"
+                }
+              ]
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "safe_attachment_policies": [
+                {
+                  "Name": "Built-In Protection Policy",
+                  "Enable": false,
+                  "Action": "Block",
+                  "QuarantineTag": "AdminOnlyAccessPolicy"
+                }
+              ]
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "safe_attachment_policies": "malformed"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "safe_attachment_policies": [
+                {
+                  "Name": "Built-In Protection Policy",
+                  "Enable": true,
+                  "Action": "Monitor",
+                  "QuarantineTag": "AdminOnlyAccessPolicy"
+                }
+              ]
+            },
+            "expected": false
+          },
+          "partial": {
+            "input": {
+              "safe_attachment_policies": [
+                {
+                  "Name": "Built-In Protection Policy",
+                  "Enable": true
+                }
+              ]
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "safe_attachment_policies": [
+                {
+                  "Name": "Built-In Protection Policy",
+                  "Enable": true,
+                  "Action": "Block",
+                  "QuarantineTag": "AdminOnlyAccessPolicy"
+                }
+              ],
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          },
+          "no_policies": {
+            "input": {
+              "safe_attachment_policies": []
+            },
+            "expected": false
+          },
+          "partial_population": {
+            "input": {
+              "safe_attachment_policies": [
+                {
+                  "Name": "Built-In Protection Policy",
+                  "Enable": true,
+                  "Action": "Block",
+                  "QuarantineTag": "AdminOnlyAccessPolicy"
+                },
+                {}
+              ]
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "Enabled monitoring does not satisfy blocking.",
+        "policy_file": "2.1.4_Safe_AttachementsPolicy_Enabled.rego",
+        "collector_id": "exchange.protection.safe_attachment_policy"
+      },
+      "2.1.5": {
+        "cases": {
+          "pass": {
+            "input": {
+              "atp_policy": {
+                "EnableATPForSPOTeamsODB": true,
+                "EnableSafeDocs": true,
+                "AllowSafeDocsOpen": false
+              }
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "atp_policy": {
+                "EnableATPForSPOTeamsODB": false,
+                "EnableSafeDocs": true,
+                "AllowSafeDocsOpen": false
+              }
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "atp_policy": "malformed"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "atp_policy": {
+                "EnableATPForSPOTeamsODB": true,
+                "EnableSafeDocs": true,
+                "AllowSafeDocsOpen": true
+              }
+            },
+            "expected": false
+          },
+          "partial": {
+            "input": {
+              "atp_policy": null
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "atp_policy": {
+                "EnableATPForSPOTeamsODB": true,
+                "EnableSafeDocs": true,
+                "AllowSafeDocsOpen": false
+              },
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "Allowing unsafe documents independently violates the control.",
+        "policy_file": "2.1.5_Safe_Attachments_SharePoint_OneDrive_MSTeams_Enabled.rego",
+        "collector_id": "exchange.protection.atp_policy_o365"
+      },
+      "2.1.6": {
+        "cases": {
+          "pass": {
+            "input": {
+              "default_policy": {
+                "BccSuspiciousOutboundMail": true,
+                "NotifyOutboundSpam": true,
+                "BccSuspiciousOutboundAdditionalRecipients": [
+                  "admin@example.test"
+                ],
+                "NotifyOutboundSpamRecipients": [
+                  "admin@example.test"
+                ]
+              }
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "default_policy": {
+                "BccSuspiciousOutboundMail": true,
+                "NotifyOutboundSpam": false,
+                "BccSuspiciousOutboundAdditionalRecipients": [
+                  "admin@example.test"
+                ],
+                "NotifyOutboundSpamRecipients": [
+                  "admin@example.test"
+                ]
+              }
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "default_policy": "malformed"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "default_policy": {
+                "BccSuspiciousOutboundMail": true,
+                "NotifyOutboundSpam": true,
+                "BccSuspiciousOutboundAdditionalRecipients": [
+                  "admin@example.test"
+                ],
+                "NotifyOutboundSpamRecipients": []
+              }
+            },
+            "expected": false
+          },
+          "partial": {
+            "input": {
+              "default_policy": {
+                "BccSuspiciousOutboundMail": true,
+                "NotifyOutboundSpam": true
+              }
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "default_policy": {
+                "BccSuspiciousOutboundMail": true,
+                "NotifyOutboundSpam": true,
+                "BccSuspiciousOutboundAdditionalRecipients": [
+                  "admin@example.test"
+                ],
+                "NotifyOutboundSpamRecipients": [
+                  "admin@example.test"
+                ]
+              },
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          },
+          "blank_recipient": {
+            "input": {
+              "default_policy": {
+                "BccSuspiciousOutboundMail": true,
+                "NotifyOutboundSpam": true,
+                "BccSuspiciousOutboundAdditionalRecipients": [
+                  "admin@example.test"
+                ],
+                "NotifyOutboundSpamRecipients": [
+                  " "
+                ]
+              }
+            },
+            "expected": false
+          }
+        },
+        "boundary_reason": "Enabled notifications without recipients fail.",
+        "policy_file": "2.1.6_Exchange_OnlineSpam_Policies_Notify_Administrators.rego",
+        "collector_id": "exchange.protection.hosted_outbound_spam_filter"
+      },
+      "2.1.7": {
+        "cases": {
+          "pass": {
+            "input": {
+              "anti_phish_policies": [
+                {
+                  "Name": "AntiPhish",
+                  "Enabled": true,
+                  "PhishThresholdLevel": 3,
+                  "EnableTargetedUserProtection": true,
+                  "EnableOrganizationDomainsProtection": true,
+                  "EnableMailboxIntelligence": true,
+                  "EnableMailboxIntelligenceProtection": true,
+                  "EnableSpoofIntelligence": true,
+                  "TargetedUserProtectionAction": "Quarantine",
+                  "TargetedDomainProtectionAction": "Quarantine",
+                  "MailboxIntelligenceProtectionAction": "Quarantine",
+                  "EnableFirstContactSafetyTips": true,
+                  "EnableSimilarUsersSafetyTips": true,
+                  "EnableSimilarDomainsSafetyTips": true,
+                  "EnableUnusualCharactersSafetyTips": true,
+                  "HonorDmarcPolicy": true,
+                  "TargetedUsersToProtect": [
+                    "user@example.test"
+                  ]
+                }
+              ],
+              "anti_phish_rules": [
+                {
+                  "State": "Enabled",
+                  "AntiPhishPolicy": "AntiPhish",
+                  "RecipientDomainIs": [
+                    "example.test"
+                  ],
+                  "SentToMemberOf": [
+                    "all-users"
+                  ]
+                }
+              ]
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "anti_phish_policies": [
+                {
+                  "Name": "AntiPhish",
+                  "Enabled": false,
+                  "PhishThresholdLevel": 3,
+                  "EnableTargetedUserProtection": true,
+                  "EnableOrganizationDomainsProtection": true,
+                  "EnableMailboxIntelligence": true,
+                  "EnableMailboxIntelligenceProtection": true,
+                  "EnableSpoofIntelligence": true,
+                  "TargetedUserProtectionAction": "Quarantine",
+                  "TargetedDomainProtectionAction": "Quarantine",
+                  "MailboxIntelligenceProtectionAction": "Quarantine",
+                  "EnableFirstContactSafetyTips": true,
+                  "EnableSimilarUsersSafetyTips": true,
+                  "EnableSimilarDomainsSafetyTips": true,
+                  "EnableUnusualCharactersSafetyTips": true,
+                  "HonorDmarcPolicy": true,
+                  "TargetedUsersToProtect": [
+                    "user@example.test"
+                  ]
+                }
+              ],
+              "anti_phish_rules": [
+                {
+                  "State": "Enabled",
+                  "AntiPhishPolicy": "AntiPhish",
+                  "RecipientDomainIs": [
+                    "example.test"
+                  ],
+                  "SentToMemberOf": [
+                    "all-users"
+                  ]
+                }
+              ]
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "anti_phish_policies": "malformed",
+              "anti_phish_rules": [
+                {
+                  "State": "Enabled",
+                  "AntiPhishPolicy": "AntiPhish",
+                  "RecipientDomainIs": [
+                    "example.test"
+                  ],
+                  "SentToMemberOf": [
+                    "all-users"
+                  ]
+                }
+              ]
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "anti_phish_policies": [
+                {
+                  "Name": "AntiPhish",
+                  "Enabled": true,
+                  "PhishThresholdLevel": 3,
+                  "EnableTargetedUserProtection": true,
+                  "EnableOrganizationDomainsProtection": true,
+                  "EnableMailboxIntelligence": true,
+                  "EnableMailboxIntelligenceProtection": true,
+                  "EnableSpoofIntelligence": true,
+                  "TargetedUserProtectionAction": "Quarantine",
+                  "TargetedDomainProtectionAction": "Quarantine",
+                  "MailboxIntelligenceProtectionAction": "Quarantine",
+                  "EnableFirstContactSafetyTips": true,
+                  "EnableSimilarUsersSafetyTips": true,
+                  "EnableSimilarDomainsSafetyTips": true,
+                  "EnableUnusualCharactersSafetyTips": true,
+                  "HonorDmarcPolicy": true,
+                  "TargetedUsersToProtect": [
+                    "u0",
+                    "u1",
+                    "u2",
+                    "u3",
+                    "u4",
+                    "u5",
+                    "u6",
+                    "u7",
+                    "u8",
+                    "u9",
+                    "u10",
+                    "u11",
+                    "u12",
+                    "u13",
+                    "u14",
+                    "u15",
+                    "u16",
+                    "u17",
+                    "u18",
+                    "u19",
+                    "u20",
+                    "u21",
+                    "u22",
+                    "u23",
+                    "u24",
+                    "u25",
+                    "u26",
+                    "u27",
+                    "u28",
+                    "u29",
+                    "u30",
+                    "u31",
+                    "u32",
+                    "u33",
+                    "u34",
+                    "u35",
+                    "u36",
+                    "u37",
+                    "u38",
+                    "u39",
+                    "u40",
+                    "u41",
+                    "u42",
+                    "u43",
+                    "u44",
+                    "u45",
+                    "u46",
+                    "u47",
+                    "u48",
+                    "u49",
+                    "u50",
+                    "u51",
+                    "u52",
+                    "u53",
+                    "u54",
+                    "u55",
+                    "u56",
+                    "u57",
+                    "u58",
+                    "u59",
+                    "u60",
+                    "u61",
+                    "u62",
+                    "u63",
+                    "u64",
+                    "u65",
+                    "u66",
+                    "u67",
+                    "u68",
+                    "u69",
+                    "u70",
+                    "u71",
+                    "u72",
+                    "u73",
+                    "u74",
+                    "u75",
+                    "u76",
+                    "u77",
+                    "u78",
+                    "u79",
+                    "u80",
+                    "u81",
+                    "u82",
+                    "u83",
+                    "u84",
+                    "u85",
+                    "u86",
+                    "u87",
+                    "u88",
+                    "u89",
+                    "u90",
+                    "u91",
+                    "u92",
+                    "u93",
+                    "u94",
+                    "u95",
+                    "u96",
+                    "u97",
+                    "u98",
+                    "u99",
+                    "u100",
+                    "u101",
+                    "u102",
+                    "u103",
+                    "u104",
+                    "u105",
+                    "u106",
+                    "u107",
+                    "u108",
+                    "u109",
+                    "u110",
+                    "u111",
+                    "u112",
+                    "u113",
+                    "u114",
+                    "u115",
+                    "u116",
+                    "u117",
+                    "u118",
+                    "u119",
+                    "u120",
+                    "u121",
+                    "u122",
+                    "u123",
+                    "u124",
+                    "u125",
+                    "u126",
+                    "u127",
+                    "u128",
+                    "u129",
+                    "u130",
+                    "u131",
+                    "u132",
+                    "u133",
+                    "u134",
+                    "u135",
+                    "u136",
+                    "u137",
+                    "u138",
+                    "u139",
+                    "u140",
+                    "u141",
+                    "u142",
+                    "u143",
+                    "u144",
+                    "u145",
+                    "u146",
+                    "u147",
+                    "u148",
+                    "u149",
+                    "u150",
+                    "u151",
+                    "u152",
+                    "u153",
+                    "u154",
+                    "u155",
+                    "u156",
+                    "u157",
+                    "u158",
+                    "u159",
+                    "u160",
+                    "u161",
+                    "u162",
+                    "u163",
+                    "u164",
+                    "u165",
+                    "u166",
+                    "u167",
+                    "u168",
+                    "u169",
+                    "u170",
+                    "u171",
+                    "u172",
+                    "u173",
+                    "u174",
+                    "u175",
+                    "u176",
+                    "u177",
+                    "u178",
+                    "u179",
+                    "u180",
+                    "u181",
+                    "u182",
+                    "u183",
+                    "u184",
+                    "u185",
+                    "u186",
+                    "u187",
+                    "u188",
+                    "u189",
+                    "u190",
+                    "u191",
+                    "u192",
+                    "u193",
+                    "u194",
+                    "u195",
+                    "u196",
+                    "u197",
+                    "u198",
+                    "u199",
+                    "u200",
+                    "u201",
+                    "u202",
+                    "u203",
+                    "u204",
+                    "u205",
+                    "u206",
+                    "u207",
+                    "u208",
+                    "u209",
+                    "u210",
+                    "u211",
+                    "u212",
+                    "u213",
+                    "u214",
+                    "u215",
+                    "u216",
+                    "u217",
+                    "u218",
+                    "u219",
+                    "u220",
+                    "u221",
+                    "u222",
+                    "u223",
+                    "u224",
+                    "u225",
+                    "u226",
+                    "u227",
+                    "u228",
+                    "u229",
+                    "u230",
+                    "u231",
+                    "u232",
+                    "u233",
+                    "u234",
+                    "u235",
+                    "u236",
+                    "u237",
+                    "u238",
+                    "u239",
+                    "u240",
+                    "u241",
+                    "u242",
+                    "u243",
+                    "u244",
+                    "u245",
+                    "u246",
+                    "u247",
+                    "u248",
+                    "u249",
+                    "u250",
+                    "u251",
+                    "u252",
+                    "u253",
+                    "u254",
+                    "u255",
+                    "u256",
+                    "u257",
+                    "u258",
+                    "u259",
+                    "u260",
+                    "u261",
+                    "u262",
+                    "u263",
+                    "u264",
+                    "u265",
+                    "u266",
+                    "u267",
+                    "u268",
+                    "u269",
+                    "u270",
+                    "u271",
+                    "u272",
+                    "u273",
+                    "u274",
+                    "u275",
+                    "u276",
+                    "u277",
+                    "u278",
+                    "u279",
+                    "u280",
+                    "u281",
+                    "u282",
+                    "u283",
+                    "u284",
+                    "u285",
+                    "u286",
+                    "u287",
+                    "u288",
+                    "u289",
+                    "u290",
+                    "u291",
+                    "u292",
+                    "u293",
+                    "u294",
+                    "u295",
+                    "u296",
+                    "u297",
+                    "u298",
+                    "u299",
+                    "u300",
+                    "u301",
+                    "u302",
+                    "u303",
+                    "u304",
+                    "u305",
+                    "u306",
+                    "u307",
+                    "u308",
+                    "u309",
+                    "u310",
+                    "u311",
+                    "u312",
+                    "u313",
+                    "u314",
+                    "u315",
+                    "u316",
+                    "u317",
+                    "u318",
+                    "u319",
+                    "u320",
+                    "u321",
+                    "u322",
+                    "u323",
+                    "u324",
+                    "u325",
+                    "u326",
+                    "u327",
+                    "u328",
+                    "u329",
+                    "u330",
+                    "u331",
+                    "u332",
+                    "u333",
+                    "u334",
+                    "u335",
+                    "u336",
+                    "u337",
+                    "u338",
+                    "u339",
+                    "u340",
+                    "u341",
+                    "u342",
+                    "u343",
+                    "u344",
+                    "u345",
+                    "u346",
+                    "u347",
+                    "u348",
+                    "u349"
+                  ]
+                }
+              ],
+              "anti_phish_rules": [
+                {
+                  "State": "Enabled",
+                  "AntiPhishPolicy": "AntiPhish",
+                  "RecipientDomainIs": [
+                    "example.test"
+                  ],
+                  "SentToMemberOf": [
+                    "all-users"
+                  ]
+                }
+              ]
+            },
+            "expected": true
+          },
+          "partial": {
+            "input": {
+              "anti_phish_policies": [
+                {
+                  "Name": "AntiPhish",
+                  "Enabled": true,
+                  "PhishThresholdLevel": 3,
+                  "EnableTargetedUserProtection": true,
+                  "EnableOrganizationDomainsProtection": true,
+                  "EnableMailboxIntelligence": true,
+                  "EnableMailboxIntelligenceProtection": true,
+                  "EnableSpoofIntelligence": true,
+                  "TargetedUserProtectionAction": "Quarantine",
+                  "TargetedDomainProtectionAction": "Quarantine",
+                  "MailboxIntelligenceProtectionAction": "Quarantine",
+                  "EnableFirstContactSafetyTips": true,
+                  "EnableSimilarUsersSafetyTips": true,
+                  "EnableSimilarDomainsSafetyTips": true,
+                  "EnableUnusualCharactersSafetyTips": true,
+                  "HonorDmarcPolicy": true,
+                  "TargetedUsersToProtect": [
+                    "user@example.test"
+                  ]
+                }
+              ]
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "anti_phish_policies": [
+                {
+                  "Name": "AntiPhish",
+                  "Enabled": true,
+                  "PhishThresholdLevel": 3,
+                  "EnableTargetedUserProtection": true,
+                  "EnableOrganizationDomainsProtection": true,
+                  "EnableMailboxIntelligence": true,
+                  "EnableMailboxIntelligenceProtection": true,
+                  "EnableSpoofIntelligence": true,
+                  "TargetedUserProtectionAction": "Quarantine",
+                  "TargetedDomainProtectionAction": "Quarantine",
+                  "MailboxIntelligenceProtectionAction": "Quarantine",
+                  "EnableFirstContactSafetyTips": true,
+                  "EnableSimilarUsersSafetyTips": true,
+                  "EnableSimilarDomainsSafetyTips": true,
+                  "EnableUnusualCharactersSafetyTips": true,
+                  "HonorDmarcPolicy": true,
+                  "TargetedUsersToProtect": [
+                    "user@example.test"
+                  ]
+                }
+              ],
+              "anti_phish_rules": [
+                {
+                  "State": "Enabled",
+                  "AntiPhishPolicy": "AntiPhish",
+                  "RecipientDomainIs": [
+                    "example.test"
+                  ],
+                  "SentToMemberOf": [
+                    "all-users"
+                  ]
+                }
+              ],
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          },
+          "unbound_policy": {
+            "input": {
+              "anti_phish_policies": [
+                {
+                  "Name": "AntiPhish",
+                  "Enabled": true,
+                  "PhishThresholdLevel": 3,
+                  "EnableTargetedUserProtection": true,
+                  "EnableOrganizationDomainsProtection": true,
+                  "EnableMailboxIntelligence": true,
+                  "EnableMailboxIntelligenceProtection": true,
+                  "EnableSpoofIntelligence": true,
+                  "TargetedUserProtectionAction": "Quarantine",
+                  "TargetedDomainProtectionAction": "Quarantine",
+                  "MailboxIntelligenceProtectionAction": "Quarantine",
+                  "EnableFirstContactSafetyTips": true,
+                  "EnableSimilarUsersSafetyTips": true,
+                  "EnableSimilarDomainsSafetyTips": true,
+                  "EnableUnusualCharactersSafetyTips": true,
+                  "HonorDmarcPolicy": true,
+                  "TargetedUsersToProtect": [
+                    "user@example.test"
+                  ]
+                }
+              ],
+              "anti_phish_rules": []
+            },
+            "expected": false
+          },
+          "above_target_limit": {
+            "input": {
+              "anti_phish_policies": [
+                {
+                  "Name": "AntiPhish",
+                  "Enabled": true,
+                  "PhishThresholdLevel": 3,
+                  "EnableTargetedUserProtection": true,
+                  "EnableOrganizationDomainsProtection": true,
+                  "EnableMailboxIntelligence": true,
+                  "EnableMailboxIntelligenceProtection": true,
+                  "EnableSpoofIntelligence": true,
+                  "TargetedUserProtectionAction": "Quarantine",
+                  "TargetedDomainProtectionAction": "Quarantine",
+                  "MailboxIntelligenceProtectionAction": "Quarantine",
+                  "EnableFirstContactSafetyTips": true,
+                  "EnableSimilarUsersSafetyTips": true,
+                  "EnableSimilarDomainsSafetyTips": true,
+                  "EnableUnusualCharactersSafetyTips": true,
+                  "HonorDmarcPolicy": true,
+                  "TargetedUsersToProtect": [
+                    "u0",
+                    "u1",
+                    "u2",
+                    "u3",
+                    "u4",
+                    "u5",
+                    "u6",
+                    "u7",
+                    "u8",
+                    "u9",
+                    "u10",
+                    "u11",
+                    "u12",
+                    "u13",
+                    "u14",
+                    "u15",
+                    "u16",
+                    "u17",
+                    "u18",
+                    "u19",
+                    "u20",
+                    "u21",
+                    "u22",
+                    "u23",
+                    "u24",
+                    "u25",
+                    "u26",
+                    "u27",
+                    "u28",
+                    "u29",
+                    "u30",
+                    "u31",
+                    "u32",
+                    "u33",
+                    "u34",
+                    "u35",
+                    "u36",
+                    "u37",
+                    "u38",
+                    "u39",
+                    "u40",
+                    "u41",
+                    "u42",
+                    "u43",
+                    "u44",
+                    "u45",
+                    "u46",
+                    "u47",
+                    "u48",
+                    "u49",
+                    "u50",
+                    "u51",
+                    "u52",
+                    "u53",
+                    "u54",
+                    "u55",
+                    "u56",
+                    "u57",
+                    "u58",
+                    "u59",
+                    "u60",
+                    "u61",
+                    "u62",
+                    "u63",
+                    "u64",
+                    "u65",
+                    "u66",
+                    "u67",
+                    "u68",
+                    "u69",
+                    "u70",
+                    "u71",
+                    "u72",
+                    "u73",
+                    "u74",
+                    "u75",
+                    "u76",
+                    "u77",
+                    "u78",
+                    "u79",
+                    "u80",
+                    "u81",
+                    "u82",
+                    "u83",
+                    "u84",
+                    "u85",
+                    "u86",
+                    "u87",
+                    "u88",
+                    "u89",
+                    "u90",
+                    "u91",
+                    "u92",
+                    "u93",
+                    "u94",
+                    "u95",
+                    "u96",
+                    "u97",
+                    "u98",
+                    "u99",
+                    "u100",
+                    "u101",
+                    "u102",
+                    "u103",
+                    "u104",
+                    "u105",
+                    "u106",
+                    "u107",
+                    "u108",
+                    "u109",
+                    "u110",
+                    "u111",
+                    "u112",
+                    "u113",
+                    "u114",
+                    "u115",
+                    "u116",
+                    "u117",
+                    "u118",
+                    "u119",
+                    "u120",
+                    "u121",
+                    "u122",
+                    "u123",
+                    "u124",
+                    "u125",
+                    "u126",
+                    "u127",
+                    "u128",
+                    "u129",
+                    "u130",
+                    "u131",
+                    "u132",
+                    "u133",
+                    "u134",
+                    "u135",
+                    "u136",
+                    "u137",
+                    "u138",
+                    "u139",
+                    "u140",
+                    "u141",
+                    "u142",
+                    "u143",
+                    "u144",
+                    "u145",
+                    "u146",
+                    "u147",
+                    "u148",
+                    "u149",
+                    "u150",
+                    "u151",
+                    "u152",
+                    "u153",
+                    "u154",
+                    "u155",
+                    "u156",
+                    "u157",
+                    "u158",
+                    "u159",
+                    "u160",
+                    "u161",
+                    "u162",
+                    "u163",
+                    "u164",
+                    "u165",
+                    "u166",
+                    "u167",
+                    "u168",
+                    "u169",
+                    "u170",
+                    "u171",
+                    "u172",
+                    "u173",
+                    "u174",
+                    "u175",
+                    "u176",
+                    "u177",
+                    "u178",
+                    "u179",
+                    "u180",
+                    "u181",
+                    "u182",
+                    "u183",
+                    "u184",
+                    "u185",
+                    "u186",
+                    "u187",
+                    "u188",
+                    "u189",
+                    "u190",
+                    "u191",
+                    "u192",
+                    "u193",
+                    "u194",
+                    "u195",
+                    "u196",
+                    "u197",
+                    "u198",
+                    "u199",
+                    "u200",
+                    "u201",
+                    "u202",
+                    "u203",
+                    "u204",
+                    "u205",
+                    "u206",
+                    "u207",
+                    "u208",
+                    "u209",
+                    "u210",
+                    "u211",
+                    "u212",
+                    "u213",
+                    "u214",
+                    "u215",
+                    "u216",
+                    "u217",
+                    "u218",
+                    "u219",
+                    "u220",
+                    "u221",
+                    "u222",
+                    "u223",
+                    "u224",
+                    "u225",
+                    "u226",
+                    "u227",
+                    "u228",
+                    "u229",
+                    "u230",
+                    "u231",
+                    "u232",
+                    "u233",
+                    "u234",
+                    "u235",
+                    "u236",
+                    "u237",
+                    "u238",
+                    "u239",
+                    "u240",
+                    "u241",
+                    "u242",
+                    "u243",
+                    "u244",
+                    "u245",
+                    "u246",
+                    "u247",
+                    "u248",
+                    "u249",
+                    "u250",
+                    "u251",
+                    "u252",
+                    "u253",
+                    "u254",
+                    "u255",
+                    "u256",
+                    "u257",
+                    "u258",
+                    "u259",
+                    "u260",
+                    "u261",
+                    "u262",
+                    "u263",
+                    "u264",
+                    "u265",
+                    "u266",
+                    "u267",
+                    "u268",
+                    "u269",
+                    "u270",
+                    "u271",
+                    "u272",
+                    "u273",
+                    "u274",
+                    "u275",
+                    "u276",
+                    "u277",
+                    "u278",
+                    "u279",
+                    "u280",
+                    "u281",
+                    "u282",
+                    "u283",
+                    "u284",
+                    "u285",
+                    "u286",
+                    "u287",
+                    "u288",
+                    "u289",
+                    "u290",
+                    "u291",
+                    "u292",
+                    "u293",
+                    "u294",
+                    "u295",
+                    "u296",
+                    "u297",
+                    "u298",
+                    "u299",
+                    "u300",
+                    "u301",
+                    "u302",
+                    "u303",
+                    "u304",
+                    "u305",
+                    "u306",
+                    "u307",
+                    "u308",
+                    "u309",
+                    "u310",
+                    "u311",
+                    "u312",
+                    "u313",
+                    "u314",
+                    "u315",
+                    "u316",
+                    "u317",
+                    "u318",
+                    "u319",
+                    "u320",
+                    "u321",
+                    "u322",
+                    "u323",
+                    "u324",
+                    "u325",
+                    "u326",
+                    "u327",
+                    "u328",
+                    "u329",
+                    "u330",
+                    "u331",
+                    "u332",
+                    "u333",
+                    "u334",
+                    "u335",
+                    "u336",
+                    "u337",
+                    "u338",
+                    "u339",
+                    "u340",
+                    "u341",
+                    "u342",
+                    "u343",
+                    "u344",
+                    "u345",
+                    "u346",
+                    "u347",
+                    "u348",
+                    "u349",
+                    "u350"
+                  ]
+                }
+              ],
+              "anti_phish_rules": [
+                {
+                  "State": "Enabled",
+                  "AntiPhishPolicy": "AntiPhish",
+                  "RecipientDomainIs": [
+                    "example.test"
+                  ],
+                  "SentToMemberOf": [
+                    "all-users"
+                  ]
+                }
+              ]
+            },
+            "expected": false
+          },
+          "disabled_rule": {
+            "input": {
+              "anti_phish_policies": [
+                {
+                  "Name": "AntiPhish",
+                  "Enabled": true,
+                  "PhishThresholdLevel": 3,
+                  "EnableTargetedUserProtection": true,
+                  "EnableOrganizationDomainsProtection": true,
+                  "EnableMailboxIntelligence": true,
+                  "EnableMailboxIntelligenceProtection": true,
+                  "EnableSpoofIntelligence": true,
+                  "TargetedUserProtectionAction": "Quarantine",
+                  "TargetedDomainProtectionAction": "Quarantine",
+                  "MailboxIntelligenceProtectionAction": "Quarantine",
+                  "EnableFirstContactSafetyTips": true,
+                  "EnableSimilarUsersSafetyTips": true,
+                  "EnableSimilarDomainsSafetyTips": true,
+                  "EnableUnusualCharactersSafetyTips": true,
+                  "HonorDmarcPolicy": true,
+                  "TargetedUsersToProtect": [
+                    "user@example.test"
+                  ]
+                }
+              ],
+              "anti_phish_rules": [
+                {
+                  "State": "Disabled",
+                  "AntiPhishPolicy": "AntiPhish",
+                  "RecipientDomainIs": [
+                    "example.test"
+                  ],
+                  "SentToMemberOf": [
+                    "all-users"
+                  ]
+                }
+              ]
+            },
+            "expected": false
+          },
+          "nested_error": {
+            "input": {
+              "anti_phish_policies": [
+                {
+                  "Name": "AntiPhish",
+                  "Enabled": true,
+                  "PhishThresholdLevel": 3,
+                  "EnableTargetedUserProtection": true,
+                  "EnableOrganizationDomainsProtection": true,
+                  "EnableMailboxIntelligence": true,
+                  "EnableMailboxIntelligenceProtection": true,
+                  "EnableSpoofIntelligence": true,
+                  "TargetedUserProtectionAction": "Quarantine",
+                  "TargetedDomainProtectionAction": "Quarantine",
+                  "MailboxIntelligenceProtectionAction": "Quarantine",
+                  "EnableFirstContactSafetyTips": true,
+                  "EnableSimilarUsersSafetyTips": true,
+                  "EnableSimilarDomainsSafetyTips": true,
+                  "EnableUnusualCharactersSafetyTips": true,
+                  "HonorDmarcPolicy": true,
+                  "TargetedUsersToProtect": [
+                    "user@example.test"
+                  ],
+                  "error": "permission_denied"
+                }
+              ],
+              "anti_phish_rules": [
+                {
+                  "State": "Enabled",
+                  "AntiPhishPolicy": "AntiPhish",
+                  "RecipientDomainIs": [
+                    "example.test"
+                  ],
+                  "SentToMemberOf": [
+                    "all-users"
+                  ]
+                }
+              ]
+            },
+            "expected": null
+          },
+          "malformed_rule_targets": {
+            "input": {
+              "anti_phish_policies": [
+                {
+                  "Name": "AntiPhish",
+                  "Enabled": true,
+                  "PhishThresholdLevel": 3,
+                  "EnableTargetedUserProtection": true,
+                  "EnableOrganizationDomainsProtection": true,
+                  "EnableMailboxIntelligence": true,
+                  "EnableMailboxIntelligenceProtection": true,
+                  "EnableSpoofIntelligence": true,
+                  "TargetedUserProtectionAction": "Quarantine",
+                  "TargetedDomainProtectionAction": "Quarantine",
+                  "MailboxIntelligenceProtectionAction": "Quarantine",
+                  "EnableFirstContactSafetyTips": true,
+                  "EnableSimilarUsersSafetyTips": true,
+                  "EnableSimilarDomainsSafetyTips": true,
+                  "EnableUnusualCharactersSafetyTips": true,
+                  "HonorDmarcPolicy": true,
+                  "TargetedUsersToProtect": [
+                    "user@example.test"
+                  ]
+                }
+              ],
+              "anti_phish_rules": [
+                {
+                  "State": "Enabled",
+                  "AntiPhishPolicy": "AntiPhish",
+                  "RecipientDomainIs": [
+                    {}
+                  ],
+                  "SentToMemberOf": [
+                    "all-users"
+                  ]
+                }
+              ]
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "The existing 350-target maximum is inclusive.",
+        "policy_file": "2.1.7_AntiPhishing_Policy_is_created.rego",
+        "collector_id": "exchange.protection.anti_phish_policy"
+      },
+      "2.1.11": {
+        "cases": {
+          "pass": {
+            "input": {
+              "default_policy": {
+                "EnableFileFilter": true,
+                "FileTypes": [
+                  "7z",
+                  "a3x",
+                  "ace",
+                  "ade",
+                  "adp",
+                  "ani",
+                  "app",
+                  "appinstaller",
+                  "applescript",
+                  "application",
+                  "appref-ms",
+                  "appx",
+                  "appxbundle",
+                  "arj",
+                  "asd",
+                  "asx",
+                  "bas",
+                  "bat",
+                  "bgi",
+                  "bz2",
+                  "cab",
+                  "chm",
+                  "cmd",
+                  "com",
+                  "cpl",
+                  "crt",
+                  "cs",
+                  "csh",
+                  "daa",
+                  "dbf",
+                  "dcr",
+                  "deb",
+                  "desktopthemepackfile",
+                  "dex",
+                  "diagcab",
+                  "dif",
+                  "dir",
+                  "dll",
+                  "dmg",
+                  "doc",
+                  "docm",
+                  "dot",
+                  "dotm",
+                  "elf",
+                  "eml",
+                  "exe",
+                  "fxp",
+                  "gadget",
+                  "gz",
+                  "hlp",
+                  "hta",
+                  "htc",
+                  "htm",
+                  "html",
+                  "hwpx",
+                  "ics",
+                  "img",
+                  "inf",
+                  "ins",
+                  "iqy",
+                  "iso",
+                  "isp",
+                  "jar",
+                  "jnlp",
+                  "js",
+                  "jse",
+                  "kext",
+                  "ksh",
+                  "lha",
+                  "lib",
+                  "library-ms",
+                  "lnk",
+                  "lzh",
+                  "macho",
+                  "mam",
+                  "mda",
+                  "mdb",
+                  "mde",
+                  "mdt",
+                  "mdw",
+                  "mdz",
+                  "mht",
+                  "mhtml",
+                  "mof",
+                  "msc",
+                  "msi",
+                  "msix",
+                  "msp",
+                  "msrcincident",
+                  "mst",
+                  "ocx",
+                  "odt",
+                  "ops",
+                  "oxps",
+                  "pcd",
+                  "pif",
+                  "plg",
+                  "pot",
+                  "potm",
+                  "ppa",
+                  "ppam",
+                  "ppkg",
+                  "pps",
+                  "ppsm",
+                  "ppt",
+                  "pptm",
+                  "prf",
+                  "prg",
+                  "ps1",
+                  "ps11",
+                  "ps11xml",
+                  "ps1xml",
+                  "ps2",
+                  "ps2xml",
+                  "psc1",
+                  "psc2",
+                  "pub",
+                  "py",
+                  "pyc",
+                  "pyo",
+                  "pyw",
+                  "pyz",
+                  "pyzw",
+                  "rar",
+                  "reg",
+                  "rev",
+                  "rtf",
+                  "scf",
+                  "scpt",
+                  "scr",
+                  "sct",
+                  "searchConnector-ms",
+                  "service",
+                  "settingcontent-ms",
+                  "sh",
+                  "shb",
+                  "shs",
+                  "shtm",
+                  "shtml",
+                  "sldm",
+                  "slk",
+                  "so",
+                  "spl",
+                  "stm",
+                  "svg",
+                  "swf",
+                  "sys",
+                  "tar",
+                  "theme",
+                  "themepack",
+                  "timer",
+                  "uif",
+                  "url",
+                  "uue",
+                  "vb",
+                  "vbe",
+                  "vbs",
+                  "vhd",
+                  "vhdx",
+                  "vxd",
+                  "wbk",
+                  "website",
+                  "wim",
+                  "wiz",
+                  "ws",
+                  "wsc",
+                  "wsf",
+                  "wsh",
+                  "xla",
+                  "xlam",
+                  "xlc",
+                  "xll",
+                  "xlm",
+                  "xls",
+                  "xlsb",
+                  "xlsm",
+                  "xlt",
+                  "xltm",
+                  "xlw",
+                  "xnk",
+                  "xps",
+                  "xsl",
+                  "xz",
+                  "z"
+                ]
+              }
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "default_policy": {
+                "EnableFileFilter": false,
+                "FileTypes": [
+                  "7z",
+                  "a3x",
+                  "ace",
+                  "ade",
+                  "adp",
+                  "ani",
+                  "app",
+                  "appinstaller",
+                  "applescript",
+                  "application",
+                  "appref-ms",
+                  "appx",
+                  "appxbundle",
+                  "arj",
+                  "asd",
+                  "asx",
+                  "bas",
+                  "bat",
+                  "bgi",
+                  "bz2",
+                  "cab",
+                  "chm",
+                  "cmd",
+                  "com",
+                  "cpl",
+                  "crt",
+                  "cs",
+                  "csh",
+                  "daa",
+                  "dbf",
+                  "dcr",
+                  "deb",
+                  "desktopthemepackfile",
+                  "dex",
+                  "diagcab",
+                  "dif",
+                  "dir",
+                  "dll",
+                  "dmg",
+                  "doc",
+                  "docm",
+                  "dot",
+                  "dotm",
+                  "elf",
+                  "eml",
+                  "exe",
+                  "fxp",
+                  "gadget",
+                  "gz",
+                  "hlp",
+                  "hta",
+                  "htc",
+                  "htm",
+                  "html",
+                  "hwpx",
+                  "ics",
+                  "img",
+                  "inf",
+                  "ins",
+                  "iqy",
+                  "iso",
+                  "isp",
+                  "jar",
+                  "jnlp",
+                  "js",
+                  "jse",
+                  "kext",
+                  "ksh",
+                  "lha",
+                  "lib",
+                  "library-ms",
+                  "lnk",
+                  "lzh",
+                  "macho",
+                  "mam",
+                  "mda",
+                  "mdb",
+                  "mde",
+                  "mdt",
+                  "mdw",
+                  "mdz",
+                  "mht",
+                  "mhtml",
+                  "mof",
+                  "msc",
+                  "msi",
+                  "msix",
+                  "msp",
+                  "msrcincident",
+                  "mst",
+                  "ocx",
+                  "odt",
+                  "ops",
+                  "oxps",
+                  "pcd",
+                  "pif",
+                  "plg",
+                  "pot",
+                  "potm",
+                  "ppa",
+                  "ppam",
+                  "ppkg",
+                  "pps",
+                  "ppsm",
+                  "ppt",
+                  "pptm",
+                  "prf",
+                  "prg",
+                  "ps1",
+                  "ps11",
+                  "ps11xml",
+                  "ps1xml",
+                  "ps2",
+                  "ps2xml",
+                  "psc1",
+                  "psc2",
+                  "pub",
+                  "py",
+                  "pyc",
+                  "pyo",
+                  "pyw",
+                  "pyz",
+                  "pyzw",
+                  "rar",
+                  "reg",
+                  "rev",
+                  "rtf",
+                  "scf",
+                  "scpt",
+                  "scr",
+                  "sct",
+                  "searchConnector-ms",
+                  "service",
+                  "settingcontent-ms",
+                  "sh",
+                  "shb",
+                  "shs",
+                  "shtm",
+                  "shtml",
+                  "sldm",
+                  "slk",
+                  "so",
+                  "spl",
+                  "stm",
+                  "svg",
+                  "swf",
+                  "sys",
+                  "tar",
+                  "theme",
+                  "themepack",
+                  "timer",
+                  "uif",
+                  "url",
+                  "uue",
+                  "vb",
+                  "vbe",
+                  "vbs",
+                  "vhd",
+                  "vhdx",
+                  "vxd",
+                  "wbk",
+                  "website",
+                  "wim",
+                  "wiz",
+                  "ws",
+                  "wsc",
+                  "wsf",
+                  "wsh",
+                  "xla",
+                  "xlam",
+                  "xlc",
+                  "xll",
+                  "xlm",
+                  "xls",
+                  "xlsb",
+                  "xlsm",
+                  "xlt",
+                  "xltm",
+                  "xlw",
+                  "xnk",
+                  "xps",
+                  "xsl",
+                  "xz",
+                  "z"
+                ]
+              }
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "default_policy": "malformed"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "default_policy": {
+                "EnableFileFilter": true,
+                "FileTypes": [
+                  "7z",
+                  "a3x",
+                  "ace",
+                  "ade",
+                  "adp",
+                  "ani",
+                  "app",
+                  "appinstaller",
+                  "applescript",
+                  "application",
+                  "appref-ms",
+                  "appx",
+                  "appxbundle",
+                  "arj",
+                  "asd",
+                  "asx",
+                  "bas",
+                  "bat",
+                  "bgi",
+                  "bz2",
+                  "cab",
+                  "chm",
+                  "cmd",
+                  "com",
+                  "cpl",
+                  "crt",
+                  "cs",
+                  "csh",
+                  "daa",
+                  "dbf",
+                  "dcr",
+                  "deb",
+                  "desktopthemepackfile",
+                  "dex",
+                  "diagcab",
+                  "dif",
+                  "dir",
+                  "dll",
+                  "dmg",
+                  "doc",
+                  "docm",
+                  "dot",
+                  "dotm",
+                  "elf",
+                  "eml",
+                  "exe",
+                  "fxp",
+                  "gadget",
+                  "gz",
+                  "hlp",
+                  "hta",
+                  "htc",
+                  "htm",
+                  "html",
+                  "hwpx",
+                  "ics",
+                  "img",
+                  "inf",
+                  "ins",
+                  "iqy",
+                  "iso",
+                  "isp",
+                  "jar",
+                  "jnlp",
+                  "js",
+                  "jse",
+                  "kext",
+                  "ksh",
+                  "lha",
+                  "lib",
+                  "library-ms",
+                  "lnk",
+                  "lzh",
+                  "macho",
+                  "mam",
+                  "mda",
+                  "mdb",
+                  "mde",
+                  "mdt",
+                  "mdw",
+                  "mdz",
+                  "mht",
+                  "mhtml",
+                  "mof",
+                  "msc",
+                  "msi",
+                  "msix",
+                  "msp",
+                  "msrcincident",
+                  "mst",
+                  "ocx",
+                  "odt",
+                  "ops",
+                  "oxps",
+                  "pcd",
+                  "pif",
+                  "plg",
+                  "pot",
+                  "potm",
+                  "ppa",
+                  "ppam",
+                  "ppkg",
+                  "pps",
+                  "ppsm",
+                  "ppt",
+                  "pptm",
+                  "prf",
+                  "prg",
+                  "ps1",
+                  "ps11",
+                  "ps11xml",
+                  "ps1xml",
+                  "ps2",
+                  "ps2xml",
+                  "psc1",
+                  "psc2",
+                  "pub",
+                  "py",
+                  "pyc",
+                  "pyo",
+                  "pyw",
+                  "pyz",
+                  "pyzw",
+                  "rar",
+                  "reg",
+                  "rev",
+                  "rtf",
+                  "scf",
+                  "scpt",
+                  "scr",
+                  "sct",
+                  "searchConnector-ms",
+                  "service",
+                  "settingcontent-ms",
+                  "sh",
+                  "shb",
+                  "shs",
+                  "shtm",
+                  "shtml",
+                  "sldm",
+                  "slk",
+                  "so",
+                  "spl",
+                  "stm",
+                  "svg",
+                  "swf",
+                  "sys",
+                  "tar",
+                  "theme",
+                  "themepack",
+                  "timer",
+                  "uif",
+                  "url",
+                  "uue",
+                  "vb",
+                  "vbe",
+                  "vbs",
+                  "vhd",
+                  "vhdx",
+                  "vxd",
+                  "wbk",
+                  "website",
+                  "wim",
+                  "wiz",
+                  "ws",
+                  "wsc"
+                ]
+              }
+            },
+            "expected": true
+          },
+          "partial": {
+            "input": {
+              "default_policy": {
+                "EnableFileFilter": true
+              }
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "default_policy": {
+                "EnableFileFilter": true,
+                "FileTypes": [
+                  "7z",
+                  "a3x",
+                  "ace",
+                  "ade",
+                  "adp",
+                  "ani",
+                  "app",
+                  "appinstaller",
+                  "applescript",
+                  "application",
+                  "appref-ms",
+                  "appx",
+                  "appxbundle",
+                  "arj",
+                  "asd",
+                  "asx",
+                  "bas",
+                  "bat",
+                  "bgi",
+                  "bz2",
+                  "cab",
+                  "chm",
+                  "cmd",
+                  "com",
+                  "cpl",
+                  "crt",
+                  "cs",
+                  "csh",
+                  "daa",
+                  "dbf",
+                  "dcr",
+                  "deb",
+                  "desktopthemepackfile",
+                  "dex",
+                  "diagcab",
+                  "dif",
+                  "dir",
+                  "dll",
+                  "dmg",
+                  "doc",
+                  "docm",
+                  "dot",
+                  "dotm",
+                  "elf",
+                  "eml",
+                  "exe",
+                  "fxp",
+                  "gadget",
+                  "gz",
+                  "hlp",
+                  "hta",
+                  "htc",
+                  "htm",
+                  "html",
+                  "hwpx",
+                  "ics",
+                  "img",
+                  "inf",
+                  "ins",
+                  "iqy",
+                  "iso",
+                  "isp",
+                  "jar",
+                  "jnlp",
+                  "js",
+                  "jse",
+                  "kext",
+                  "ksh",
+                  "lha",
+                  "lib",
+                  "library-ms",
+                  "lnk",
+                  "lzh",
+                  "macho",
+                  "mam",
+                  "mda",
+                  "mdb",
+                  "mde",
+                  "mdt",
+                  "mdw",
+                  "mdz",
+                  "mht",
+                  "mhtml",
+                  "mof",
+                  "msc",
+                  "msi",
+                  "msix",
+                  "msp",
+                  "msrcincident",
+                  "mst",
+                  "ocx",
+                  "odt",
+                  "ops",
+                  "oxps",
+                  "pcd",
+                  "pif",
+                  "plg",
+                  "pot",
+                  "potm",
+                  "ppa",
+                  "ppam",
+                  "ppkg",
+                  "pps",
+                  "ppsm",
+                  "ppt",
+                  "pptm",
+                  "prf",
+                  "prg",
+                  "ps1",
+                  "ps11",
+                  "ps11xml",
+                  "ps1xml",
+                  "ps2",
+                  "ps2xml",
+                  "psc1",
+                  "psc2",
+                  "pub",
+                  "py",
+                  "pyc",
+                  "pyo",
+                  "pyw",
+                  "pyz",
+                  "pyzw",
+                  "rar",
+                  "reg",
+                  "rev",
+                  "rtf",
+                  "scf",
+                  "scpt",
+                  "scr",
+                  "sct",
+                  "searchConnector-ms",
+                  "service",
+                  "settingcontent-ms",
+                  "sh",
+                  "shb",
+                  "shs",
+                  "shtm",
+                  "shtml",
+                  "sldm",
+                  "slk",
+                  "so",
+                  "spl",
+                  "stm",
+                  "svg",
+                  "swf",
+                  "sys",
+                  "tar",
+                  "theme",
+                  "themepack",
+                  "timer",
+                  "uif",
+                  "url",
+                  "uue",
+                  "vb",
+                  "vbe",
+                  "vbs",
+                  "vhd",
+                  "vhdx",
+                  "vxd",
+                  "wbk",
+                  "website",
+                  "wim",
+                  "wiz",
+                  "ws",
+                  "wsc",
+                  "wsf",
+                  "wsh",
+                  "xla",
+                  "xlam",
+                  "xlc",
+                  "xll",
+                  "xlm",
+                  "xls",
+                  "xlsb",
+                  "xlsm",
+                  "xlt",
+                  "xltm",
+                  "xlw",
+                  "xnk",
+                  "xps",
+                  "xsl",
+                  "xz",
+                  "z"
+                ]
+              },
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          },
+          "below_coverage_threshold": {
+            "input": {
+              "default_policy": {
+                "EnableFileFilter": true,
+                "FileTypes": [
+                  "7z",
+                  "a3x",
+                  "ace",
+                  "ade",
+                  "adp",
+                  "ani",
+                  "app",
+                  "appinstaller",
+                  "applescript",
+                  "application",
+                  "appref-ms",
+                  "appx",
+                  "appxbundle",
+                  "arj",
+                  "asd",
+                  "asx",
+                  "bas",
+                  "bat",
+                  "bgi",
+                  "bz2",
+                  "cab",
+                  "chm",
+                  "cmd",
+                  "com",
+                  "cpl",
+                  "crt",
+                  "cs",
+                  "csh",
+                  "daa",
+                  "dbf",
+                  "dcr",
+                  "deb",
+                  "desktopthemepackfile",
+                  "dex",
+                  "diagcab",
+                  "dif",
+                  "dir",
+                  "dll",
+                  "dmg",
+                  "doc",
+                  "docm",
+                  "dot",
+                  "dotm",
+                  "elf",
+                  "eml",
+                  "exe",
+                  "fxp",
+                  "gadget",
+                  "gz",
+                  "hlp",
+                  "hta",
+                  "htc",
+                  "htm",
+                  "html",
+                  "hwpx",
+                  "ics",
+                  "img",
+                  "inf",
+                  "ins",
+                  "iqy",
+                  "iso",
+                  "isp",
+                  "jar",
+                  "jnlp",
+                  "js",
+                  "jse",
+                  "kext",
+                  "ksh",
+                  "lha",
+                  "lib",
+                  "library-ms",
+                  "lnk",
+                  "lzh",
+                  "macho",
+                  "mam",
+                  "mda",
+                  "mdb",
+                  "mde",
+                  "mdt",
+                  "mdw",
+                  "mdz",
+                  "mht",
+                  "mhtml",
+                  "mof",
+                  "msc",
+                  "msi",
+                  "msix",
+                  "msp",
+                  "msrcincident",
+                  "mst",
+                  "ocx",
+                  "odt",
+                  "ops",
+                  "oxps",
+                  "pcd",
+                  "pif",
+                  "plg",
+                  "pot",
+                  "potm",
+                  "ppa",
+                  "ppam",
+                  "ppkg",
+                  "pps",
+                  "ppsm",
+                  "ppt",
+                  "pptm",
+                  "prf",
+                  "prg",
+                  "ps1",
+                  "ps11",
+                  "ps11xml",
+                  "ps1xml",
+                  "ps2",
+                  "ps2xml",
+                  "psc1",
+                  "psc2",
+                  "pub",
+                  "py",
+                  "pyc",
+                  "pyo",
+                  "pyw",
+                  "pyz",
+                  "pyzw",
+                  "rar",
+                  "reg",
+                  "rev",
+                  "rtf",
+                  "scf",
+                  "scpt",
+                  "scr",
+                  "sct",
+                  "searchConnector-ms",
+                  "service",
+                  "settingcontent-ms",
+                  "sh",
+                  "shb",
+                  "shs",
+                  "shtm",
+                  "shtml",
+                  "sldm",
+                  "slk",
+                  "so",
+                  "spl",
+                  "stm",
+                  "svg",
+                  "swf",
+                  "sys",
+                  "tar",
+                  "theme",
+                  "themepack",
+                  "timer",
+                  "uif",
+                  "url",
+                  "uue",
+                  "vb",
+                  "vbe",
+                  "vbs",
+                  "vhd",
+                  "vhdx",
+                  "vxd",
+                  "wbk",
+                  "website",
+                  "wim",
+                  "wiz",
+                  "ws"
+                ]
+              }
+            },
+            "expected": false
+          }
+        },
+        "boundary_reason": "Coverage rounds up to the first whole extension count meeting 90 percent.",
+        "policy_file": "2.1.11_Comprehensive_Attachment_Filtering_Applied.rego",
+        "collector_id": "exchange.protection.malware_filter_policy"
+      },
+      "2.4.4": {
+        "cases": {
+          "pass": {
+            "input": {
+              "zap_enabled": true
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "zap_enabled": false
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "zap_enabled": "malformed"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "teams_protection_policy": {
+                "ZapEnabled": true
+              }
+            },
+            "expected": true
+          },
+          "partial": {
+            "input": {
+              "zap_enabled": null
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "zap_enabled": true,
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "The raw policy fallback is supported.",
+        "policy_file": "2.4.4_Zero_hour_AutoPurge_MSTeams_is_On.rego",
+        "collector_id": "exchange.protection.teams_protection_policy"
+      },
+      "4.2": {
+        "cases": {
+          "pass": {
+            "input": {
+              "personal_devices_blocked": true,
+              "total_configurations": 1,
+              "platform_restrictions": [
+                {}
+              ]
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "personal_devices_blocked": false,
+              "total_configurations": 1,
+              "platform_restrictions": [
+                {}
+              ]
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "personal_devices_blocked": "malformed",
+              "total_configurations": 1,
+              "platform_restrictions": [
+                {}
+              ]
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "personal_devices_blocked": false,
+              "total_configurations": 0,
+              "platform_restrictions": []
+            },
+            "expected": false
+          },
+          "partial": {
+            "input": {
+              "total_configurations": 1,
+              "platform_restrictions": [
+                {}
+              ]
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "personal_devices_blocked": true,
+              "total_configurations": 1,
+              "platform_restrictions": [
+                {}
+              ],
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "No restriction configurations cannot block personal enrollment.",
+        "policy_file": "4.2_block_personal_device_enrollment.rego",
+        "collector_id": "entra.devices.enrollment_restrictions"
+      },
+      "5.1.2.2": {
+        "cases": {
+          "pass": {
+            "input": {
+              "allowed_to_create_apps": false
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "allowed_to_create_apps": true
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "allowed_to_create_apps": "malformed"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "allowed_to_create_apps": null
+            },
+            "expected": null
+          },
+          "partial": {
+            "input": {
+              "allowed_to_create_apps": null
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "allowed_to_create_apps": false,
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "An explicit null setting is unknown, including when false is the secure value.",
+        "policy_file": "5.1.2.2_block_third_party_integrated_apps.rego",
+        "collector_id": "entra.policies.authorization_policy"
+      },
+      "5.1.5.1": {
+        "cases": {
+          "pass": {
+            "input": {
+              "default_user_role_permissions": {
+                "permissionGrantPoliciesAssigned": []
+              }
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "default_user_role_permissions": {
+                "permissionGrantPoliciesAssigned": [
+                  "user-consent"
+                ]
+              }
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "default_user_role_permissions": "malformed"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "default_user_role_permissions": null
+            },
+            "expected": null
+          },
+          "partial": {
+            "input": {
+              "default_user_role_permissions": {}
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "default_user_role_permissions": {
+                "permissionGrantPoliciesAssigned": []
+              },
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "An explicit null setting is unknown, including when false is the secure value.",
+        "policy_file": "5.1.5.1_block_user_app_consent.rego",
+        "collector_id": "entra.policies.authorization_policy"
+      },
+      "5.1.5.2": {
+        "cases": {
+          "pass": {
+            "input": {
+              "is_enabled": true,
+              "reviewers": [
+                {
+                  "query": "/users/admin"
+                }
+              ],
+              "notify_reviewers": true,
+              "reminders_enabled": true,
+              "request_duration_in_days": 30
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "is_enabled": false,
+              "reviewers": [
+                {
+                  "query": "/users/admin"
+                }
+              ],
+              "notify_reviewers": true,
+              "reminders_enabled": true,
+              "request_duration_in_days": 30
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "is_enabled": "malformed",
+              "reviewers": [
+                {
+                  "query": "/users/admin"
+                }
+              ],
+              "notify_reviewers": true,
+              "reminders_enabled": true,
+              "request_duration_in_days": 30
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "is_enabled": true,
+              "reviewers": [],
+              "notify_reviewers": true,
+              "reminders_enabled": true,
+              "request_duration_in_days": 30
+            },
+            "expected": true
+          },
+          "partial": {
+            "input": {
+              "reviewers": [
+                {
+                  "query": "/users/admin"
+                }
+              ],
+              "notify_reviewers": true,
+              "reminders_enabled": true,
+              "request_duration_in_days": 30
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "is_enabled": true,
+              "reviewers": [
+                {
+                  "query": "/users/admin"
+                }
+              ],
+              "notify_reviewers": true,
+              "reminders_enabled": true,
+              "request_duration_in_days": 30,
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "Current control checks workflow enablement; reviewer requirements need benchmark interpretation.",
+        "policy_file": "5.1.5.2_admin_consent_workflow_enabled.rego",
+        "collector_id": "entra.policies.admin_consent_request_policy"
+      },
+      "5.1.6.1": {
+        "cases": {
+          "pass": {
+            "input": {
+              "partners": [
+                {
+                  "tenantId": "partner"
+                }
+              ],
+              "partners_count": 1,
+              "b2b_collaboration_inbound": {
+                "usersAndGroups": {
+                  "accessType": "blocked"
+                }
+              }
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "partners": [
+                {
+                  "tenantId": "partner"
+                }
+              ],
+              "partners_count": 1,
+              "b2b_collaboration_inbound": {
+                "usersAndGroups": {
+                  "accessType": "allowed"
+                }
+              }
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "partners": "malformed",
+              "partners_count": 1,
+              "b2b_collaboration_inbound": {
+                "usersAndGroups": {
+                  "accessType": "blocked"
+                }
+              }
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "partners": [],
+              "partners_count": 0,
+              "b2b_collaboration_inbound": {
+                "usersAndGroups": {
+                  "accessType": "blocked"
+                }
+              }
+            },
+            "expected": false
+          },
+          "partial": {
+            "input": {
+              "partners_count": 1,
+              "b2b_collaboration_inbound": {
+                "usersAndGroups": {
+                  "accessType": "blocked"
+                }
+              }
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "partners": [
+                {
+                  "tenantId": "partner"
+                }
+              ],
+              "partners_count": 1,
+              "b2b_collaboration_inbound": {
+                "usersAndGroups": {
+                  "accessType": "blocked"
+                }
+              },
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          },
+          "inconsistent_partner_count": {
+            "input": {
+              "partners": [],
+              "partners_count": 1,
+              "b2b_collaboration_inbound": {
+                "usersAndGroups": {
+                  "accessType": "blocked"
+                }
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "Preserves the existing partner/default-inbound heuristic; D09 mapping remains open.",
+        "policy_file": "5.1.6.1_restrict_collaboration_invite_domains.rego",
+        "collector_id": "entra.policies.b2b_policy"
+      },
+      "5.1.6.2": {
+        "cases": {
+          "pass": {
+            "input": {
+              "guest_user_role_id": "10dae51f-b6af-4016-8d66-8c2a99b929b3"
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "guest_user_role_id": "a0b1b346-4d3e-4e8b-98f8-753987be4970"
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "guest_user_role_id": 17
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "guest_user_role_id": "2af84b1e-32c8-42b7-82bc-daa82404023b"
+            },
+            "expected": true
+          },
+          "partial": {
+            "input": {
+              "guest_user_role_id": null
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "guest_user_role_id": "10dae51f-b6af-4016-8d66-8c2a99b929b3",
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "Both limited and restricted guest roles satisfy the existing interpretation.",
+        "policy_file": "5.1.6.2_restrict_guest_user_access.rego",
+        "collector_id": "entra.policies.authorization_policy"
+      },
+      "5.1.6.3": {
+        "cases": {
+          "pass": {
+            "input": {
+              "allow_invites_from": "adminsAndGuestInviters"
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "allow_invites_from": "everyone"
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "allow_invites_from": []
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "allow_invites_from": "adminsGuestInvitersAndAllMembers"
+            },
+            "expected": false
+          },
+          "partial": {
+            "input": {
+              "allow_invites_from": null
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "allow_invites_from": "adminsAndGuestInviters",
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "Allowing all members to invite fails.",
+        "policy_file": "5.1.6.3_limit_guest_invitations.rego",
+        "collector_id": "entra.policies.authorization_policy"
+      },
+      "5.2.2.3": {
+        "cases": {
+          "pass": {
+            "input": {
+              "conditional_access_policies": [
+                {
+                  "display_name": "Block legacy",
+                  "state": "enabled",
+                  "targets_all_users": true,
+                  "targets_all_apps": true,
+                  "blocks_legacy_auth": true,
+                  "grant_control": "block"
+                }
+              ]
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "conditional_access_policies": [
+                {
+                  "display_name": "Block legacy",
+                  "state": "enabled",
+                  "targets_all_users": true,
+                  "targets_all_apps": true,
+                  "blocks_legacy_auth": true,
+                  "grant_control": "mfa"
+                }
+              ]
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "conditional_access_policies": "malformed"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "conditional_access_policies": [
+                {
+                  "display_name": "Block legacy",
+                  "state": "enabledForReportingButNotEnforced",
+                  "targets_all_users": true,
+                  "targets_all_apps": true,
+                  "blocks_legacy_auth": true,
+                  "grant_control": "block"
+                }
+              ]
+            },
+            "expected": false
+          },
+          "partial": {
+            "input": {
+              "conditional_access_policies": [
+                {
+                  "display_name": "Block legacy",
+                  "state": "enabled",
+                  "targets_all_users": null,
+                  "targets_all_apps": true,
+                  "blocks_legacy_auth": true,
+                  "grant_control": "block"
+                }
+              ]
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "conditional_access_policies": [
+                {
+                  "display_name": "Block legacy",
+                  "state": "enabled",
+                  "targets_all_users": true,
+                  "targets_all_apps": true,
+                  "blocks_legacy_auth": true,
+                  "grant_control": "block"
+                }
+              ],
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          },
+          "partial_population": {
+            "input": {
+              "conditional_access_policies": [
+                {
+                  "display_name": "Block legacy",
+                  "state": "enabled",
+                  "targets_all_users": true,
+                  "targets_all_apps": true,
+                  "blocks_legacy_auth": true,
+                  "grant_control": "block"
+                },
+                {}
+              ]
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "Report-only policies do not enforce blocking.",
+        "policy_file": "5.2.2.3_block_legacy_auth.rego",
+        "collector_id": "entra.conditional_access.legacy_auth_block"
+      },
+      "5.2.3.1": {
+        "cases": {
+          "pass": {
+            "input": {
+              "number_matching_enabled": true,
+              "display_app_information_enabled": true,
+              "display_location_information_enabled": true,
+              "state": "enabled",
+              "include_targets": [
+                {
+                  "id": "all_users"
+                }
+              ],
+              "exclude_targets": []
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "number_matching_enabled": false,
+              "display_app_information_enabled": true,
+              "display_location_information_enabled": true,
+              "state": "enabled",
+              "include_targets": [
+                {
+                  "id": "all_users"
+                }
+              ],
+              "exclude_targets": []
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "number_matching_enabled": "malformed",
+              "display_app_information_enabled": true,
+              "display_location_information_enabled": true,
+              "state": "enabled",
+              "include_targets": [
+                {
+                  "id": "all_users"
+                }
+              ],
+              "exclude_targets": []
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "number_matching_enabled": true,
+              "display_app_information_enabled": true,
+              "display_location_information_enabled": false,
+              "state": "enabled",
+              "include_targets": [
+                {
+                  "id": "all_users"
+                }
+              ],
+              "exclude_targets": []
+            },
+            "expected": true
+          },
+          "partial": {
+            "input": {
+              "display_app_information_enabled": true,
+              "display_location_information_enabled": true,
+              "state": "enabled",
+              "include_targets": [
+                {
+                  "id": "all_users"
+                }
+              ],
+              "exclude_targets": []
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "number_matching_enabled": true,
+              "display_app_information_enabled": true,
+              "display_location_information_enabled": true,
+              "state": "enabled",
+              "include_targets": [
+                {
+                  "id": "all_users"
+                }
+              ],
+              "exclude_targets": [],
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "Preserves current number-matching criterion; additional context does not change it.",
+        "policy_file": "5.2.3.1_mfa_fatigue_protection.rego",
+        "collector_id": "entra.authentication.mfa_fatigue_protection"
+      },
+      "5.2.3.2": {
+        "cases": {
+          "pass": {
+            "input": {
+              "banned_password_list_enabled": true,
+              "banned_password_list": "example"
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "banned_password_list_enabled": false,
+              "banned_password_list": "example"
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "banned_password_list_enabled": "malformed",
+              "banned_password_list": "example"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "banned_password_list_enabled": true,
+              "banned_password_list": ""
+            },
+            "expected": true
+          },
+          "partial": {
+            "input": {
+              "banned_password_list": "example"
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "banned_password_list_enabled": true,
+              "banned_password_list": "example",
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "Current benchmark mapping assesses enablement; list content is descriptive.",
+        "policy_file": "5.2.3.2_custom_banned_passwords_enabled.rego",
+        "collector_id": "entra.authentication.password_protection"
+      },
+      "5.2.3.3": {
+        "cases": {
+          "pass": {
+            "input": {
+              "on_prem_protection_enabled": true,
+              "enforce_custom_banned_passwords": true
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "on_prem_protection_enabled": false,
+              "enforce_custom_banned_passwords": true
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "on_prem_protection_enabled": "malformed",
+              "enforce_custom_banned_passwords": true
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "on_prem_protection_enabled": true,
+              "enforce_custom_banned_passwords": false
+            },
+            "expected": true
+          },
+          "partial": {
+            "input": {
+              "enforce_custom_banned_passwords": true
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "on_prem_protection_enabled": true,
+              "enforce_custom_banned_passwords": true,
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "Preserves current on-premises enablement criterion.",
+        "policy_file": "5.2.3.3_enable_on_prem_password_protection.rego",
+        "collector_id": "entra.authentication.password_protection"
+      },
+      "5.2.3.4": {
+        "cases": {
+          "pass": {
+            "input": {
+              "total_users": 1,
+              "mfa_capable_count": 1,
+              "mfa_registered_count": 1,
+              "mfa_not_registered_count": 0,
+              "mfa_registration_percentage": 100
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "total_users": 1,
+              "mfa_capable_count": 0,
+              "mfa_registered_count": 1,
+              "mfa_not_registered_count": 0,
+              "mfa_registration_percentage": 100
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "total_users": "malformed",
+              "mfa_capable_count": 1,
+              "mfa_registered_count": 1,
+              "mfa_not_registered_count": 0,
+              "mfa_registration_percentage": 100
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "total_users": 0,
+              "mfa_capable_count": 0,
+              "mfa_registered_count": 0,
+              "mfa_not_registered_count": 0,
+              "mfa_registration_percentage": 0
+            },
+            "expected": null
+          },
+          "partial": {
+            "input": {
+              "mfa_capable_count": 1,
+              "mfa_registered_count": 1,
+              "mfa_not_registered_count": 0,
+              "mfa_registration_percentage": 100
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "total_users": 1,
+              "mfa_capable_count": 1,
+              "mfa_registered_count": 1,
+              "mfa_not_registered_count": 0,
+              "mfa_registration_percentage": 100,
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          },
+          "impossible_count": {
+            "input": {
+              "total_users": 1,
+              "mfa_capable_count": 2,
+              "mfa_registered_count": 1,
+              "mfa_not_registered_count": 0,
+              "mfa_registration_percentage": 100
+            },
+            "expected": null
+          },
+          "fractional_count": {
+            "input": {
+              "total_users": 1.5,
+              "mfa_capable_count": 1.5,
+              "mfa_registered_count": 1,
+              "mfa_not_registered_count": 0,
+              "mfa_registration_percentage": 100
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "An empty user population is not evidence that all members are MFA capable.",
+        "policy_file": "5.2.3.4_all_members_mfa_capable.rego",
+        "collector_id": "entra.authentication.mfa_registration_report"
+      },
+      "5.2.3.5": {
+        "cases": {
+          "pass": {
+            "input": {
+              "sms_enabled": false,
+              "voice_enabled": false
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "sms_enabled": true,
+              "voice_enabled": false
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "sms_enabled": "malformed",
+              "voice_enabled": false
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "sms_enabled": false,
+              "voice_enabled": true
+            },
+            "expected": false
+          },
+          "partial": {
+            "input": {
+              "voice_enabled": false
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "sms_enabled": false,
+              "voice_enabled": false,
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "Either weak authentication method independently fails.",
+        "policy_file": "5.2.3.5_disable_weak_auth_methods.rego",
+        "collector_id": "entra.authentication.authentication_methods"
+      },
+      "5.2.3.6": {
+        "cases": {
+          "pass": {
+            "input": {
+              "authentication_methods_policy": {
+                "systemCredentialPreferences": {
+                  "state": "enabled"
+                }
+              }
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "authentication_methods_policy": {
+                "systemCredentialPreferences": {
+                  "state": "disabled"
+                }
+              }
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "authentication_methods_policy": "malformed"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "authentication_methods_policy": {
+                "systemCredentialPreferences": {
+                  "state": "default"
+                }
+              }
+            },
+            "expected": false
+          },
+          "partial": {
+            "input": {
+              "authentication_methods_policy": {}
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "authentication_methods_policy": {
+                "systemCredentialPreferences": {
+                  "state": "enabled"
+                }
+              },
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "A default value is not explicit enabled evidence.",
+        "policy_file": "5.2.3.6_enable_system_preferred_mfa.rego",
+        "collector_id": "entra.authentication.authentication_methods"
+      },
+      "5.2.3.7": {
+        "cases": {
+          "pass": {
+            "input": {
+              "email_otp_enabled": false
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "email_otp_enabled": true
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "email_otp_enabled": "malformed"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "email_otp_enabled": null
+            },
+            "expected": null
+          },
+          "partial": {
+            "input": {
+              "email_otp_enabled": null
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "email_otp_enabled": false,
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "An explicit null setting is unknown, including when false is the secure value.",
+        "policy_file": "5.2.3.7_disable_email_otp.rego",
+        "collector_id": "entra.authentication.authentication_methods"
+      },
+      "5.3.1": {
+        "cases": {
+          "pass": {
+            "input": {
+              "pim_enabled": true,
+              "total_policies": 1
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "pim_enabled": false,
+              "total_policies": 0
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "pim_enabled": "malformed",
+              "total_policies": 1
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "pim_enabled": true,
+              "total_policies": 2
+            },
+            "expected": true
+          },
+          "partial": {
+            "input": {
+              "total_policies": 1
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "pim_enabled": true,
+              "total_policies": 1,
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          },
+          "inconsistent_presence": {
+            "input": {
+              "pim_enabled": true,
+              "total_policies": 0
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "More than one role policy still establishes the existing PIM-presence check.",
+        "policy_file": "5.3.1_pim_enabled.rego",
+        "collector_id": "entra.governance.pim_role_policies"
+      },
+      "5.3.2": {
+        "cases": {
+          "pass": {
+            "input": {
+              "has_guest_reviews": true,
+              "total_reviews": 1,
+              "guest_reviews_count": 1
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "has_guest_reviews": false,
+              "total_reviews": 0,
+              "guest_reviews_count": 0
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "has_guest_reviews": "malformed",
+              "total_reviews": 1,
+              "guest_reviews_count": 1
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "has_guest_reviews": true,
+              "total_reviews": 2,
+              "guest_reviews_count": 1
+            },
+            "expected": true
+          },
+          "partial": {
+            "input": {
+              "total_reviews": 1,
+              "guest_reviews_count": 1
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "has_guest_reviews": true,
+              "total_reviews": 1,
+              "guest_reviews_count": 1,
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          },
+          "inconsistent_presence": {
+            "input": {
+              "has_guest_reviews": true,
+              "total_reviews": 1,
+              "guest_reviews_count": 0
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "Unrelated non-guest reviews do not negate an existing guest review.",
+        "policy_file": "5.3.2_guest_access_reviews_configured.rego",
+        "collector_id": "entra.governance.access_reviews"
+      },
+      "5.3.3": {
+        "cases": {
+          "pass": {
+            "input": {
+              "access_review_definitions": [
+                {
+                  "id": "review",
+                  "scope": {
+                    "query": "/roleManagement/directory/roleAssignments"
+                  }
+                }
+              ],
+              "total_reviews": 1
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "access_review_definitions": [
+                {
+                  "id": "review",
+                  "scope": {
+                    "query": "/groups"
+                  }
+                }
+              ],
+              "total_reviews": 1
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "access_review_definitions": "malformed",
+              "total_reviews": 1
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "access_review_definitions": [],
+              "total_reviews": 0
+            },
+            "expected": false
+          },
+          "partial": {
+            "input": {
+              "access_review_definitions": [
+                {
+                  "id": "review"
+                }
+              ],
+              "total_reviews": 1
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "access_review_definitions": [
+                {
+                  "id": "review",
+                  "scope": {
+                    "query": "/roleManagement/directory/roleAssignments"
+                  }
+                }
+              ],
+              "total_reviews": 1,
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "A successfully collected empty review population fails.",
+        "policy_file": "5.3.3_privileged_role_access_reviews_configured.rego",
+        "collector_id": "entra.governance.access_reviews"
+      },
+      "5.3.4": {
+        "cases": {
+          "pass": {
+            "input": {
+              "global_admin_approval_required": true,
+              "global_admin_policy": {
+                "id": "policy"
+              },
+              "global_admin_mfa_required": true,
+              "global_admin_justification_required": true,
+              "global_admin_max_activation_duration": "PT1H"
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "global_admin_approval_required": false,
+              "global_admin_policy": {
+                "id": "policy"
+              },
+              "global_admin_mfa_required": true,
+              "global_admin_justification_required": true,
+              "global_admin_max_activation_duration": "PT1H"
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "global_admin_approval_required": "malformed",
+              "global_admin_policy": {
+                "id": "policy"
+              },
+              "global_admin_mfa_required": true,
+              "global_admin_justification_required": true,
+              "global_admin_max_activation_duration": "PT1H"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "global_admin_approval_required": true,
+              "global_admin_policy": {
+                "id": "policy"
+              },
+              "global_admin_mfa_required": true,
+              "global_admin_justification_required": true,
+              "global_admin_max_activation_duration": "PT8H"
+            },
+            "expected": true
+          },
+          "partial": {
+            "input": {
+              "global_admin_policy": {
+                "id": "policy"
+              },
+              "global_admin_mfa_required": true,
+              "global_admin_justification_required": true,
+              "global_admin_max_activation_duration": "PT1H"
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "global_admin_approval_required": true,
+              "global_admin_policy": {
+                "id": "policy"
+              },
+              "global_admin_mfa_required": true,
+              "global_admin_justification_required": true,
+              "global_admin_max_activation_duration": "PT1H",
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "The activation-duration setting is independent of required approval.",
+        "policy_file": "5.3.4_ga_activation_requires_approval.rego",
+        "collector_id": "entra.governance.pim_role_policies"
+      },
+      "5.3.5": {
+        "cases": {
+          "pass": {
+            "input": {
+              "privileged_role_admin_approval_required": true,
+              "privileged_role_admin_policy": {
+                "id": "policy"
+              }
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "privileged_role_admin_approval_required": false,
+              "privileged_role_admin_policy": {
+                "id": "policy"
+              }
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "privileged_role_admin_approval_required": "malformed",
+              "privileged_role_admin_policy": {
+                "id": "policy"
+              }
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "privileged_role_admin_approval_required": null,
+              "privileged_role_admin_policy": {
+                "id": "policy"
+              }
+            },
+            "expected": null
+          },
+          "partial": {
+            "input": {
+              "privileged_role_admin_policy": {
+                "id": "policy"
+              }
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "privileged_role_admin_approval_required": true,
+              "privileged_role_admin_policy": {
+                "id": "policy"
+              },
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "An explicit null setting is unknown, including when false is the secure value.",
+        "policy_file": "5.3.5_pra_activation_requires_approval.rego",
+        "collector_id": "entra.governance.pim_role_policies"
+      },
+      "6.1.1": {
+        "cases": {
+          "pass": {
+            "input": {
+              "audit_disabled": false
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "audit_disabled": true
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "audit_disabled": "malformed"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "audit_disabled": null
+            },
+            "expected": null
+          },
+          "partial": {
+            "input": {
+              "audit_disabled": null
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "audit_disabled": false,
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "An explicit null setting is unknown, including when false is the secure value.",
+        "policy_file": "6.1.1_audit_disabled.rego",
+        "collector_id": "exchange.organization.organization_config"
+      },
+      "6.1.2": {
+        "cases": {
+          "pass": {
+            "input": {
+              "mailboxes": [
+                {
+                  "AuditAdmin": [
+                    "ApplyRecord",
+                    "Copy",
+                    "Create",
+                    "FolderBind",
+                    "HardDelete",
+                    "Move",
+                    "MoveToDeletedItems",
+                    "SendAs",
+                    "SendOnBehalf",
+                    "SoftDelete",
+                    "Update",
+                    "UpdateCalendarDelegation",
+                    "UpdateFolderPermissions",
+                    "UpdateInboxRules"
+                  ],
+                  "AuditDelegate": [
+                    "ApplyRecord",
+                    "Create",
+                    "FolderBind",
+                    "HardDelete",
+                    "Move",
+                    "MoveToDeletedItems",
+                    "SendAs",
+                    "SendOnBehalf",
+                    "SoftDelete",
+                    "Update",
+                    "UpdateFolderPermissions",
+                    "UpdateInboxRules"
+                  ],
+                  "AuditOwner": [
+                    "ApplyRecord",
+                    "Create",
+                    "HardDelete",
+                    "MailboxLogin",
+                    "Move",
+                    "MoveToDeletedItems",
+                    "SoftDelete",
+                    "Update",
+                    "UpdateCalendarDelegation",
+                    "UpdateFolderPermissions",
+                    "UpdateInboxRules"
+                  ],
+                  "UserPrincipalName": "mailbox@example.test"
+                }
+              ]
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "mailboxes": [
+                {
+                  "AuditAdmin": [
+                    "ApplyRecord",
+                    "Copy",
+                    "Create",
+                    "FolderBind",
+                    "HardDelete",
+                    "Move",
+                    "MoveToDeletedItems",
+                    "SendAs",
+                    "SendOnBehalf",
+                    "SoftDelete",
+                    "Update",
+                    "UpdateCalendarDelegation",
+                    "UpdateFolderPermissions",
+                    "UpdateInboxRules"
+                  ],
+                  "AuditDelegate": [
+                    "ApplyRecord",
+                    "Create",
+                    "FolderBind",
+                    "HardDelete",
+                    "Move",
+                    "MoveToDeletedItems",
+                    "SendAs",
+                    "SendOnBehalf",
+                    "SoftDelete",
+                    "Update",
+                    "UpdateFolderPermissions",
+                    "UpdateInboxRules"
+                  ],
+                  "AuditOwner": [
+                    "ApplyRecord",
+                    "Create",
+                    "HardDelete",
+                    "MailboxLogin",
+                    "Move",
+                    "MoveToDeletedItems",
+                    "SoftDelete",
+                    "Update",
+                    "UpdateCalendarDelegation",
+                    "UpdateFolderPermissions"
+                  ],
+                  "UserPrincipalName": "mailbox@example.test"
+                }
+              ]
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "mailboxes": "malformed"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "mailboxes": []
+            },
+            "expected": null
+          },
+          "partial": {
+            "input": {
+              "mailboxes": [
+                {
+                  "UserPrincipalName": "mailbox@example.test"
+                }
+              ]
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "mailboxes": [
+                {
+                  "AuditAdmin": [
+                    "ApplyRecord",
+                    "Copy",
+                    "Create",
+                    "FolderBind",
+                    "HardDelete",
+                    "Move",
+                    "MoveToDeletedItems",
+                    "SendAs",
+                    "SendOnBehalf",
+                    "SoftDelete",
+                    "Update",
+                    "UpdateCalendarDelegation",
+                    "UpdateFolderPermissions",
+                    "UpdateInboxRules"
+                  ],
+                  "AuditDelegate": [
+                    "ApplyRecord",
+                    "Create",
+                    "FolderBind",
+                    "HardDelete",
+                    "Move",
+                    "MoveToDeletedItems",
+                    "SendAs",
+                    "SendOnBehalf",
+                    "SoftDelete",
+                    "Update",
+                    "UpdateFolderPermissions",
+                    "UpdateInboxRules"
+                  ],
+                  "AuditOwner": [
+                    "ApplyRecord",
+                    "Create",
+                    "HardDelete",
+                    "MailboxLogin",
+                    "Move",
+                    "MoveToDeletedItems",
+                    "SoftDelete",
+                    "Update",
+                    "UpdateCalendarDelegation",
+                    "UpdateFolderPermissions",
+                    "UpdateInboxRules"
+                  ],
+                  "UserPrincipalName": "mailbox@example.test"
+                }
+              ],
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          },
+          "unidentified_mailbox": {
+            "input": {
+              "mailboxes": [
+                {
+                  "AuditAdmin": [
+                    "ApplyRecord",
+                    "Copy",
+                    "Create",
+                    "FolderBind",
+                    "HardDelete",
+                    "Move",
+                    "MoveToDeletedItems",
+                    "SendAs",
+                    "SendOnBehalf",
+                    "SoftDelete",
+                    "Update",
+                    "UpdateCalendarDelegation",
+                    "UpdateFolderPermissions",
+                    "UpdateInboxRules"
+                  ],
+                  "AuditDelegate": [
+                    "ApplyRecord",
+                    "Create",
+                    "FolderBind",
+                    "HardDelete",
+                    "Move",
+                    "MoveToDeletedItems",
+                    "SendAs",
+                    "SendOnBehalf",
+                    "SoftDelete",
+                    "Update",
+                    "UpdateFolderPermissions",
+                    "UpdateInboxRules"
+                  ],
+                  "AuditOwner": [
+                    "ApplyRecord",
+                    "Create",
+                    "HardDelete",
+                    "MailboxLogin",
+                    "Move",
+                    "MoveToDeletedItems",
+                    "SoftDelete",
+                    "Update",
+                    "UpdateCalendarDelegation",
+                    "UpdateFolderPermissions",
+                    "UpdateInboxRules"
+                  ]
+                }
+              ]
+            },
+            "expected": null
+          },
+          "duplicate_actions": {
+            "input": {
+              "mailboxes": [
+                {
+                  "AuditAdmin": [
+                    "ApplyRecord",
+                    "Copy",
+                    "Create",
+                    "FolderBind",
+                    "HardDelete",
+                    "Move",
+                    "MoveToDeletedItems",
+                    "SendAs",
+                    "SendOnBehalf",
+                    "SoftDelete",
+                    "Update",
+                    "UpdateCalendarDelegation",
+                    "UpdateFolderPermissions",
+                    "UpdateInboxRules"
+                  ],
+                  "AuditDelegate": [
+                    "ApplyRecord",
+                    "Create",
+                    "FolderBind",
+                    "HardDelete",
+                    "Move",
+                    "MoveToDeletedItems",
+                    "SendAs",
+                    "SendOnBehalf",
+                    "SoftDelete",
+                    "Update",
+                    "UpdateFolderPermissions",
+                    "UpdateInboxRules"
+                  ],
+                  "AuditOwner": [
+                    "ApplyRecord",
+                    "Create",
+                    "HardDelete",
+                    "MailboxLogin",
+                    "Move",
+                    "MoveToDeletedItems",
+                    "SoftDelete",
+                    "Update",
+                    "UpdateCalendarDelegation",
+                    "UpdateFolderPermissions",
+                    "ApplyRecord",
+                    "Create",
+                    "HardDelete",
+                    "MailboxLogin",
+                    "Move",
+                    "MoveToDeletedItems",
+                    "SoftDelete",
+                    "Update",
+                    "UpdateCalendarDelegation",
+                    "UpdateFolderPermissions"
+                  ],
+                  "UserPrincipalName": "mailbox@example.test"
+                }
+              ]
+            },
+            "expected": false
+          },
+          "superset_actions": {
+            "input": {
+              "mailboxes": [
+                {
+                  "AuditAdmin": [
+                    "ApplyRecord",
+                    "Copy",
+                    "Create",
+                    "FolderBind",
+                    "HardDelete",
+                    "Move",
+                    "MoveToDeletedItems",
+                    "SendAs",
+                    "SendOnBehalf",
+                    "SoftDelete",
+                    "Update",
+                    "UpdateCalendarDelegation",
+                    "UpdateFolderPermissions",
+                    "UpdateInboxRules"
+                  ],
+                  "AuditDelegate": [
+                    "ApplyRecord",
+                    "Create",
+                    "FolderBind",
+                    "HardDelete",
+                    "Move",
+                    "MoveToDeletedItems",
+                    "SendAs",
+                    "SendOnBehalf",
+                    "SoftDelete",
+                    "Update",
+                    "UpdateFolderPermissions",
+                    "UpdateInboxRules"
+                  ],
+                  "AuditOwner": [
+                    "ApplyRecord",
+                    "Create",
+                    "HardDelete",
+                    "MailboxLogin",
+                    "Move",
+                    "MoveToDeletedItems",
+                    "SoftDelete",
+                    "Update",
+                    "UpdateCalendarDelegation",
+                    "UpdateFolderPermissions",
+                    "UpdateInboxRules",
+                    "AdditionalAction"
+                  ],
+                  "UserPrincipalName": "mailbox@example.test"
+                }
+              ]
+            },
+            "expected": true
+          },
+          "partial_population": {
+            "input": {
+              "mailboxes": [
+                {
+                  "AuditAdmin": [
+                    "ApplyRecord",
+                    "Copy",
+                    "Create",
+                    "FolderBind",
+                    "HardDelete",
+                    "Move",
+                    "MoveToDeletedItems",
+                    "SendAs",
+                    "SendOnBehalf",
+                    "SoftDelete",
+                    "Update",
+                    "UpdateCalendarDelegation",
+                    "UpdateFolderPermissions",
+                    "UpdateInboxRules"
+                  ],
+                  "AuditDelegate": [
+                    "ApplyRecord",
+                    "Create",
+                    "FolderBind",
+                    "HardDelete",
+                    "Move",
+                    "MoveToDeletedItems",
+                    "SendAs",
+                    "SendOnBehalf",
+                    "SoftDelete",
+                    "Update",
+                    "UpdateFolderPermissions",
+                    "UpdateInboxRules"
+                  ],
+                  "AuditOwner": [
+                    "ApplyRecord",
+                    "Create",
+                    "HardDelete",
+                    "MailboxLogin",
+                    "Move",
+                    "MoveToDeletedItems",
+                    "SoftDelete",
+                    "Update",
+                    "UpdateCalendarDelegation",
+                    "UpdateFolderPermissions",
+                    "UpdateInboxRules"
+                  ],
+                  "UserPrincipalName": "mailbox@example.test"
+                },
+                {}
+              ]
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "Empty mailbox populations are indeterminate; existing action sets and D03 applicability remain unchanged.",
+        "policy_file": "6.1.2_mailbox_audit_actions.rego",
+        "collector_id": "exchange.mailbox.mailbox_audit_actions"
+      },
+      "6.1.3": {
+        "cases": {
+          "pass": {
+            "input": {
+              "accounts_with_bypass_enabled": [],
+              "bypass_count": 0
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "accounts_with_bypass_enabled": [
+                {
+                  "Name": "mailbox"
+                }
+              ],
+              "bypass_count": 1
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "accounts_with_bypass_enabled": "malformed",
+              "bypass_count": 0
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "accounts_with_bypass_enabled": null,
+              "bypass_count": 0
+            },
+            "expected": null
+          },
+          "partial": {
+            "input": {
+              "bypass_count": 0
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "accounts_with_bypass_enabled": [],
+              "bypass_count": 0,
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          },
+          "inconsistent_count": {
+            "input": {
+              "accounts_with_bypass_enabled": [
+                {
+                  "Name": "bypassed"
+                }
+              ],
+              "bypass_count": 0
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "An explicit null setting is unknown, including when false is the secure value.",
+        "policy_file": "6.1.3_audit_bypass.rego",
+        "collector_id": "exchange.mailbox.mailbox_audit"
+      },
+      "6.2.1": {
+        "cases": {
+          "pass": {
+            "input": {
+              "outbound_spam_filter_policies": [
+                {
+                  "name": "Default",
+                  "auto_forwarding_mode": "Off"
+                }
+              ],
+              "auto_forwarding_blocked": true,
+              "forwarding_rules": [],
+              "whitelist_rules": [],
+              "total_rules": 0
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "outbound_spam_filter_policies": [
+                {
+                  "name": "Default",
+                  "auto_forwarding_mode": "On"
+                }
+              ],
+              "auto_forwarding_blocked": false,
+              "forwarding_rules": [],
+              "whitelist_rules": [],
+              "total_rules": 0
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "outbound_spam_filter_policies": "malformed",
+              "auto_forwarding_blocked": true,
+              "forwarding_rules": [],
+              "whitelist_rules": [],
+              "total_rules": 0
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "outbound_spam_filter_policies": [
+                {
+                  "name": "Default",
+                  "auto_forwarding_mode": "Off"
+                }
+              ],
+              "auto_forwarding_blocked": true,
+              "forwarding_rules": [
+                {
+                  "name": "Old",
+                  "state": "Disabled"
+                }
+              ],
+              "whitelist_rules": [],
+              "total_rules": 1
+            },
+            "expected": true
+          },
+          "partial": {
+            "input": {
+              "outbound_spam_filter_policies": [
+                {
+                  "name": "Default",
+                  "auto_forwarding_mode": "Off"
+                }
+              ],
+              "auto_forwarding_blocked": true
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "outbound_spam_filter_policies": [
+                {
+                  "name": "Default",
+                  "auto_forwarding_mode": "Off"
+                }
+              ],
+              "auto_forwarding_blocked": true,
+              "forwarding_rules": [],
+              "whitelist_rules": [],
+              "total_rules": 0,
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          },
+          "contradictory_summary": {
+            "input": {
+              "outbound_spam_filter_policies": [
+                {
+                  "name": "Default",
+                  "auto_forwarding_mode": "On"
+                }
+              ],
+              "auto_forwarding_blocked": true,
+              "forwarding_rules": [],
+              "whitelist_rules": [],
+              "total_rules": 0
+            },
+            "expected": null
+          },
+          "empty_outbound_population": {
+            "input": {
+              "outbound_spam_filter_policies": [],
+              "auto_forwarding_blocked": true,
+              "forwarding_rules": [],
+              "whitelist_rules": [],
+              "total_rules": 0
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "Disabled forwarding rules do not forward mail.",
+        "policy_file": "6.2.1_mail_forwarding_blocked.rego",
+        "collector_id": "exchange.transport.transport_rules"
+      },
+      "6.2.2": {
+        "cases": {
+          "pass": {
+            "input": {
+              "whitelist_rules": [],
+              "total_rules": 0
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "whitelist_rules": [
+                {
+                  "name": "Allow",
+                  "state": "Enabled",
+                  "set_scl": -1,
+                  "sender_domain": [
+                    "example.test"
+                  ]
+                }
+              ],
+              "total_rules": 1
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "whitelist_rules": "malformed",
+              "total_rules": 0
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "whitelist_rules": [
+                {
+                  "name": "Allow",
+                  "state": "Disabled",
+                  "set_scl": -1,
+                  "sender_domain": [
+                    "example.test"
+                  ]
+                }
+              ],
+              "total_rules": 1
+            },
+            "expected": true
+          },
+          "partial": {
+            "input": {
+              "whitelist_rules": [
+                {}
+              ],
+              "total_rules": 1
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "whitelist_rules": [],
+              "total_rules": 0,
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          },
+          "malformed_scl": {
+            "input": {
+              "whitelist_rules": [
+                {
+                  "name": "Allow",
+                  "state": "Enabled",
+                  "set_scl": "-1",
+                  "sender_domain": [
+                    "example.test"
+                  ]
+                }
+              ],
+              "total_rules": 1
+            },
+            "expected": null
+          },
+          "partial_population": {
+            "input": {
+              "whitelist_rules": [
+                {
+                  "name": "Allow",
+                  "state": "Enabled",
+                  "set_scl": -1,
+                  "sender_domain": [
+                    "example.test"
+                  ]
+                },
+                {}
+              ],
+              "total_rules": 2
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "Disabled whitelist rules do not bypass spam checks.",
+        "policy_file": "6.2.2_transport_whitelist.rego",
+        "collector_id": "exchange.transport.transport_rules"
+      },
+      "6.2.3": {
+        "cases": {
+          "pass": {
+            "input": {
+              "enabled": true,
+              "allowed_senders": []
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "enabled": false,
+              "allowed_senders": []
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "enabled": "malformed",
+              "allowed_senders": []
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "enabled": true,
+              "allowed_senders": [
+                "trusted@example.test"
+              ]
+            },
+            "expected": true
+          },
+          "partial": {
+            "input": {
+              "allowed_senders": []
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "enabled": true,
+              "allowed_senders": [],
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "Preserves enablement criterion; exceptions remain visible in policy details.",
+        "policy_file": "6.2.3_external_sender_tagging.rego",
+        "collector_id": "exchange.transport.external_in_outlook"
+      },
+      "6.5.1": {
+        "cases": {
+          "pass": {
+            "input": {
+              "oauth_enabled": true
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "oauth_enabled": false
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "oauth_enabled": "malformed"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "oauth_enabled": null
+            },
+            "expected": null
+          },
+          "partial": {
+            "input": {
+              "oauth_enabled": null
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "oauth_enabled": true,
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "An explicit null setting is unknown, including when false is the secure value.",
+        "policy_file": "6.5.1_modern_auth.rego",
+        "collector_id": "exchange.organization.organization_config"
+      },
+      "6.5.4": {
+        "cases": {
+          "pass": {
+            "input": {
+              "smtp_client_authentication_disabled": true
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "smtp_client_authentication_disabled": false
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "smtp_client_authentication_disabled": "malformed"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "smtp_client_authentication_disabled": null
+            },
+            "expected": null
+          },
+          "partial": {
+            "input": {
+              "smtp_client_authentication_disabled": null
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "smtp_client_authentication_disabled": true,
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "An explicit null setting is unknown, including when false is the secure value.",
+        "policy_file": "6.5.4_smtp_auth.rego",
+        "collector_id": "exchange.organization.transport_config"
+      },
+      "6.5.5": {
+        "cases": {
+          "pass": {
+            "input": {
+              "reject_direct_send": true
+            },
+            "expected": true
+          },
+          "fail": {
+            "input": {
+              "reject_direct_send": false
+            },
+            "expected": false
+          },
+          "missing": {
+            "input": {},
+            "expected": null
+          },
+          "malformed": {
+            "input": {
+              "reject_direct_send": "malformed"
+            },
+            "expected": null
+          },
+          "boundary": {
+            "input": {
+              "reject_direct_send": null
+            },
+            "expected": null
+          },
+          "partial": {
+            "input": {
+              "reject_direct_send": null
+            },
+            "expected": null
+          },
+          "collector_error": {
+            "input": {
+              "reject_direct_send": true,
+              "collector_error": {
+                "code": "Forbidden"
+              }
+            },
+            "expected": null
+          }
+        },
+        "boundary_reason": "An explicit null setting is unknown, including when false is the secure value.",
+        "policy_file": "6.5.5_direct_send.rego",
+        "collector_id": "exchange.organization.organization_config"
+      }
+    }
+  }
+}

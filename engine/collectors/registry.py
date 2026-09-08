@@ -11,6 +11,7 @@ from collectors.entra.applications.forms_settings import FormsSettingsDataCollec
 from collectors.entra.applications.third_party_storage_services import (
     ThirdPartyStorageServicesDataCollector,
 )
+
 # Authentication
 from collectors.entra.authentication.authentication_methods import (
     AuthenticationMethodsDataCollector,
@@ -150,8 +151,11 @@ from collectors.exchange.transport.transport_rules import TransportRulesDataColl
 # SharePoint - PnP
 from collectors.sharepoint.pnp.tenant import PnpTenantDataCollector
 
-
-
+# Compliance
+from collectors.compliance.dlp_compliance_policy import (
+    DlpCompliancePolicyDataCollector,
+)
+from collectors.compliance.label_policy import LabelPolicyDataCollector
 
 
 # Registry mapping data_collector_id to collector class
@@ -221,7 +225,11 @@ DATA_COLLECTORS: dict[str, type[BaseDataCollector]] = {
     "exchange.transport.transport_rules": TransportRulesDataCollector,
     # SharePoint - PnP
     "sharepoint.pnp.tenant": PnpTenantDataCollector,
+    # Compliance
+    "compliance.dlp_compliance_policy": DlpCompliancePolicyDataCollector,
+    "compliance.label_policy": LabelPolicyDataCollector,
 }
+
 
 def get_collector(collector_id: str) -> BaseDataCollector:
     """Get a collector instance by ID."""

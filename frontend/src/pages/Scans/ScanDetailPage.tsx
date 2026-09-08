@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, JSX } from "react";
+import React, { useState, useEffect, useCallback, useRef, JSX } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import {
 	ArrowLeft,
@@ -11,24 +11,19 @@ import {
 	Shield,
 	AlertTriangle,
 } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
-import { getScan } from "../../api/client";
+import { cancelScan, getScan } from "../../api/client";
 import { RelativeTime, relativeTimePresetClass } from "../../components/RelativeTime";
+
+import type { ScanAssessmentFields, ScanResult, ScanResultStatus } from "../../types/scan";
+import { getScanAssessment, RESULT_LABELS } from "../../utils/scanAssessment";
+import AssessmentSummary from "../../components/AssessmentSummary";
 
 type ScanDetailPageProps = {
 	sidebarWidth?: number;
 	isDarkMode?: boolean;
 };
 
-type ScanResult = {
-	control_id?: string | number;
-	status?: string;
-	title?: string;
-	description?: string;
-	message?: string;
-};
-
-type ScanDetail = {
+type ScanDetail = ScanAssessmentFields & {
 	id?: number | string;
 	status?: string;
 	benchmark?: string;
@@ -72,6 +67,7 @@ function compareControlIdAscending(a: ScanResult, b: ScanResult): number {
 
 const statusIconMap: Record<string, string> = {
 	completed: "text-emerald-500",
+	cancelled: "text-slate-500",
 	failed: "text-red-500",
 	running: "text-blue-500",
 	pending: "text-orange-500",
@@ -105,6 +101,8 @@ const resultStatusColors: Record<
 		badge: "text-orange-500",
 		badgeBg: "bg-orange-500/15",
 	},
+	indeterminate: { border: "border-l-amber-500", icon: "text-amber-500", badge: "text-amber-500", badgeBg: "bg-amber-500/15" },
+	not_assessable: { border: "border-l-slate-400", icon: "text-slate-400", badge: "text-slate-400", badgeBg: "bg-slate-500/15" },
 	skipped: {
 		border: "border-l-slate-400",
 		icon: "text-slate-400",
@@ -121,6 +119,7 @@ const resultStatusColors: Record<
 
 const statusBadgeStyles: Record<string, string> = {
 	completed: "bg-emerald-500/15 text-emerald-500",
+	cancelled: "bg-slate-500/15 text-slate-500",
 	failed: "bg-red-500/15 text-red-500",
 	running: "bg-blue-500/15 text-blue-500",
 	pending: "bg-orange-500/15 text-orange-500",
@@ -132,11 +131,14 @@ const ScanDetailPage: React.FC<ScanDetailPageProps> = ({
 }) => {
 	const { scanId } = useParams<{ scanId: string }>();
 	const navigate = useNavigate();
-	const { token } = useAuth();
+
 
 	const [scan, setScan] = useState<ScanDetail | null>(null);
 	const [isLoading, setIsLoading] = useState<boolean>(true);
 	const [error, setError] = useState<string | null>(null);
+	const [isCancelling, setIsCancelling] = useState(false);
+	const [cancelError, setCancelError] = useState<string | null>(null);
+	const requestVersion = useRef(0);
 
 	const loadScan = useCallback(async (): Promise<ScanDetail | null> => {
 		if (!scanId) {
@@ -144,16 +146,18 @@ const ScanDetailPage: React.FC<ScanDetailPageProps> = ({
 			return null;
 		}
 
+		const version = ++requestVersion.current;
 		try {
-			const scanData = await getScan(token, scanId);
+			const scanData = await getScan(scanId);
+			if (version !== requestVersion.current) return null;
 			setScan(scanData as ScanDetail);
 			setError(null);
 			return scanData as ScanDetail;
 		} catch (err: unknown) {
-			setError(getErrorMessage(err, "Failed to load scan"));
+			if (version === requestVersion.current) setError(getErrorMessage(err, "Failed to load scan"));
 			return null;
 		}
-	}, [token, scanId]);
+	}, [scanId]);
 
 	useEffect(() => {
 		async function initialLoad(): Promise<void> {
@@ -165,28 +169,60 @@ const ScanDetailPage: React.FC<ScanDetailPageProps> = ({
 	}, [loadScan]);
 
 	useEffect(() => {
-		if (!scan || scan.status === "completed" || scan.status === "failed") {
+		if (scan?.status !== "pending" && scan?.status !== "running") {
 			return;
 		}
 
-		const interval = setInterval(async () => {
+		let stopped = false;
+		let timeout: ReturnType<typeof setTimeout>;
+		async function poll(): Promise<void> {
 			const updatedScan = await loadScan();
 			if (
-				updatedScan?.status === "completed" ||
-				updatedScan?.status === "failed"
+				!stopped &&
+				updatedScan?.status !== "completed" &&
+				updatedScan?.status !== "failed" &&
+				updatedScan?.status !== "cancelled"
 			) {
-				clearInterval(interval);
+				// Wait until this request finishes before scheduling another poll.
+				timeout = setTimeout(poll, 3000);
 			}
-		}, 3000);
+		}
+		timeout = setTimeout(poll, 3000);
 
-		return () => clearInterval(interval);
-	}, [scan, loadScan]);
+		return () => {
+			stopped = true;
+			clearTimeout(timeout);
+		};
+	}, [scan?.status, loadScan]);
+
+	async function handleCancel(): Promise<void> {
+		if (!scanId || isCancelling) return;
+		setIsCancelling(true);
+		setCancelError(null);
+		try {
+			const result = await cancelScan(scanId);
+			// Ignore any poll started before the persisted cancellation response.
+			const version = ++requestVersion.current;
+			setScan(previous => previous ? { ...previous, status: result.status } : previous);
+			try {
+				const refreshed = await getScan(scanId);
+				if (version === requestVersion.current) setScan(refreshed as ScanDetail);
+			} catch {
+				setCancelError("Scan status updated, but results could not be refreshed. Reload to see the latest results.");
+			}
+		} catch (err: unknown) {
+			setCancelError(getErrorMessage(err, "Failed to cancel scan"));
+		} finally {
+			setIsCancelling(false);
+		}
+	}
 
 	function getStatusIcon(status?: string): JSX.Element {
 		const colorClass = statusIconMap[status || ""] || "text-orange-500";
 		switch (status) {
 			case "completed":
 				return <CheckCircle size={20} className={colorClass} />;
+			case "cancelled":
 			case "failed":
 				return <XCircle size={20} className={colorClass} />;
 			case "running":
@@ -205,6 +241,8 @@ const ScanDetailPage: React.FC<ScanDetailPageProps> = ({
 		switch (status) {
 			case "completed":
 				return "Completed";
+			case "cancelled":
+				return "Cancelled";
 			case "failed":
 				return "Failed";
 			case "running":
@@ -231,21 +269,8 @@ const ScanDetailPage: React.FC<ScanDetailPageProps> = ({
 		}
 	}
 
-	function getResultBadgeText(status?: string): string {
-		switch (status) {
-			case "passed":
-				return "Pass";
-			case "failed":
-				return "Fail";
-			case "error":
-				return "Error";
-			case "pending":
-				return "Pending";
-			case "skipped":
-				return "Skipped";
-			default:
-				return "Unknown";
-		}
+	function getResultBadgeText(status?: ScanResultStatus): string {
+		return status ? RESULT_LABELS[status] : "Unknown";
 	}
 
 	const pageClasses = `min-h-screen p-6 transition-colors duration-300 ${
@@ -327,24 +352,9 @@ const ScanDetailPage: React.FC<ScanDetailPageProps> = ({
 		);
 	}
 
-	const summary = {
-		total: scan.total_controls || 0,
-		passed: scan.passed_count || 0,
-		failed: scan.failed_count || 0,
-		errors: scan.error_count || 0,
-		pending:
-			(scan.total_controls || 0) -
-			(scan.passed_count || 0) -
-			(scan.failed_count || 0) -
-			(scan.error_count || 0) -
-			(scan.skipped_count || 0),
-	};
-
-	const done =
-		summary.passed +
-		summary.failed +
-		summary.errors +
-		(scan.skipped_count || 0);
+	const assessment = getScanAssessment(scan);
+	const summary = { total: assessment.total, passed: assessment.counts.passed, failed: assessment.counts.failed, errors: assessment.counts.error, pending: assessment.pending };
+	const done = assessment.done;
 
 	const progressPercent =
 		summary.total > 0
@@ -420,6 +430,8 @@ const ScanDetailPage: React.FC<ScanDetailPageProps> = ({
 					</button>
 				</div>
 
+				{cancelError && <div role="alert" className="mb-6 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-500">{cancelError}</div>}
+
 				{/* Header card */}
 				<div className={`rounded-xl border p-6 mb-6 ${cardBg}`}>
 					<div className="flex gap-4 items-center mb-5 max-md:flex-col max-md:items-start">
@@ -436,6 +448,13 @@ const ScanDetailPage: React.FC<ScanDetailPageProps> = ({
 								{scan.version || ""}
 							</p>
 						</div>
+						{(scan.status === "pending" || scan.status === "running") && (
+							<button type="button" onClick={handleCancel} disabled={isCancelling}
+								className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-400/30 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-500 transition hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-60">
+								{isCancelling && <Loader2 size={16} className="animate-spin" />}
+								{isCancelling ? "Cancelling..." : "Cancel scan"}
+							</button>
+						)}
 						<span
 							className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium ${
 								statusBadgeStyles[scan.status || ""] ||
@@ -477,7 +496,7 @@ const ScanDetailPage: React.FC<ScanDetailPageProps> = ({
 							<span
 								className={`text-xs font-medium uppercase tracking-wide ${textTertiary}`}
 							>
-								Completed
+								{scan.status === "cancelled" ? "Finished" : "Completed"}
 							</span>
 							{scan.finished_at || scan.completed_at ? (
 								<div className={`text-sm ${textPrimary}`}>
@@ -540,6 +559,10 @@ const ScanDetailPage: React.FC<ScanDetailPageProps> = ({
 						</div>
 					</div>
 				)}
+
+				<div className={`rounded-xl border p-6 mb-6 ${cardBg}`}>
+					<AssessmentSummary scan={scan} />
+				</div>
 
 				{/* Stats grid */}
 				<div className="grid grid-cols-4 gap-4 mb-6 max-md:grid-cols-2 max-[480px]:grid-cols-1">

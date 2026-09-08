@@ -34,7 +34,10 @@ class AdminAuditLogConfigDataCollector(BasePowerShellCollector):
             - unified_audit_log_ingestion_enabled: Unified audit log
               ingestion status (CIS 3.1.1)
         """
-        config = await client.run_cmdlet("ExchangeOnline", "Get-AdminAuditLogConfig")
+        config = await client.run_operation(
+            "exchange.organization.admin_audit_log_config.read",
+            "exchange.organization.admin_audit_log_config",
+        )
 
         return {
             "admin_audit_log_config": config,

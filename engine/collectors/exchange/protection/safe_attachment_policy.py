@@ -11,7 +11,7 @@ Required Permissions: Exchange.ManageAsApp + Exchange role assignment
 
 from typing import Any
 
-from collectors.powershell_base import BasePowerShellCollector
+from collectors.powershell_base import BasePowerShellCollector, powershell_records
 from collectors.powershell_client import PowerShellClient
 
 
@@ -30,13 +30,13 @@ class SafeAttachmentPolicyDataCollector(BasePowerShellCollector):
             - safe_attachment_policies: List of Safe Attachment policies
             - policies_with_protection: Policies with protection enabled
         """
-        policies = await client.run_cmdlet("ExchangeOnline", "Get-SafeAttachmentPolicy")
+        policies = await client.run_operation(
+            "exchange.protection.safe_attachment_policy.read",
+            "exchange.protection.safe_attachment_policy",
+        )
 
         # Handle None, single policy, or list
-        if policies is None:
-            policies = []
-        elif isinstance(policies, dict):
-            policies = [policies]
+        policies = powershell_records(policies)
 
         # Find policies with protection enabled (Action != "Off")
         policies_with_protection = [

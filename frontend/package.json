@@ -2,6 +2,9 @@
   "name": "autoaudit-dashboard",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=24 <25"
+  },
   "dependencies": {
     "@fontsource/league-spartan": "^5.2.7",
     "@tailwindcss/vite": "^4.2.2",
@@ -23,6 +26,7 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
     "lint": "oxlint",
     "lint:fix": "oxlint --fix"
   },

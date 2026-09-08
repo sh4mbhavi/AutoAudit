@@ -1,0 +1,467 @@
+{
+  "count": 77,
+  "files": [
+    {
+      "path": "backend-api/alembic/versions/a3f5c1d90b47_phase8_drift_and_compliance_binding.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "f2e80011d7adeaf90408aec27936355c5925ec52138132a9e41de35b6b153a6f"
+    },
+    {
+      "path": "backend-api/app/api/v1/drift.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "e3b7fb6866d6b75a8b16b9f2cdf6f9f4346525cd5d24ff237dcf36b8c6177c79"
+    },
+    {
+      "path": "backend-api/app/api/v1/m365_connections.py",
+      "change": "modified",
+      "phase7_sha256": "fbbcf7c0b5dcb97f215c30ca91b18d5074b07fcb97a47498a63b1426d2228bb8",
+      "phase8_sha256": "3b89c2944874ed45a2e3ef5877bb298f1b89ac366c7e9b96e2b670fc36524f95"
+    },
+    {
+      "path": "backend-api/app/api/v1/router.py",
+      "change": "modified",
+      "phase7_sha256": "31afe3249bcdd846906fc340ef4c6919ca7ea0243171ce5711ea42c3cd1c35bc",
+      "phase8_sha256": "a8e0bccf354491ea95319828abfd94ff6a99cc4418c9229f2ffd0a525fe40888"
+    },
+    {
+      "path": "backend-api/app/api/v1/scans.py",
+      "change": "modified",
+      "phase7_sha256": "aae28a742ffaf1aeb4c22ddc41bb545ac54684d302e5a56e3332a707041d0de6",
+      "phase8_sha256": "84981185ba07adcb855f0cce7206b747abdb650565c9747cd3560307729b190c"
+    },
+    {
+      "path": "backend-api/app/api/v1/soc2.py",
+      "change": "modified",
+      "phase7_sha256": "0c02f637fb0284670e080172c5c15d8e13907beceff418435d84ceb79da983d6",
+      "phase8_sha256": "dfd95af1a731ec3bf60a66d0b099ebfcf916583ce15b1bdca52c87729a675790"
+    },
+    {
+      "path": "backend-api/app/models/__init__.py",
+      "change": "modified",
+      "phase7_sha256": "d4d95c38346dc66b4136cfba149722f09935ef9dc8835f78266782f1917ebc08",
+      "phase8_sha256": "e2f16b254c4cb1f33f9b9958e0108f5c2ba482d27f88d89bd229a3ec39c80970"
+    },
+    {
+      "path": "backend-api/app/models/compliance.py",
+      "change": "modified",
+      "phase7_sha256": "3aa3d96459927d30caf97726df48042307aeee104e78bdb743894815c27f0c2a",
+      "phase8_sha256": "8368d552f4ce8ff265317007d6a17cfc102d46c27321c2a5ba1b8d27af74f8f2"
+    },
+    {
+      "path": "backend-api/app/models/drift.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "ce33750e159fb3acfa122ef19ebca990186dfa1c120f2bb8b25460172f9c6535"
+    },
+    {
+      "path": "backend-api/app/models/m365_connection.py",
+      "change": "modified",
+      "phase7_sha256": "ca20a6d8812b718b718ea750bcd5359cbf9ea6ea42b63e53d395e8de869592ad",
+      "phase8_sha256": "02bc0de26c26167a17d176737d541246684c48cdfcc892d2dd5e942ee652822e"
+    },
+    {
+      "path": "backend-api/app/models/scan_dispatch.py",
+      "change": "modified",
+      "phase7_sha256": "0e57fcc4219a00535f8c253c2b409f19f96314cd655d2f71338365c0f5796c49",
+      "phase8_sha256": "6ffb3419cf92e0535a10e6a6f128316764db9a5809f30e005ad04155a660c47f"
+    },
+    {
+      "path": "backend-api/app/models/scan_result_factprint.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "dc8ae2a08c4fcd559427ff03bde6ee6898a50caf1aa7508b9aeca3ebb15b9a95"
+    },
+    {
+      "path": "backend-api/app/schemas/drift.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "1a2607bdca9b44c11fcf73c4f345a71680eaa8ed79deedf0e84b1e048c046c7b"
+    },
+    {
+      "path": "backend-api/app/schemas/m365_connection.py",
+      "change": "modified",
+      "phase7_sha256": "5fdb7f4568a5e768b7f9d8be7642a3efe77ff6d6930c52a38350f39793ae1691",
+      "phase8_sha256": "1ecdb7a6b79ef77b8d9f35313517db5737a18022cad2d30b710fff18d66c2540"
+    },
+    {
+      "path": "backend-api/app/schemas/soc2.py",
+      "change": "modified",
+      "phase7_sha256": "52e4e96b35104e6ec13d10b21c0baae1354fda4d0a312559f68a7441c8d38cfe",
+      "phase8_sha256": "0d88cd429622f30ccca5529121cd424d5622ec516e86e20f128f7db70e54b1da"
+    },
+    {
+      "path": "backend-api/app/services/drift.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "515c01eed3eaeb465af6ac7dc6d4f1f3b1081062d42337947cc9ea09d2e89817"
+    },
+    {
+      "path": "backend-api/app/services/drift_notifications.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "cdf9060d9b2c6b61a48783bada431a4d2f25543400172e2c20c3203ad711e8dd"
+    },
+    {
+      "path": "backend-api/app/services/scan_readiness.py",
+      "change": "modified",
+      "phase7_sha256": "3eabfcb107bc4ee189a8c15e5d1fff1091565dda1119e8739fa4157762704a08",
+      "phase8_sha256": "e4665cb081080aa449a28f8182eb9f2223cc7fa732dc46306db50a9fa3f75077"
+    },
+    {
+      "path": "backend-api/tests/test_phase8_connection_binding.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "a4cd8840da0a53f744a2c2824e9ecc9320c0e736ef01207996ab787aa9d72958"
+    },
+    {
+      "path": "backend-api/tests/test_phase8_drift_api.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "f0f93f87d1b0260592885c33a3b54694c3ede945884e89fbf78b118a47cdd377"
+    },
+    {
+      "path": "backend-api/tests/test_phase8_drift_models.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "f8e159f3e1c4b23d195300896b05abf485b155ae2f19395f9614f17f9fd90bb4"
+    },
+    {
+      "path": "backend-api/tests/test_phase8_migration.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "5212aa8b1abb563fa31b0d5cd8f8106df39b3529fb340f48a69049b1a8527b21"
+    },
+    {
+      "path": "backend-api/tests/test_phase8_purview_readiness.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "587394159456950985c00ca98688a8094310e3bb152632b61bb80ecd99dc2b03"
+    },
+    {
+      "path": "backend-api/tests/test_phase8_soc2_drift.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "c6cc5df9e468aaba90573bc84d576a546a5e9cfd201263110d45f3a444458c87"
+    },
+    {
+      "path": "docker-compose.compliance.override.yml.example",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "c0d22ae6fecd63a215b5129c0181ac54b86ecc683d61bdc8b6e3e13bd380aa0d"
+    },
+    {
+      "path": "docker-compose.compliance.yml",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "5f2a3cbb62bb1ddfe6cc3affc08a192ad69c4e29788561d2b475380909d08c05"
+    },
+    {
+      "path": "docs/engine/policies/cis/microsoft-365-foundations/v6.0.0/controls.md",
+      "change": "modified",
+      "phase7_sha256": "13cc0b083b076b90afcce9ede5bab52c9acbbd7858ff49961dd40ecea960f61f",
+      "phase8_sha256": "2bf15e581b527d93f4d07de494f7018a7219a5d3be5ea2ee9a6464730829eb61"
+    },
+    {
+      "path": "engine/collectors/_pending/README.md",
+      "change": "modified",
+      "phase7_sha256": "9d29c642d022907167386e8ec633b97d6373545d5fabf9ae20b95fb78c4f2a01",
+      "phase8_sha256": "b5579bc83d0d1e4ef3e5e8142896282fa2e939bd033df450765930cc198d509e"
+    },
+    {
+      "path": "engine/collectors/_pending/compliance/__init__.py",
+      "change": "removed",
+      "phase7_sha256": "35753431949f6526c04b5dbc4ae7dbc6fecf799bfa5c855f076a87aa261c72a9",
+      "phase8_sha256": null
+    },
+    {
+      "path": "engine/collectors/_pending/compliance/dlp_compliance_policy.py",
+      "change": "removed",
+      "phase7_sha256": "4968c805010bdd1a26a8227d3a0cec857fc907433d2ef88045444ce654261310",
+      "phase8_sha256": null
+    },
+    {
+      "path": "engine/collectors/_pending/compliance/label_policy.py",
+      "change": "removed",
+      "phase7_sha256": "e8a0b855cd891b22c01f550c3454daa40d968e1b4524ee8bc84534a64b82d3a8",
+      "phase8_sha256": null
+    },
+    {
+      "path": "engine/collectors/compliance/__init__.py",
+      "change": "modified",
+      "phase7_sha256": "ac51a07836a421a2a6ba831ea3f035fd94971d3e1f40b3b297804b4d1cd48b7c",
+      "phase8_sha256": "a30ef6e8b4634acfe2554ebfe83ff06af06576caeaae92a7fdf2a4c0b780dc8a"
+    },
+    {
+      "path": "engine/collectors/compliance/dlp_compliance_policy.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "168dec7c83fbaa0037cc8cfe318d205cb087bc2bf45f9f3461eb7e0b5d674363"
+    },
+    {
+      "path": "engine/collectors/compliance/label_policy.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "06e61f0b8dccef6c436eafff0426ba50456e55c2aad43efde28c75273c0ae176"
+    },
+    {
+      "path": "engine/collectors/compliance/shape.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "0dc4ab157df940fc6808933c26bebcae188122c428e5ec31afd19f9111bb80d8"
+    },
+    {
+      "path": "engine/collectors/powershell_client.py",
+      "change": "modified",
+      "phase7_sha256": "0f4ee036754ba6ebc5f45a1492bd51e839cf61cdaf6ea50201077fa6dd74cb5d",
+      "phase8_sha256": "e276f54c3cdff05f2b4d7917a91e04d15346ea0d51c75902d1122b9f7f144dfd"
+    },
+    {
+      "path": "engine/collectors/registry.py",
+      "change": "modified",
+      "phase7_sha256": "c78fa26a4fcfacc5eca0e7d8adb8e9ff71dc5d52579a9a29c1af92f1b2f0a851",
+      "phase8_sha256": "324af867628b80982f290258e4ada9804880c749fa9ef1ff1490923a9adc7e24"
+    },
+    {
+      "path": "engine/policies/candidate/README.md",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "acdbab450f8a95a04d6f92630d151a31a64cdd971d44bb48e10f4ba95475897e"
+    },
+    {
+      "path": "engine/policies/candidate/candidates.json",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "6d1c991f0f502336b8867b2b7a64fed3dc76853c83e0db4cac8d2cd3682d759f"
+    },
+    {
+      "path": "engine/policies/candidate/cis/microsoft-365-foundations/v6.0.0/3.2.1_dlp_policies_enabled.rego",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "cc5383e450ed4768117b5450d72f148df3877c983c2582909bba490c601cde16"
+    },
+    {
+      "path": "engine/policies/candidate/cis/microsoft-365-foundations/v6.0.0/3.2.2_dlp_policies_teams.rego",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "e95350cc2ab20bdc3bd453d8d9273e2a7d6219331d3af4e10d41f0c4e599c2a9"
+    },
+    {
+      "path": "engine/policies/candidate/cis/microsoft-365-foundations/v6.0.0/3.3.1_sensitivity_label_policies_published.rego",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "f77c4fed8ebdf24658aea527abddb03b7fb0157d7e0c92e175bc2f31817cf4e5"
+    },
+    {
+      "path": "engine/policies/cis/microsoft-365-foundations/v6.0.0/metadata.json",
+      "change": "modified",
+      "phase7_sha256": "99e849ee7bbbafc48c5c09178424edce24af53048c29912abfdbd678f27f2187",
+      "phase8_sha256": "719d767241152b4c01e18b1feceddf291a15de360d0bc08b18f5b94eda096a04"
+    },
+    {
+      "path": "engine/powershell/service/executor.py",
+      "change": "modified",
+      "phase7_sha256": "a44ca708d9eb17a42053d34d83db84aa27c5fbcdc220f6b9008edf8e302d3b98",
+      "phase8_sha256": "ebabc728e4df808dedc83251335bb7cf7b54764133d5f8dde0d3f1efca185d17"
+    },
+    {
+      "path": "engine/powershell/service/operations.py",
+      "change": "modified",
+      "phase7_sha256": "254c9ba316631a63ac3e152879e049b698a0c020cdadc1c3afea314e8c8350f2",
+      "phase8_sha256": "b5d29866ec6aafa0ff0062a2712d47edd1d38652a48bd74a8c05760f547e448d"
+    },
+    {
+      "path": "engine/powershell/service/schemas.py",
+      "change": "modified",
+      "phase7_sha256": "6d3f5bcedc87fb3f399a872349166c6c76923c95fcbcf402dc53d59397e436b5",
+      "phase8_sha256": "ee084f8b3bf0934e443e1e7fc5574d693ef4470dd86d7a9af85ba6ff60fdb075"
+    },
+    {
+      "path": "engine/tests/test_phase5_powershell_boundary.py",
+      "change": "modified",
+      "phase7_sha256": "48a3b0f405d52ebf0702e4397ca6d6a36dbd79a004f3062e0e8386ce6a83c10c",
+      "phase8_sha256": "45d310bf2344e7bbbbe134bad35728ee1af1e8bb21707c9ce855ce484ee389db"
+    },
+    {
+      "path": "engine/tests/test_phase6_dispatch_fairness.py",
+      "change": "modified",
+      "phase7_sha256": "e9639e5be942e45eb661f2973ae20bdc670dd1f64194b1122c6e0147a55250a3",
+      "phase8_sha256": "5e26f34c020b2d346662661884968e4c3d6bd253336dc1ac94015380d8f6d997"
+    },
+    {
+      "path": "engine/tests/test_phase6_lifecycle.py",
+      "change": "modified",
+      "phase7_sha256": "2f663a00f843901783492047d02a619abe4aceab28121c42799207d4ebce8125",
+      "phase8_sha256": "be38d79b1a3d9a6cdbdf23230d3f9a8ea8bf914092436b4425e0a15279c8564a"
+    },
+    {
+      "path": "engine/tests/test_phase8_candidate_3_2_1.rego",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "962fe2396eccdc7793decff59f236d0f4144407b76e77ee725334c12afba44e2"
+    },
+    {
+      "path": "engine/tests/test_phase8_candidate_3_2_2.rego",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "231e8df69fb9405dd4eecf10a751a919b1ebd924ab3e22c5f5f3fc2a6f1bc011"
+    },
+    {
+      "path": "engine/tests/test_phase8_candidate_3_3_1.rego",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "91685833cc937595e9d211c4dae6116c7c7c51e259bb2d2e94fa2df88df45110"
+    },
+    {
+      "path": "engine/tests/test_phase8_candidate_manifest.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "b0fb520e66464c1b7305b943d14ecc2d7c0e5392d10a126f87e74ce4646e582f"
+    },
+    {
+      "path": "engine/tests/test_phase8_candidate_never_pass.rego",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "d8caf546bdf3e0e68309f7ca0b4a5f623e52833faa4bb2b52f4992a25bf56305"
+    },
+    {
+      "path": "engine/tests/test_phase8_compliance_auth.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "e148efa6d03c5bc02ba2bb22f51fd2ce209121cb97abae17092f8c0c5e4c4557"
+    },
+    {
+      "path": "engine/tests/test_phase8_compliance_collectors.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "7050befc5ca3d446ee2065accb8c231b1c89a0b3daabc161a62e1ed95d619112"
+    },
+    {
+      "path": "engine/tests/test_phase8_connection_identity.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "1892259c5ecf507838855538aa77c49bc6cb62c11f891fbad1c9fa5d4d118b28"
+    },
+    {
+      "path": "engine/tests/test_phase8_drift.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "c257f44e1d18c1027dda0c7c89739fbcd546d31927c6ae8d398f96db17331cee"
+    },
+    {
+      "path": "engine/tests/test_phase8_factprint.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "039e9f7b83d5d29a22445de598e942914cd471da57d058940b96f256ae61157b"
+    },
+    {
+      "path": "engine/tests/test_phase8_metadata_records.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "672b6403ffeaca940b0e5c3a44314b660eae957b99ee7c9602c0e9d62b72332a"
+    },
+    {
+      "path": "engine/tests/test_phase8_policy_isolation.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "d4b199e9e9f06eb0387fec0eee493f2210ecf887701e1c411d9251525f8eff01"
+    },
+    {
+      "path": "engine/tests/test_phase8_timezone.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "59976d02accac651ff0d8885dce3d2ffc72ce05857ea0a5f1bb8e672968af030"
+    },
+    {
+      "path": "engine/tests/test_phase8_worker_drift_hook.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "dc478bc84549609f31851a03e231123632219edf131f7dcb8d22714f3db38e22"
+    },
+    {
+      "path": "engine/worker/config.py",
+      "change": "modified",
+      "phase7_sha256": "dc28f8fdde7902e3198ede91dcd0c3e2f176b882551f021d2117df0ef63a3e3c",
+      "phase8_sha256": "360a110ecec31a1e68da8a46ad19347554f649e840ffde55b956abf2eb0b9a5d"
+    },
+    {
+      "path": "engine/worker/db.py",
+      "change": "modified",
+      "phase7_sha256": "ac226a1ce6a115e7cba43dffbc9fd31467d0a63a64c098d3511b659de9ef768d",
+      "phase8_sha256": "708ac3b31b9986f62b935c8174a198296efb6e963b0a2fd02e3156e1ec6b6021"
+    },
+    {
+      "path": "engine/worker/dispatcher.py",
+      "change": "modified",
+      "phase7_sha256": "34fec68856e09fc26a2a8f04567db901234711339fe2952879ad49bb9122d506",
+      "phase8_sha256": "41d654d8ce33822455c2b45c0e4133423e129cc301f704ea8b0348607e7846cc"
+    },
+    {
+      "path": "engine/worker/drift.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "25638a00f0787455a571bf3183b031514282929b7c24131d02120146368caaef"
+    },
+    {
+      "path": "engine/worker/factprint.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "7a74791f48241d5b74f8e968899ddc62f8d9aae97b6b168088daaaff784981a1"
+    },
+    {
+      "path": "engine/worker/lifecycle.py",
+      "change": "modified",
+      "phase7_sha256": "8bafc7becce9b700635933e4445a138976512b80168dae3611271adeb8533eec",
+      "phase8_sha256": "9ca48b0f83b6647f38d93fd75bdb077d19d89a060e9c661ba737723b9386135c"
+    },
+    {
+      "path": "engine/worker/provenance.py",
+      "change": "modified",
+      "phase7_sha256": "08b9bdfc9d2dbb6e1aa075d57c19da5b8947e88a782d28d148d53cab539aa611",
+      "phase8_sha256": "8353a1cdd2a806bd57290998a1fcd3a887e532eb12d21f02b0e10a113510db60"
+    },
+    {
+      "path": "engine/worker/tasks.py",
+      "change": "modified",
+      "phase7_sha256": "739955159cb2ceefac2c7c3f62209b90a0b71d4ffc21ad9f5ba4ec2ba4e526ad",
+      "phase8_sha256": "5f1f2bf262264c4741e74f22f4a8d53381b644fd4fe021ad82a13777100349e5"
+    },
+    {
+      "path": "frontend/src/types/drift.ts",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "52ab3c2dda980db2c53bb555b56018a71eb7cc8e7559c4d77452853de62675ed"
+    },
+    {
+      "path": "frontend/src/types/soc2.ts",
+      "change": "modified",
+      "phase7_sha256": "f838eca38455d4b27e96c379ce6f41346267e8ddef0415f6fc0f9ae6a1649bcc",
+      "phase8_sha256": "e64c0bb9d7bda0130f54c2b19db79db6ec92e44a4c3f1a6bef7181bc66df7456"
+    },
+    {
+      "path": "tools/policies/__init__.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "87d3d34b3f64d1edf8eda463e9da75bb671da8f36a048599885c894a438847a6"
+    },
+    {
+      "path": "tools/policies/promote_candidate.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "6b9591229b459a2d5476bf65a18ca96473aafb87325e1f679b48c6311b246b36"
+    },
+    {
+      "path": "tools/tests/test_phase8_deployment.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "92326db70ee6ec77bd5a9465adf80528eccc2179277e5ef481d2a9bf5ec3a555"
+    },
+    {
+      "path": "tools/tests/test_phase8_promotion.py",
+      "change": "added",
+      "phase7_sha256": null,
+      "phase8_sha256": "59bf6d7ba2a6f69a9a0edc17c27a92a695dd6f9e217582d37d2d2ece35b54eba"
+    }
+  ]
+}

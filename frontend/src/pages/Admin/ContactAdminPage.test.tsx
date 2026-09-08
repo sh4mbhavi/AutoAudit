@@ -26,21 +26,21 @@ vi.mock('../../api/client', () => ({
 
 const mockAuthAdmin = {
   user: { id: 1, role: 'admin' as const, email: 'admin@example.com' },
-  token: 'test-token',
+
   isAuthenticated: true,
   isLoading: false,
   login: vi.fn(),
-  loginWithAccessToken: vi.fn(),
+  completeOAuthLogin: vi.fn(),
   logout: vi.fn(),
 };
 
 const mockAuthNonAdmin = {
   user: { id: 2, role: 'user' as const, email: 'user@example.com' },
-  token: 'test-token',
+
   isAuthenticated: true,
   isLoading: false,
   login: vi.fn(),
-  loginWithAccessToken: vi.fn(),
+  completeOAuthLogin: vi.fn(),
   logout: vi.fn(),
 };
 
@@ -94,7 +94,7 @@ describe('ContactAdminPage', () => {
       expect(screen.getByText(/no submissions yet/i)).toBeInTheDocument();
     });
 
-    expect(getContactSubmissions).toHaveBeenCalledWith('test-token');
+    expect(getContactSubmissions).toHaveBeenCalledWith();
   });
 
   test('admin sees submission list and detail after load', async () => {
@@ -111,8 +111,8 @@ describe('ContactAdminPage', () => {
 
     // Detail fetches run in useEffect after the render that shows the list; wait for them.
     await waitFor(() => {
-      expect(vi.mocked(getContactNotes)).toHaveBeenCalledWith('test-token', 42);
-      expect(vi.mocked(getContactHistory)).toHaveBeenCalledWith('test-token', 42);
+      expect(vi.mocked(getContactNotes)).toHaveBeenCalledWith(42);
+      expect(vi.mocked(getContactHistory)).toHaveBeenCalledWith(42);
     });
   });
 

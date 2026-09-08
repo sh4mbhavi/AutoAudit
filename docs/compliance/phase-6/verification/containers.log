@@ -1,0 +1,3 @@
+Worker image built
+API image built
+PASS: API migration/startup, worker ping, real broker outage, durable dispatcher recovery and terminal scan
