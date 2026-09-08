@@ -20,8 +20,10 @@ import {
 	deleteScan,
 	getSettings,
 	getScanReadiness,
+	type ScanListItem,
 	type ScanReadinessResponse,
 } from "../../api/client";
+import { usePoll } from "../../hooks/usePoll";
 import { RelativeTime } from "../../components/RelativeTime";
 
 type ScansPageProps = {
@@ -29,19 +31,18 @@ type ScansPageProps = {
 	isDarkMode?: boolean;
 };
 
-type Scan = {
-	id: number | string;
-	status?: string;
-	benchmark?: string;
-	version?: string;
-	connection_name?: string;
-	m365_connection_id?: number | string;
-	started_at?: string | null;
+import { getScanAssessment } from "../../utils/scanAssessment";
+import AssessmentSummary from "../../components/AssessmentSummary";
+
+/**
+ * The list response itself, from the generated OpenAPI types, plus the one
+ * historical field older rows may still carry. Phase 9: this was a hand-written
+ * shape that disagreed with the API in two places -- `connection_name` is
+ * nullable and `semantics_version` is any string -- and nothing checked it,
+ * because getScans() returned `Promise<any>`.
+ */
+type Scan = ScanListItem & {
 	created_at?: string | null;
-	passed_count?: number;
-	failed_count?: number;
-	error_count?: number;
-	total_controls?: number;
 };
 
 type Connection = {
@@ -75,7 +76,7 @@ const ScansPage: React.FC<ScansPageProps> = ({
 }) => {
 	const navigate = useNavigate();
 	const location = useLocation();
-	const { token } = useAuth();
+	const { user } = useAuth();
 
 	const [scans, setScans] = useState<Scan[]>([]);
 	const [connections, setConnections] = useState<Connection[]>([]);
@@ -105,14 +106,26 @@ const ScansPage: React.FC<ScansPageProps> = ({
 	const appliedNavStateRef = useRef<boolean>(false);
 	const stableStartedAtRef = useRef<Record<string, string>>({});
 
-	const loadScans = useCallback(async (): Promise<void> => {
-		try {
-			const scansData = await getScans(token);
-			setScans(scansData);
-		} catch (err: unknown) {
-			console.error("Failed to refresh scans:", err);
-		}
-	}, [token]);
+	// A monotonic version so a slow response can never overwrite a newer one --
+	// the list poll previously used a bare setInterval with no staleness guard,
+	// so two in-flight requests could be applied out of order and a delete could
+	// be undone on screen by a response that was already in flight.
+	const listVersion = useRef(0);
+
+	const loadScans = useCallback(
+		async (signal?: AbortSignal): Promise<void> => {
+			const version = ++listVersion.current;
+			try {
+				const scansData = await getScans({ signal });
+				if (version !== listVersion.current) return;
+				setScans(scansData);
+			} catch (err: unknown) {
+				if (version !== listVersion.current) return;
+				console.error("Failed to refresh scans:", err);
+			}
+		},
+		[user],
+	);
 
 	useEffect(() => {
 		async function loadData(): Promise<void> {
@@ -122,9 +135,9 @@ const ScansPage: React.FC<ScansPageProps> = ({
 			try {
 				const [scansData, connectionsData, benchmarksData] =
 					await Promise.all([
-						getScans(token),
-						getConnections(token),
-						getBenchmarks(token),
+						getScans(),
+						getConnections(),
+						getBenchmarks(),
 					]);
 
 				setScans(scansData);
@@ -138,7 +151,7 @@ const ScansPage: React.FC<ScansPageProps> = ({
 		}
 
 		loadData();
-	}, [token]);
+	}, [user]);
 
 	useEffect(() => {
 		if (appliedNavStateRef.current) return;
@@ -160,7 +173,7 @@ const ScansPage: React.FC<ScansPageProps> = ({
 	useEffect(() => {
 		async function loadSettings(): Promise<void> {
 			try {
-				const settings = await getSettings(token);
+				const settings = await getSettings();
 				setConfirmDeleteEnabled(
 					settings?.confirm_delete_enabled ?? true,
 				);
@@ -170,18 +183,16 @@ const ScansPage: React.FC<ScansPageProps> = ({
 		}
 
 		loadSettings();
-	}, [token]);
+	}, [user]);
 
-	useEffect(() => {
-		const hasPendingScans = scans.some(
-			(scan) => scan.status === "pending" || scan.status === "running",
-		);
+	const hasPendingScans = scans.some(
+		(scan) => scan.status === "pending" || scan.status === "running",
+	);
 
-		if (!hasPendingScans) return;
-
-		const interval = setInterval(loadScans, 5000);
-		return () => clearInterval(interval);
-	}, [scans, loadScans]);
+	// usePoll waits for each response before scheduling the next, pauses in a
+	// hidden tab, backs off on repeated failures and aborts in flight on
+	// teardown. The old setInterval did none of those.
+	usePoll(loadScans, { intervalMs: 5000, enabled: hasPendingScans });
 
 	useEffect(() => {
 		setReadiness(null);
@@ -253,7 +264,7 @@ const ScansPage: React.FC<ScansPageProps> = ({
 		setIsCheckingReadiness(true);
 
 		try {
-			const readinessResult = await getScanReadiness(token, {
+			const readinessResult = await getScanReadiness({
 				m365_connection_id: parseInt(formData.m365_connection_id, 10),
 				framework: parsedBenchmark.framework,
 				benchmark: parsedBenchmark.benchmark,
@@ -298,14 +309,20 @@ const ScansPage: React.FC<ScansPageProps> = ({
 		setIsSubmitting(true);
 
 		try {
-			const newScan = await createScan(token, {
+			const newScan = await createScan({
 				m365_connection_id: parseInt(formData.m365_connection_id, 10),
 				framework: parsedBenchmark.framework,
 				benchmark: parsedBenchmark.benchmark,
 				version: parsedBenchmark.version,
 			});
 
-			setScans((prev) => [newScan, ...prev]);
+			// POST /scans returns {id, status, message} -- an acknowledgement, not
+			// a scan row. Prepending it produced a row missing every column the
+			// table renders; the untyped client made that invisible. Refresh the
+			// list from the API instead, which is also what the poll would have
+			// done a moment later.
+			void newScan;
+			await loadScans();
 			setFormData({ m365_connection_id: "", benchmark_key: "" });
 			setReadiness(null);
 			setShowForm(false);
@@ -320,6 +337,8 @@ const ScansPage: React.FC<ScansPageProps> = ({
 		switch (status) {
 			case "completed":
 				return <CheckCircle size={16} className="text-emerald-500" />;
+			case "cancelled":
+				return <XCircle size={16} className="text-slate-500" />;
 			case "failed":
 				return <XCircle size={16} className="text-red-500" />;
 			case "running":
@@ -335,6 +354,8 @@ const ScansPage: React.FC<ScansPageProps> = ({
 		switch (status) {
 			case "completed":
 				return "Completed";
+			case "cancelled":
+				return "Cancelled";
 			case "failed":
 				return "Failed";
 			case "running":
@@ -393,6 +414,8 @@ const ScansPage: React.FC<ScansPageProps> = ({
 		switch (status) {
 			case "completed":
 				return `${base} bg-emerald-500/15 text-emerald-500`;
+			case "cancelled":
+				return `${base} bg-slate-500/15 text-slate-500`;
 			case "failed":
 				return `${base} bg-red-500/15 text-red-500`;
 			case "running":
@@ -415,7 +438,7 @@ const ScansPage: React.FC<ScansPageProps> = ({
 		setError(null);
 
 		try {
-			await deleteScan(token, scanId);
+			await deleteScan(scanId);
 			setScans((prev) => prev.filter((s) => s.id !== scanId));
 		} catch (err: unknown) {
 			setError((err as any)?.message || "Failed to delete scan");
@@ -830,43 +853,11 @@ const ScansPage: React.FC<ScansPageProps> = ({
 											</td>
 
 											<td className={tableBodyCellClass}>
-												{scan.status ===
-													"completed" ||
-												scan.status === "running" ? (
-													<div className="flex flex-wrap gap-3 text-[13px]">
-														<span className="text-emerald-500">
-															{scan.passed_count ||
-																0}{" "}
-															passed
-														</span>
-
-														<span className="text-red-500">
-															{scan.failed_count ||
-																0}{" "}
-															failed
-														</span>
-
-														{scan.status ===
-															"running" &&
-															(scan.total_controls ||
-																0) > 0 && (
-																<span>
-																	(
-																	{(scan.passed_count ||
-																		0) +
-																		(scan.failed_count ||
-																			0) +
-																		(scan.error_count ||
-																			0)}
-																	/
-																	{scan.total_controls ||
-																		0}
-																	)
-																</span>
-															)}
-													</div>
-												) : (
-													"-"
+												<AssessmentSummary scan={scan} />
+												{scan.status === "running" && (
+													<span className="text-xs">
+														{getScanAssessment(scan).done}/{scan.total_controls || 0} complete
+													</span>
 												)}
 											</td>
 

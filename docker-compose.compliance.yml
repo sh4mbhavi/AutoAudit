@@ -1,0 +1,12 @@
+# Purview (Security & Compliance) certificate provisioning overlay. Save the alias and the primary .onmicrosoft.com domain on each M365 connection.
+# docker compose -f docker-compose.production.yml -f docker-compose.compliance.yml up
+services:
+  powershell-service:
+    environment:
+      COMPLIANCE_CERT_ALIASES: '{"default":{"path":"/run/secrets/compliance_pfx","password_file":"/run/secrets/compliance_password"}}'
+    secrets: [compliance_pfx, compliance_password]
+secrets:
+  compliance_pfx:
+    file: ${COMPLIANCE_PFX_FILE:?mounted Purview application certificate required}
+  compliance_password:
+    file: ${COMPLIANCE_PASSWORD_FILE:?certificate password file required}

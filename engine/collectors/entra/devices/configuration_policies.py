@@ -16,6 +16,7 @@ Graph Endpoints:
 from typing import Any
 
 from collectors.base import BaseDataCollector
+from collectors.concurrency import gather_bounded
 from collectors.graph_client import GraphClient
 
 
@@ -44,19 +45,31 @@ class ConfigurationPoliciesDataCollector(BaseDataCollector):
         # Fetch the configured setting values for each policy individually.
         # The top-level policy list only returns metadata (name, description, assignments).
         # The actual setting IDs and values are in a separate per-policy endpoint.
-        policies_with_settings = []
-        for policy in policies:
-            policy_id = policy.get("id")
-            if not policy_id:
-                continue
-            settings = await client.get_all_pages(
-                f"/deviceManagement/configurationPolicies/{policy_id}/settings",
-                beta=True,
-            )
-            policies_with_settings.append({
-                **policy,
-                "settings": settings,
-            })
+        #
+        # Phase 9: bounded concurrency instead of a serial loop. The list is
+        # filtered first so the request order is a pure function of the page
+        # order, and gather_bounded returns in input order, so the emitted
+        # evidence is byte-identical to the serial version for any given tenant
+        # response. That matters beyond tidiness: Phase 8 digests this payload,
+        # and a reordering would read as configuration drift.
+        identified = [policy for policy in policies if policy.get("id")]
+
+        def _settings(policy_id: str):
+            async def fetch():
+                return await client.get_all_pages(
+                    f"/deviceManagement/configurationPolicies/{policy_id}/settings",
+                    beta=True,
+                )
+
+            return fetch
+
+        settings_pages = await gather_bounded(
+            [_settings(policy["id"]) for policy in identified]
+        )
+        policies_with_settings = [
+            {**policy, "settings": settings}
+            for policy, settings in zip(identified, settings_pages)
+        ]
 
         return {
             "configuration_policies": policies_with_settings,

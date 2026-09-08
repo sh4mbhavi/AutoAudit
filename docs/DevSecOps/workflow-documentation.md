@@ -18,18 +18,28 @@ Workflow files use a prefix to group them by purpose:
 
 ## CI Workflows
 
-| Workflow | Watches |
+| Workflow | Path filter |
 |---|---|
-| `ci.backend-api.yml` | `backend-api/**` |
-| `ci.frontend.yml` | `frontend/**` |
-| `ci.engine.yml` | `engine/**` |
-| `ci.security.yml` | `security/**` |
+| `ci.backend-api.yml` | **None** — runs on every PR and push to `main` |
+| `ci.frontend.yml` | **None** |
+| `ci.engine.yml` | **None** |
+| `ci.validate-alerts.yml` | **None** |
+| `ci.supply-chain.yml` | **None** |
+| `ci.grype.yml` | **None** — scans the whole repository (`path: "."`) |
+| `ci.security.yml` | `security/**` (the unmaintained TPRM module) |
 
 ### When they run
 
-Each workflow triggers on pull requests and pushes to `main`, but only when files inside its watched directory changed. If a PR only touches `frontend/`, the backend, engine, and security workflows never start and do not appear in the Actions tab.
+Every workflow above except `ci.security.yml` triggers on **all** pull requests
+and pushes to `main`, regardless of which files changed.
 
-The weekly schedule bypasses path filtering and runs everything regardless.
+This corrects a previous version of this page, which said each workflow watched
+its own directory and "never starts" otherwise. Phase 4 deliberately removed
+those path filters (`docs/compliance/phase-4/change-control.md`): a gate that
+only runs when its own directory changes cannot catch a change in one component
+that breaks another, which is precisely the failure a cross-cutting gate exists
+for. `ci.validate-alerts.yml` lost its filter in Phase 10 for the same reason —
+deleting a metric emitter in the application is what actually breaks an alert.
 
 ### Jobs
 
@@ -59,11 +69,21 @@ The `security/` directory contains the TPRM Scanner from T2 2025 and is no longe
 
 ## Grype Dependency Scan
 
-**`ci.grype.yml`** triggers on PRs and pushes to `main` when files change inside `frontend/**`, `backend-api/**`, or `engine/**`, and on a weekly schedule.
+**`ci.grype.yml`** triggers on every PR and push to `main`, and weekly. It has no path filter and scans the whole repository (`path: "."`).
 
 Grype walks the repo and checks dependency files (`pyproject.toml`, `requirements.txt`, `package-lock.json`) against public vulnerability databases without needing a Docker build. Results upload to the GitHub Security tab as a SARIF report.
 
-`fail-build` is false so findings are surfaced for review rather than blocking merges.
+**`fail-build` is `true`, with `severity-cutoff: critical`** — a critical finding
+blocks the merge. A previous version of this page said the opposite; Phase 4
+turned the gate on and the page was never updated. Findings at `high` and below
+do not block: Phase 4 and Phase 5 both recorded 0 critical, 51 high, 49 medium
+and 12 low passing this gate, and that backlog has not been triaged since.
+
+Note that a **directory** scan cannot see a base image or an apt layer.
+`ci.supply-chain.yml` (Phase 10) scans the built worker image itself, generates a
+CycloneDX SBOM for the worker and the API, and verifies that the built worker
+image matches `engine/uv.lock`. Its image scan reports rather than gates, for the
+same untriaged-backlog reason.
 
 Note: the Security tab upload requires GitHub Advanced Security, which is free for public repos and requires a paid plan for private ones.
 
@@ -71,19 +91,43 @@ Note: the Security tab upload requires GitHub Advanced Security, which is free f
 
 ## Ops Workflows
 
-**`ops.collector.yml`** runs the audit engine collector on the `engine-development` branch when changes are pushed there.
+**`ops.collector.yml`** is **hard-disabled** (`if: false`) and runs nothing. Its
+header records why: it used a long-lived `GCP_CREDENTIALS` service-account key
+and auto-committed live GCP infrastructure data into the repository on every
+push. Do not re-enable the trigger before both conditions in that header are met.
 
-**`ops.workflow-cleanup.yml`** runs on a schedule to delete old workflow run history.
+**`ops.workflow-cleanup.yml`** runs weekly as a **dry run only**: it reports which runs are older than `RETENTION_DAYS` and deletes nothing. Deletion requires a manual `workflow_dispatch` with `dry_run=false` and `confirm=DELETE`. So workflow-run history is **not** currently being retained to any period by an automated process, and must not be cited as retained evidence on the strength of this workflow alone.
 
-**`ops.short-test.yml`** a minimal workflow used to verify cleanup is working. Only triggers when its own file changes.
+**`ops.short-test.yml`** is the canary used to verify the cleanup workflow. It
+triggers only when its own file changes — and until Phase 10 its path filter
+named `short-test.yml` while the file is `ops.short-test.yml`, so it could never
+trigger at all. That is worth stating plainly: the cleanup behaviour had never
+been exercised by its own test.
 
 ---
 
 ## Other CI Workflows
 
-**`ci.opa-eval.yml`** evaluates OPA policies used by the audit engine. Runs on `engine-development` and on any pull request.
+**`ci.opa-eval.yml`** evaluates legacy OPA policies under `engine/legacy/`. It
+triggers on pushes to `engine-development` and on **every** pull request with no
+branch filter, unlike every other CI workflow. It uploads a PDF and a JSON report
+(retained 30 days since Phase 10; previously with no stated retention) and gates
+nothing.
 
-**`ci.validate-alerts.yml`** was intended to validate Prometheus alerting rules under `infrastructure/monitoring/alerts/`. It was left by a previous team member as a conceptual piece and does not do anything meaningful in its current state. Left in place for reference.
+**`ci.validate-alerts.yml`** validates the Prometheus alerting rules under
+`infrastructure/monitoring/alerts/`. Phase 10 rebuilt it, so the previous
+description ("does not do anything meaningful") no longer applies. It now:
+
+- installs a **pinned, checksum-verified** promtool via
+  `tools/ci/install_promtool.py`, instead of an unpinned `apt-get install -y prometheus`;
+- runs `promtool check rules` on every rule file (syntax);
+- runs `promtool test rules` against `tests/rule_tests.yaml` (semantics — does a
+  threshold fire when it should, and stay quiet when it should not);
+- runs `tools/ci/check_alert_metrics.py`, which fails the build if any alert
+  reads a metric that is neither emitted by the application nor declared in
+  `tools/ci/external_metrics.json` with the exporter that provides it.
+
+It is no longer path-filtered.
 
 ---
 
@@ -96,6 +140,7 @@ Note: the Security tab upload requires GitHub Advanced Security, which is free f
 | `ci.engine.yml` | Saturdays 23:32 UTC | CodeQL and lint scan of engine |
 | `ci.security.yml` | Saturdays 23:32 UTC | CodeQL and lint scan of security |
 | `ci.grype.yml` | Thursdays 20:37 UTC | Dependency vulnerability scan |
-| `ops.workflow-cleanup.yml` | Saturdays 23:32 UTC | Cleans up old workflow run history |
+| `ci.supply-chain.yml` | Mondays 04:17 UTC | Image build, SBOM, image vulnerability scan |
+| `ops.workflow-cleanup.yml` | **Sundays 00:00 UTC** | **Dry run only** — reports runs older than `RETENTION_DAYS`, deletes nothing |
 
 Scheduled runs do not post PR comments.

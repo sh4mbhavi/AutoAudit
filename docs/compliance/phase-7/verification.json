@@ -1,0 +1,131 @@
+{
+  "date": "2026-09-06",
+  "timezone": "Australia/Melbourne",
+  "status": "local_engineering_verified_external_acceptance_pending",
+  "base_commit": "8736fcb93565dcc1e1a60a06392a879f5a585335",
+  "upstream_main": "bba14810f558190ee5221017c11864d300f8078a",
+  "branch": "fix/soc2-phase-7-audit-evidence",
+  "migration_head": "f7d2c48b1a03",
+  "mapping": {
+    "path": "engine/mappings/soc2/common-criteria/v1.0.0/mapping.json",
+    "mapping_version": "v1.0.0",
+    "sha256": "5b22a1d4a74db1f0ed585a69420157c1172c953e1f7f485ca883d5d797b991b8",
+    "approved": false,
+    "ratings": {
+      "Yes": 13,
+      "Partial": 16,
+      "No": 18
+    },
+    "points_of_focus": 47,
+    "unique_cis_controls": 44
+  },
+  "environment": {
+    "OPA_BINARY": "<scratchpad>/opa (1.20.2, installed via tools/ci/install_opa.py)",
+    "MIGRATION_TEST_ADMIN_URL": "postgresql://postgres@127.0.0.1:55437/postgres",
+    "AUTOAUDIT_REQUIRE_INTEGRATION": "1",
+    "postgresql": "16.14, disposable local cluster, timezone=UTC",
+    "frontend_node": "24"
+  },
+  "checks": [
+    {
+      "command": "uv run --frozen --project backend-api --extra dev --extra evidence python -m pytest backend-api/tests tools/tests -q",
+      "exit_code": 0,
+      "passed": 453,
+      "log": "verification/backend_tools.log"
+    },
+    {
+      "command": "uv run --frozen --project engine --extra dev python -m pytest engine/tests -q",
+      "exit_code": 0,
+      "passed": 1375,
+      "skipped": 1,
+      "xfailed": 11,
+      "note": "11 xfail pin the pre-existing unregistered-collector debt found by this phase",
+      "log": "verification/engine.log"
+    },
+    {
+      "command": "$OPA_BINARY check --strict engine/policies",
+      "exit_code": 0
+    },
+    {
+      "command": "$OPA_BINARY test engine/policies engine/tests",
+      "exit_code": 0,
+      "passed": 550
+    },
+    {
+      "command": "npm exec --yes --package=node@24 -- npm --prefix frontend run typecheck",
+      "exit_code": 0,
+      "log": "verification/frontend_typecheck.log"
+    },
+    {
+      "command": "npm exec --yes --package=node@24 -- npm --prefix frontend test",
+      "exit_code": 0,
+      "passed": 243,
+      "files": 26,
+      "log": "verification/frontend.log"
+    },
+    {
+      "command": "npm exec --yes --package=node@24 -- npm --prefix frontend run lint",
+      "exit_code": 0,
+      "warnings": 9,
+      "note": "Unchanged pre-existing warning count",
+      "log": "verification/frontend_lint.log"
+    },
+    {
+      "command": "npm exec --yes --package=node@24 -- npm --prefix frontend run build",
+      "exit_code": 0,
+      "note": "Existing large-chunk advisory remains",
+      "log": "verification/frontend_build.log"
+    },
+    {
+      "command": "python3 tools/docs/generate_control_status.py --check",
+      "exit_code": 0,
+      "note": "4 control status documents match metadata (DOC-02 gate)",
+      "log": "verification/docs_check.log"
+    },
+    {
+      "command": "uvx --from bandit==1.8.6 bandit -q -r backend-api/app",
+      "exit_code": 0,
+      "note": "clean at all severities; no # nosec added to application code",
+      "log": "verification/bandit_backend_app.log"
+    },
+    {
+      "command": "uvx --from bandit==1.8.6 bandit -q -r backend-api/tests -s B101 -f txt",
+      "exit_code": 0,
+      "log": "verification/bandit_backend_tests.log"
+    },
+    {
+      "command": "uvx pre-commit run --files <the 56 Phase 7 code/config files>",
+      "exit_code": 0,
+      "hooks_passed": 8,
+      "note": "Temporary Git index; the real index stays unstaged. One 10-line .secrets.baseline entry added for the plan's public baseline commit SHA in mapping.json, which cannot carry an inline pragma. No historical baseline entry was removed.",
+      "log": "verification/precommit.log"
+    },
+    {
+      "command": "uvx --from actionlint-py actionlint .github/workflows/ci.engine.yml",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "not_run": [
+    "python3 tools/ci/container_smoke.py \u2014 actual image rebuild/startup was not repeated for Phase 7; the evidence volume and mappings mount added to both Compose files are unverified against a running container.",
+    "tools/ci/runtime_tls_smoke.py and tools/ci/runtime_powershell_smoke.py \u2014 Phase 5 runtime proofs, unchanged by this phase and not re-run.",
+    "Any live Microsoft 365 tenant call. No tenant, credential, deployment, repository setting or public PR was touched."
+  ],
+  "independent_review": {
+    "sub_agent_streams": "Each of the six implementation streams was reviewed read-only by Codex; findings were folded in.",
+    "integration_work": "NOT independently reviewed. The Codex account hit its usage limit (resets 2026-09-07) before the migration, models, config, mapping artifact, Compose/Dockerfile and CI changes could be reviewed.",
+    "substituted_self_verification": [
+      "mapping.json validates structurally: 47 points of focus, 44 unique control ids, every rating in rating_vocabulary, no 'No' row carrying evidence, both reference directions closed, CC1-CC9 covered, approval.approved false with null reviewer fields.",
+      "alembic revision --autogenerate against a freshly migrated database proposes no change to evidence_artifact, evidence_audit_event, manual_evidence_record or manual_evidence_revision, so the models and the migration agree.",
+      "The rewritten protect_phase3_scan_inputs protects all 15 originally protected columns plus connection_snapshot and the six mapping columns; a diff of the NEW.<column> sets shows zero dropped.",
+      "Append-only triggers, the artifact identity freeze, the status/deleted_at CHECK and the independent-reviewer CHECK were each exercised against live PostgreSQL and observed to raise.",
+      "Compose POLICIES_DIR/MAPPINGS_DIR/EVIDENCE_STORAGE_DIR match the config.py defaults in both files; engine/policies and engine/mappings exist.",
+      "The documentation gate is step 2 of the ci.engine.yml test job and exits non-zero on drift.",
+      "The migration-head assertion derives from ScriptDirectory and resolves to exactly the literal it replaced; a separate test still asserts a single head."
+    ],
+    "recommendation": "Obtain an independent review of the integration commit before merge."
+  }
+}

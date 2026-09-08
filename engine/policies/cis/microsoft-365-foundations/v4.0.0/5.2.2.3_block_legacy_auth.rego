@@ -46,12 +46,12 @@ result := output if {
     }
 }
 
-generate_message(blocking_policies, all_policies) := msg if {
+generate_message(blocking_policies, _) := msg if {
     count(blocking_policies) > 0
     msg := sprintf("Found %d Conditional Access policy(ies) blocking legacy authentication", [count(blocking_policies)])
 }
 
-generate_message(blocking_policies, all_policies) := msg if {
+generate_message(blocking_policies, _) := msg if {
     count(blocking_policies) == 0
     msg := "No Conditional Access policy found that blocks legacy authentication for all users and applications"
 }

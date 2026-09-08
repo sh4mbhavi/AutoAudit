@@ -39,23 +39,31 @@ class GroupsDataCollector(BaseDataCollector):
             },
         )
 
+        # Validate classification evidence before filtering: omitted visibility
+        # must not disappear into an apparently safe empty public-group list.
+        for group in groups:
+            if not group.get("id") or not isinstance(group.get("groupTypes"), list):
+                raise ValueError("Incomplete group identity or type evidence")
+            visibility = group.get("visibility")
+            known_private_security_group = (
+                "visibility" in group
+                and visibility is None
+                and group.get("securityEnabled") is True
+                and "Unified" not in group["groupTypes"]
+            )
+            if (
+                visibility not in ("Public", "Private", "HiddenMembership")
+                and not known_private_security_group
+            ):
+                raise ValueError("Incomplete group visibility evidence")
+
         # Categorize groups
         dynamic_groups = [
-            g for g in groups
-            if "DynamicMembership" in g.get("groupTypes", [])
+            g for g in groups if "DynamicMembership" in g.get("groupTypes", [])
         ]
-        public_groups = [
-            g for g in groups
-            if g.get("visibility") == "Public"
-        ]
-        security_groups = [
-            g for g in groups
-            if g.get("securityEnabled")
-        ]
-        m365_groups = [
-            g for g in groups
-            if "Unified" in g.get("groupTypes", [])
-        ]
+        public_groups = [g for g in groups if g.get("visibility") == "Public"]
+        security_groups = [g for g in groups if g.get("securityEnabled")]
+        m365_groups = [g for g in groups if "Unified" in g.get("groupTypes", [])]
 
         return {
             "groups": groups,

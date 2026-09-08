@@ -12,36 +12,61 @@
 #   severity: critical
 #   service: EntraID
 #   requires_permissions:
-#   - RoleManagementPolicy.Read.Directory
+#   - RoleManagement.Read.Directory
 
 package cis.microsoft_365_foundations.v6_0_0.control_5_3_5
 
 import rego.v1
 
-default result := {
-  "compliant": false,
-  "message": "Unable to determine Privileged Role Administrator approval requirements",
-  "details": {},
+default assessed_result := {
+	"compliant": null,
+	"message": "Unable to determine Privileged Role Administrator approval requirements",
+	"details": {},
 }
 
 default compliant := false
 
-compliant if { input.privileged_role_admin_approval_required == true }
+compliant if input.privileged_role_admin_approval_required == true
 
-msg := "Approval is required for Privileged Role Administrator activation" if { compliant }
-msg := "Approval is NOT required for Privileged Role Administrator activation" if { input.privileged_role_admin_approval_required == false }
-msg := "Unable to determine Privileged Role Administrator approval requirements" if { input.privileged_role_admin_approval_required == null }
+msg := "Approval is required for Privileged Role Administrator activation" if compliant
+msg := "Approval is NOT required for Privileged Role Administrator activation" if input.privileged_role_admin_approval_required == false
+msg := "Unable to determine Privileged Role Administrator approval requirements" if input.privileged_role_admin_approval_required == null
 
-result := output if {
-  required := input.privileged_role_admin_approval_required
+assessed_result := output if {
+	required := input.privileged_role_admin_approval_required
 
-  output := {
-    "compliant": compliant,
-    "message": msg,
-    "details": {
-      "privileged_role_admin_policy": input.privileged_role_admin_policy,
-      "approval_required": required,
-    },
-  }
+	output := {
+		"compliant": compliant,
+		"message": msg,
+		"details": {
+			"privileged_role_admin_policy": input.privileged_role_admin_policy,
+			"approval_required": required,
+		},
+	}
 }
 
+# Typed, complete collector evidence is required before an assessed result is emitted.
+# Kept in this module so captured-source evaluation remains self-contained.
+default result := {
+	"compliant": null,
+	"message": "Unable to evaluate: required evidence is missing, malformed, or incomplete",
+	"affected_resources": [],
+	"details": {"evaluation_status": "indeterminate"},
+}
+
+result := assessed_result if evidence_complete
+
+evidence_complete if {
+	is_object(input)
+	not evidence_error
+	is_boolean(input.privileged_role_admin_approval_required)
+}
+
+# A nested collector error invalidates a partial response as well as a top-level error.
+evidence_error if {
+	some path, value
+	walk(input, [path, value])
+	count(path) > 0
+	path[count(path) - 1] in {"collector_error", "error"}
+	value != null
+}

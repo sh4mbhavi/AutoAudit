@@ -1,0 +1,219 @@
+{
+  "phase": 10,
+  "date": "2026-09-07",
+  "timezone": "Australia/Melbourne",
+  "baseline": "Phase 9 working source, 972 files, digests in phase-9-snapshot.json",
+  "counts": {
+    "added": 40,
+    "modified": 38,
+    "removed": 8,
+    "total_changed": 86
+  },
+  "note": "The eight removed files are the six pre-Phase-10 alert rule files, alert_simulation_test.py (run by nothing, and could not have passed) and promtool_validation.sh (replaced by the checksum-pinned workflow). Their replacements are application.yaml, scan_lifecycle.yaml, platform.yaml, RETIRED-ALERTS.md and tests/rule_tests.yaml.",
+  "added": {
+    ".github/workflows/ci.supply-chain.yml": "bb41810546fa6c3cdd477813d3174321d76df5bb5649df0f14f4bf6cffeccb19",
+    "backend-api/app/core/health.py": "8d83227209657a1c513e4ddde0f333e1f79a622226a968466db8e5643f547ab9",
+    "backend-api/app/core/metrics.py": "57159bfae87ddefcd014d4e72c7ee2b7d907967613c07f26a0cc2eb0e05a5d08",
+    "backend-api/tests/test_phase10_encryption.py": "b10bd7bf68a95cc236546038475898c9c5dd9a6a5489ee49f294eb38332411c5",
+    "docs/compliance/phase-10/README.md": "9a0daf5cafed5e9e4ec32c225aa7bb99cfd8711a948dcc0c3bf6e834ed4ef638",
+    "docs/compliance/phase-10/backup-and-recovery.md": "8fef14e1b405461e5dd129e2f91b7989aee6dbcab887b78d675ee86843d73b35",
+    "docs/compliance/phase-10/collisions.json": "fc66a5e33ceacf983cf0f7d74e12d02876371d74f485e4908b8e19a1d419aa13",
+    "docs/compliance/phase-10/coordination-review.md": "ec85b5cd5fa52bdc059b5fb556428e8a4505ab9ba52491264d3bbd816a00b14b",
+    "docs/compliance/phase-10/deployment-platform-decision.md": "ee7d9e23c0ce626b60f18ab74deca3aeb984b8766f2a53e4f325e022d636c39b",
+    "docs/compliance/phase-10/phase-10-changes.json": "4d8251e96aa126c5ca8d27a8fa4b5b6da423405d934d91f25c382a1ae81f4873",
+    "docs/compliance/phase-10/phase-9-snapshot.json": "9495a0df1b5887099ec4c50cbde6e4a3242eb3abb86c69bd56e38bf83c7f2033",
+    "docs/compliance/phase-10/pull-requests-2026-09-07.json": "771808dacf2ad252b033a15a5a5cb41cd2fa1006759239b3cfe1ecb481fa953c",
+    "docs/compliance/phase-10/review.json": "1fd653f3928ddd0ff267d6ae65c214d936abee6d2557df992fa1517bc3df83d6",
+    "docs/compliance/phase-10/verification.json": "d40addbeee7780746469719d651663c71fda6aed8c9998392b4e46f31dc62dda",
+    "engine/mappings/soc2/organizational/v1.0.0/register.json": "2a89891f0f92f9a237e5d04e7ad2268c052d9f4df4335ab93ead83a91ab0c2f1",
+    "engine/tests/test_phase10_key_ring.py": "c515091f3fa418bda82d13eab57851e29e9cb16a92bfe013e2bfc7ece201a98a",
+    "engine/tests/test_phase10_metrics.py": "50cc04d0f1aee475238d3672c0a3def83c1cb3eb1d9fd6535afc8769f366a0b3",
+    "engine/worker/metrics.py": "72beeaab0f70dae6273b23cd95cd6a5d6f68a934f031cfbbef3259cef9272811",
+    "infrastructure/monitoring/alerts/RETIRED-ALERTS.md": "fe1672b6b9ab0478de92f4ad24e0febfabb1e1cce21a92386853beb53fa4151e",
+    "infrastructure/monitoring/alerts/application.yaml": "e3dad74a6467ba15d08dbb376871364765de622758ca0206c825dd20249e7951",
+    "infrastructure/monitoring/alerts/platform.yaml": "94bdbd3c483490ec56945f7a5f37ed2c6b821a0e4b364ca3f99686391a54cef2",
+    "infrastructure/monitoring/alerts/scan_lifecycle.yaml": "a2d3d8a7dff2428503c4888d22da3f11786b34b5fd1527af3a2e9b5cf1be14fd",
+    "infrastructure/monitoring/alerts/tests/rule_tests.yaml": "8ec01be20eb5fc03a0ff9679b20582ebff208086186d5a0cfadf0ebc4c8e31ec",
+    "tools/ci/check_alert_metrics.py": "ef22af35c667c55c8b462a008c5b37de6b4f22f6d8d11b5aa8b9fafb0369cf5b",
+    "tools/ci/check_organizational_register.py": "3e90c22bf836e43d6db77e8e5cdfe9b8e0793f4eab499b4360a0db26dd828bd2",
+    "tools/ci/external_metrics.json": "a669c3ccb746a34c84d6109822d6f349182741d6fc2e7448fa4d228ca9255de7",
+    "tools/ci/install_promtool.py": "47f40208166390567ba047f8c038acd4b7bfd243fbe9d4a2fbff590caaed16fb",
+    "tools/ci/production_overlay_smoke.py": "c8bad1d85ed33c62daf1d43a9928290278c5b7cf8777096997810b350e4f3828",
+    "tools/ops/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "tools/ops/backup.py": "773cbc4765f20a298b6bd48ec1b01b2a51d1d2bd1640c0b8bb36b8bd632f764d",
+    "tools/ops/release_manifest.py": "91f0c456e6da8e0f3947b5964c3c7d7594ed8d8f75cab83b0ed17d2c82bc371c",
+    "tools/ops/retention_report.py": "5f5edd3fba8d1ff154c679b2b2623934496324c01a4feb21f5757c38e5277d44",
+    "tools/ops/rotate_encryption_key.py": "8d4890cb713ebaf6337a57fbd984a8131fe63a8113de0b17160ea01922f9015a",
+    "tools/tests/test_phase10_alert_metrics.py": "78f6d059b14854e7c7a721d23c40cb110d7959b82dd2cbc53bdea29eb9316ed0",
+    "tools/tests/test_phase10_backup_restore.py": "778331cbfc993a5686e5fac42e66d413e9a7038670751119c2b15c20187d4972",
+    "tools/tests/test_phase10_deployment.py": "5e22bc7adc919f01d43a88cd6d3dc05c0e66b11e269f2b905d929aaf58cf05fc",
+    "tools/tests/test_phase10_key_rotation.py": "b5d013b330149bd939a765e0431d9d84b6470c674f91683de2a1be08ab5cb630",
+    "tools/tests/test_phase10_register.py": "b97841a579a7ac05edcf1edb59f289a4711189ba80d23f766f6aaae566f275ba",
+    "tools/tests/test_phase10_retention_report.py": "b42d1998e6b8bcee86ab75c238805bacd8a37ecdb641eff586a5a0645d15db61",
+    "tools/tests/test_phase10_supply_chain.py": "62871abd2fe0be6436667ebdf6e6e59e6ab297e00b66924091e07f4e16025458"
+  },
+  "modified": {
+    ".github/CODEOWNERS": {
+      "before": "4ec5c882d2f07577be7ade4f03c8e2c0905250d16d23f3853e3828d6eb9d0d47",
+      "after": "508b93ea4a97979bf31bb4eff4f22ea25b29b4f4843da4e5f1afe7438024a63c"
+    },
+    ".github/workflows/ci.engine.yml": {
+      "before": "6e92b24267a4808a0763bdaffaf286d9017143bd5caa72073f267416776a296b",
+      "after": "c53b1cbc2f4e3bd111edbbe1de30abbf634bd2bb7ec905c0aa6957ab80c8f595"
+    },
+    ".github/workflows/ci.opa-eval.yml": {
+      "before": "7198e20c62b5e7e7458e36a464911699f67e7dabf2ecf2a29144a8493ace7eb4",
+      "after": "5b6323472fccaaad0f3656a799ff6dc68b235c333f5d9a419f5e6547267fdb16"
+    },
+    ".github/workflows/ci.runtime.yml": {
+      "before": "a4821b73e79cb9b1222992f2f3b8d95052c34d395ca45c30ab554b50b16d17e7",
+      "after": "391578ca138c1afd12e123478f70847a21aa2dd45a929b1e72e6aa2a2c8e471c"
+    },
+    ".github/workflows/ci.validate-alerts.yml": {
+      "before": "1935d8c179d5f1538aa9ba3183ea3a46b6683348b438c3325360af0602c38bba",
+      "after": "9353fae86c04492f3df54ba02f7bc8b6610495cff0e73829d378a9510b012b31"
+    },
+    ".github/workflows/ops.short-test.yml": {
+      "before": "2275e8a4aa359eda8e3c146e6f480877181b7e650fc8ac2209fd0bf9fdbdf8ce",
+      "after": "a38be5a9989007fc0933922acc5e7324d6986ada535ec6eb5ea7b97ce1e21548"
+    },
+    ".gitignore": {
+      "before": "13504c402a69ba6653fded6cb341d5633d9ea39b7c133b067d1f507d60d7f7b4",
+      "after": "bbc32d0123b7231e48c46e9429a66d892568a8cf6c8cb428b616c638c67538b5"
+    },
+    ".secrets.baseline": {
+      "before": "97a37d1a6a6040f391c6384be8ee144ee54e8c24eede793f415dc0eddc30f958",
+      "after": "c5999715272781581917b19a84ca120ecfb50b01c633af7726639474c6215f8e"
+    },
+    "README.md": {
+      "before": "822f3ab38721764c329b22d3169871acabd986dec2f81fb364a1c1c9c81304ce",
+      "after": "51242fa54ae3e2044efb425b15a29a939a538436a6430f716803b54fe06c59fe"
+    },
+    "backend-api/app/api/v1/evidence.py": {
+      "before": "594ae8be1d0f6fc38d38b095da81d197729d6a30d073239b42cd538438f8836e",
+      "after": "5ff3feb8639e0c5c7a4c3468f2b6987c8f72ac2bd276a8eeb9da77e6699c2dfd"
+    },
+    "backend-api/app/api/v1/m365_connections.py": {
+      "before": "3b89c2944874ed45a2e3ef5877bb298f1b89ac366c7e9b96e2b670fc36524f95",
+      "after": "c1fa7142be2292dc793752260a298923fcf44e363c753972df8149cb58aaa194"
+    },
+    "backend-api/app/api/v1/scans.py": {
+      "before": "f83213af699f3fc564458f9ca2560d40f963aa56b5bfe5dca8bfbeddf8f68424",
+      "after": "dcc4521b0c1a3e346010a29b201d0d890e0fa55e6e6932e02d7d83a3025ed896"
+    },
+    "backend-api/app/core/config.py": {
+      "before": "db87cde4edd2890cfe75e2f7f42da1f1a2ce8d630c86caa4eb8b590b4bfd4796",
+      "after": "42e4c235a1d0edb318f371f37eba9db68bcaecd772f5cb7266eb7761470b065b"
+    },
+    "backend-api/app/core/middleware.py": {
+      "before": "1d8308c59036f120406a6ba22411355d62b6a8020b95808f768cab395edc9718",
+      "after": "0673decc38cc31d68e2ff001fee1faa7a0784d17e5bff866f81c4a95aab87762"
+    },
+    "backend-api/app/core/sessions.py": {
+      "before": "f110773f4889bf0d4f572e0976874bd7e5154aa6de80c442bb8c69d278d0478c",
+      "after": "ef420a5a404a3608810601da5e27bcd09dcf544065a765da88a23c4bbc098947"
+    },
+    "backend-api/app/main.py": {
+      "before": "e9e428b63d3b5bb6153b91b422d8a3fa21d61cb8d438eeba5ee0f1e4b9947f8a",
+      "after": "56596dc30d58caef729050114a764942d61c81d0dfcfd223ac7286d33cad61b3"
+    },
+    "backend-api/app/models/evidence_audit_event.py": {
+      "before": "c820cd52ea27d69abff5119c93fadce218cc61886ba30356ba86fd776b02be87",
+      "after": "2d979f17d1be960b730f1d539675166b9acb580a231f664dca461ebc08bd8ec3"
+    },
+    "backend-api/app/schemas/evidence_artifact.py": {
+      "before": "98f982fdd0ee79c3c821bc2cd4899968695e28d0cea3502eb614e70a6b21186b",
+      "after": "5de971430e96c6d809c68b7de7ddab2ae1f321ba96708a03d7615a9a5ad0a350"
+    },
+    "backend-api/app/services/encryption.py": {
+      "before": "f2e5a9a7594322d8b4c57f9849dabf9494977bc340870b056359f14672a4aacb",
+      "after": "bdf9c2f142689a8704a052e1afeee4067b76e76237575d32a40047eb4a1edd81"
+    },
+    "backend-api/app/services/evidence_audit.py": {
+      "before": "0e34c8e993c2f87b8e81d6a9ff935fe4a72d3a92812aac3d14be47b111f3f7a2",
+      "after": "b6a889f2f736d47552154d5b56bfa9c21e213944b4e95ec14b19077485c05355"
+    },
+    "backend-api/pyproject.toml": {
+      "before": "406eddf98036a19e5a11b6f4a851235a361c1047fd1d059e508d089554e8ee72",
+      "after": "eeed004e52feb5ffd3f34ad1cdcc380b512316d126fcbb3b1280e6eae64bcd30"
+    },
+    "backend-api/uv.lock": {
+      "before": "86b9eb1f077d55a34788d780f8b06cd4c4304ae75cb1b3c1637e410236b952fa",
+      "after": "6a925e55dc2e325be763b0d5daaec6edcd19d2cd8e53a3197dc6b8f339e8cc40"
+    },
+    "docker-compose.production.yml": {
+      "before": "dcc77ae548e35bea52b4026eea9c0581a18a05110890ef1df35b1826393a1eb1",
+      "after": "a230d7dfeeb4915a0c8616b341912a7945d8ba8c2e7f0ed5c37e5bd7df45515a"
+    },
+    "docker-compose.yml": {
+      "before": "7695fe030a47596e3320f0000aa74083efe3e35223f03ef0f02ac13a5c99de08",
+      "after": "b80b4b926c3781aa48b5239c1d3de45a5d64b78b87203fb1883a072a026c17b9"
+    },
+    "docs/DevSecOps/workflow-documentation.md": {
+      "before": "4aef964eac45b453fb5e6bfdc476742a347df3fe2859d4085633ef0aa7827898",
+      "after": "146f0c3f759eb77f326464bf2cb63c1545059f6094dd52ee3c335c58e6167c86"
+    },
+    "engine/Dockerfile": {
+      "before": "b539ab2207978880ccbe4105e4b2d83e7e3bcb10e810c05e701df354f720e10c",
+      "after": "3a4654d05415edf7d142f27a4f6ea0e3a03a50453a5f3c46ff35c9c006e77960"
+    },
+    "engine/pyproject.toml": {
+      "before": "d0271cec09251eb71cf815384879b8f63ff1a9de402b18a0fe49048e1c9cb742",
+      "after": "f8881c604b0a99be6ce56bfe9c0b9c5c17ed1c4a54c07d809ca933eb678689ce"
+    },
+    "engine/uv.lock": {
+      "before": "beb1a789fc1146c039dfeddefc8ef849988f3c9264f874653abe5faac21fbf79",
+      "after": "a1f903a67e670cb75512b4cbc7b70238621c562af7ffd54a42280ceb6d29debd"
+    },
+    "engine/worker/config.py": {
+      "before": "d6f3c9f38d6b3e780afec7ea7ea0f1bcdeba5ea041fb2708d4ef558f25f4c2c6",
+      "after": "28174f3afe1a04a26897694f2ab87e8fda3da2e107b4122d55f677c7f9778527"
+    },
+    "engine/worker/db.py": {
+      "before": "e2c7b1a5b7c93df3de38667ae486042b33c88d479221637ca7b63779917af8ad",
+      "after": "ff172d11ce2612956e11c05a65c551de6b2be7bb419adec1c1b6a906fc4f1600"
+    },
+    "engine/worker/dispatcher.py": {
+      "before": "7c31e5db21befb9b3c36f4bdd0b5d568ee9250c3e386aa24fdd1d91e736eeac6",
+      "after": "6659d6e7f2d0d4af8edd6b33eed19f83be3cce72a55b32c423afbb5fdbfbcc29"
+    },
+    "env.example": {
+      "before": "7d0bbe54888804aae41ece93ad7e21a04eef38568cde59d2ce237f371388ea66",
+      "after": "f2872d94b9cc142fff0ebedbac5dc276a83d1860c88c7facd41befbb0c0fbfcb"
+    },
+    "infrastructure/monitoring/alerts/README.md": {
+      "before": "8c0689047ad5c2c45f17c73247a76f9e7026416977f2b926dbf401f10a58abaf",
+      "after": "bd0538f15508b953c0ac7ed292705b209a72ed9d622394311a509bd362a87f85"
+    },
+    "infrastructure/monitoring/alerts/alertmanager.yaml": {
+      "before": "c62dd573ca836a2a0f060ab97bc04ca35078964c49d2a66b7b23961a69a195d9",
+      "after": "e4dde89230a7d14aeb6687d6a0627d8973d2e1938b7140f5c6a6c04a2320154d"
+    },
+    "infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md": {
+      "before": "1615b1f6f5e440daa56e9a9d27f4b84da5a0742754ccc17ebcb69a8f3f2036bc",
+      "after": "01f9105fce446b63dc00bd3e063934db98635b8a3d8375e67d6e665585df4ae8"
+    },
+    "tools/tests/test_phase5_deployment.py": {
+      "before": "5c94e998866171db8e49af91027bf9187a3bdbd62367d08ede549cbf7f9e36e8",
+      "after": "38f573409062df8c4bb68350ad8da600d9e8d10da8713bf76e2a2b6e4a72f8b8"
+    },
+    "tools/tests/test_phase8_deployment.py": {
+      "before": "92326db70ee6ec77bd5a9465adf80528eccc2179277e5ef481d2a9bf5ec3a555",
+      "after": "f6affe0682449fecf30b0fdab6d975f55e2a8771902dca84313c5470f1975aae"
+    },
+    "tools/workflow-cleanup/cleanup-workflows.js": {
+      "before": "8c73d19881adadbb0b827c5c2c2e8014ec1c38ea14c5831ce8427d08255f7502",
+      "after": "cb48133cfe9dfa9f5e09e6f89ebb64747b8d82a61d319b35901f8888ea3cc4a8"
+    }
+  },
+  "removed": [
+    "infrastructure/monitoring/alerts/application_errors.yaml",
+    "infrastructure/monitoring/alerts/ci_cd_alerts.yaml",
+    "infrastructure/monitoring/alerts/compliance_alerts.yaml",
+    "infrastructure/monitoring/alerts/infra_health.yaml",
+    "infrastructure/monitoring/alerts/resource_utilisation.yaml",
+    "infrastructure/monitoring/alerts/security_alerts.yaml",
+    "infrastructure/monitoring/alerts/tests/alert_simulation_test.py",
+    "infrastructure/monitoring/alerts/tests/promtool_validation.sh"
+  ]
+}

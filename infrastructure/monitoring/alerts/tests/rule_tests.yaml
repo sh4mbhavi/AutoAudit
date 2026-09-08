@@ -1,0 +1,302 @@
+# promtool rule unit tests.
+#
+# Run with:  promtool test rules infrastructure/monitoring/alerts/tests/rule_tests.yaml
+#
+# These replace alert_simulation_test.py, which was never run by anything and
+# could not have passed: it pushed a CONSTANT gauge value and then asserted that
+# `rate()` of it exceeded 10. The rate of a constant is zero, so its first test
+# always failed and its second passed by accident (rate 0 made `100 - 0 > 90`
+# true without exercising anything).
+#
+# `promtool test rules` needs no running Prometheus, no Pushgateway and no
+# network. It builds a series from the samples below, evaluates the real rule
+# files against it, and asserts exactly which alerts fire at a given instant --
+# which is the only way to pin what a threshold actually means.
+
+rule_files:
+  - ../application.yaml
+  - ../scan_lifecycle.yaml
+  - ../platform.yaml
+
+evaluation_interval: 1m
+
+tests:
+  # -------------------------------------------------------------------------
+  # APIServerErrorRateHigh fires on 5xx and, crucially, NOT on 4xx.
+  # -------------------------------------------------------------------------
+  - interval: 1m
+    name: server errors fire, client errors do not
+    input_series:
+      - series: 'autoaudit_api_errors_total{method="GET",route="/v1/scans",status="500",class="5xx"}'
+        # Flat for six minutes, then +10/min. increase(...[5m]) first exceeds
+        # 20 at t=8m, and `for: 5m` holds it pending until t=13m.
+        values: '0 0 0 0 0 0 10 20 30 40 50 60 70 80 90 100'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: APIServerErrorRateHigh
+        exp_alerts: []
+      - eval_time: 10m
+        # Above the threshold but still inside the `for` window.
+        alertname: APIServerErrorRateHigh
+        exp_alerts: []
+      - eval_time: 14m
+        alertname: APIServerErrorRateHigh
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              team: backend
+              service: backend-api
+            exp_annotations:
+              summary: "High: the API is returning server errors"
+              description: |
+                More than 20 5xx responses in five minutes. Client errors are excluded,
+                so this is the API failing rather than callers being refused.
+              runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#apiapiservererrorratehigh"
+
+  - interval: 1m
+    name: a burst of client errors does not page the backend team
+    input_series:
+      # The pre-Phase-10 rule counted every error, so this -- an ordinary wave of
+      # expired browser sessions -- read the same as the API failing.
+      - series: 'autoaudit_api_errors_total{method="GET",route="/v1/scans",status="401",class="4xx"}'
+        values: '0+30x15'
+    alert_rule_test:
+      - eval_time: 12m
+        alertname: APIServerErrorRateHigh
+        exp_alerts: []
+
+  # -------------------------------------------------------------------------
+  # StoredCredentialUnreadable: the key-rotation failure signal.
+  # -------------------------------------------------------------------------
+  - interval: 1m
+    name: a single undecryptable credential fires immediately
+    input_series:
+      - series: 'autoaudit_decryption_failures_total{column="m365_connection.encrypted_client_secret"}'
+        values: '0 0 0 1 1 1 1 1 1 1 1 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: StoredCredentialUnreadable
+        exp_alerts: []
+      - eval_time: 6m
+        alertname: StoredCredentialUnreadable
+        exp_alerts:
+          # `column` survives increase() and reaches the alert, which is wanted:
+          # it names which store failed without naming the row or the tenant.
+          - exp_labels:
+              severity: critical
+              team: backend
+              service: backend-api
+              column: m365_connection.encrypted_client_secret
+            exp_annotations:
+              summary: "Critical: stored ciphertext no key in the ring can read"
+              description: |
+                A stored secret could not be decrypted. Almost always this means the
+                deployment is carrying the wrong encryption key ring -- most often a
+                retired key removed before tools/ops/rotate_encryption_key.py --check
+                reported clean. Restore the key before anything else.
+              runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#apistoredcredentialunreadable"
+
+  # -------------------------------------------------------------------------
+  # ScanExporterDown must fire on absence, not only on zero. A dispatcher that
+  # is not running produces no series at all, which is the case that matters.
+  # -------------------------------------------------------------------------
+  - interval: 1m
+    name: the exporter reporting zero fires
+    input_series:
+      - series: 'autoaudit_collector_exporter_up'
+        values: '1 1 1 0 0 0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: ScanExporterDown
+        exp_alerts: []
+      - eval_time: 9m
+        alertname: ScanExporterDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              team: backend
+              service: dispatcher
+            exp_annotations:
+              summary: "Critical: the scan lifecycle exporter is not reporting"
+              description: |
+                The dispatcher could not read the database, or is not running at all.
+                The dispatcher is the only path by which a scan reaches the broker, so
+                while this is firing no new scan can start and every other alert in
+                this group is blind.
+              runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#scanlifecyclescanexporterdown"
+
+  - interval: 1m
+    name: the exporter series being absent entirely also fires
+    input_series: []
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: ScanExporterDown
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              team: backend
+              service: dispatcher
+            exp_annotations:
+              summary: "Critical: the scan lifecycle exporter is not reporting"
+              description: |
+                The dispatcher could not read the database, or is not running at all.
+                The dispatcher is the only path by which a scan reaches the broker, so
+                while this is firing no new scan can start and every other alert in
+                this group is blind.
+              runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#scanlifecyclescanexporterdown"
+
+  # -------------------------------------------------------------------------
+  # ScanStalled: a healthy scan advancing normally must not fire.
+  # -------------------------------------------------------------------------
+  - interval: 1m
+    name: a scan advancing normally does not fire
+    input_series:
+      - series: 'autoaudit_collector_exporter_up'
+        values: '1+0x20'
+      # Sawtooth: age climbs, then resets as the scan makes progress.
+      - series: 'autoaudit_scan_oldest_progress_age_seconds'
+        values: '60 120 180 240 300 60 120 180 240 300 60 120 180 240 300 60 120 180 240 300 60'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: ScanStalled
+        exp_alerts: []
+
+  - interval: 1m
+    name: a scan stuck past half its deadline fires
+    input_series:
+      - series: 'autoaudit_collector_exporter_up'
+        values: '1+0x20'
+      - series: 'autoaudit_scan_oldest_progress_age_seconds'
+        values: '1700+60x20'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: ScanStalled
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              team: backend
+              service: dispatcher
+            exp_annotations:
+              summary: "High: a live scan has not advanced in 30 minutes"
+              description: |
+                No result or status write has landed for the least recently advanced
+                live scan in over half an hour. Check the worker is consuming, the
+                PowerShell service is reachable, and the outbox is draining.
+              runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#scanlifecyclescanstalled"
+
+  # -------------------------------------------------------------------------
+  # DispatchRetriesNearExhaustion: the label regex must catch 6, 7 and 8 and
+  # must not catch a healthy row at 0.
+  # -------------------------------------------------------------------------
+  - interval: 1m
+    name: rows below six attempts do not fire
+    input_series:
+      - series: 'autoaudit_dispatch_attempts{attempts="0"}'
+        values: '40+0x10'
+      - series: 'autoaudit_dispatch_attempts{attempts="5"}'
+        values: '2+0x10'
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: DispatchRetriesNearExhaustion
+        exp_alerts: []
+
+  - interval: 1m
+    name: a row at six attempts fires
+    input_series:
+      - series: 'autoaudit_dispatch_attempts{attempts="0"}'
+        values: '40+0x10'
+      - series: 'autoaudit_dispatch_attempts{attempts="6"}'
+        values: '1+0x10'
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: DispatchRetriesNearExhaustion
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              team: backend
+              service: dispatcher
+            exp_annotations:
+              summary: "Warning: outbox rows are close to exhausting their retries"
+              description: |
+                One or more rows have consumed six or more of their eight delivery
+                attempts. When the budget runs out the whole scan fails with
+                dispatch_retry_exhausted.
+              runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#scanlifecycledispatchretriesnearexhaustion"
+
+  # -------------------------------------------------------------------------
+  # ControlErrorRateHigh must fire on `error` and never on `failed`. A failed
+  # control is a true tenant finding; paging on it was the defect that retired
+  # the old FailedAuditChecks rule.
+  # -------------------------------------------------------------------------
+  - interval: 1m
+    name: a tenant with many failed controls does not page anyone
+    input_series:
+      - series: 'autoaudit_control_results{status="failed"}'
+        values: '0+50x40'
+      - series: 'autoaudit_control_results{status="error"}'
+        values: '3+0x40'
+    alert_rule_test:
+      - eval_time: 40m
+        alertname: ControlErrorRateHigh
+        exp_alerts: []
+
+  - interval: 1m
+    name: controls that could not be assessed do fire
+    input_series:
+      - series: 'autoaudit_control_results{status="error"}'
+        values: '0+2x60'
+    alert_rule_test:
+      - eval_time: 50m
+        alertname: ControlErrorRateHigh
+        exp_alerts:
+          - exp_labels:
+              severity: high
+              team: backend
+              service: worker
+            exp_annotations:
+              summary: "High: many controls could not be assessed"
+              description: |
+                Twenty or more control results landed in `error` in thirty minutes.
+                These are collection or evaluation failures, not tenant findings: the
+                scans that produced them under-report coverage.
+              runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#scanlifecyclecontrolerrorratehigh"
+
+  # -------------------------------------------------------------------------
+  # The platform threshold that was wrong by a factor of eight. The rule said
+  # 1000000000 BYTES/sec while its description and runbook both said 1 Gbps;
+  # 1 Gbps is 125000000 bytes/sec. This pins the corrected value: 2 Gbps must
+  # fire, and 500 Mbps must not.
+  # -------------------------------------------------------------------------
+  - interval: 1m
+    name: network threshold means gigabits, as documented
+    input_series:
+      # 62500000 bytes/sec = 500 Mbps: below the 1 Gbps threshold.
+      - series: 'container_network_receive_bytes_total{container="backend-api"}'
+        values: '0+3750000000x12'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: NetworkBandwidthThreshold
+        exp_alerts: []
+
+  - interval: 1m
+    name: two gigabits per second fires
+    input_series:
+      # 250000000 bytes/sec = 2 Gbps.
+      - series: 'container_network_receive_bytes_total{container="backend-api"}'
+        values: '0+15000000000x12'
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: NetworkBandwidthThreshold
+        exp_alerts:
+          - exp_labels:
+              severity: warning
+              team: infra
+              service: network
+              environment: production
+              container: backend-api
+            exp_annotations:
+              summary: "Warning: High network bandwidth usage"
+              description: |
+                Network bandwidth usage exceeds 1Gbps for more than 5 minutes.
+                Investigate potential network congestion or abnormal traffic.
+              runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#resourceutilisationnetworkbandwidththreshold"

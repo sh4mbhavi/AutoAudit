@@ -3,14 +3,13 @@ name: "Frontend CI/CD"
 on:
   push:
     branches: [main]
-    paths:
-      - 'frontend/**'
   pull_request:
     branches: [main]
-    paths:
-      - 'frontend/**'
   schedule:
     - cron: '32 23 * * 6'
+
+permissions:
+  contents: read
 
 jobs:
   analyze:
@@ -33,17 +32,7 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-          build-mode: ${{ matrix.build-mode }}
-
-      - if: matrix.build-mode == 'manual'
-        shell: bash
-        run: |
-          echo 'If you are using a "manual" build mode for one or more of the' \
-            'languages you are analyzing, replace this with the commands to build' \
-            'your code, for example:'
-          echo '  make bootstrap'
-          echo '  make release'
-          exit 1
+          build-mode: none
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
@@ -62,7 +51,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
@@ -75,7 +64,7 @@ jobs:
         working-directory: frontend
 
   build-and-test:
-    name: Build and Test Frontend
+    name: Frontend typecheck tests and build
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -87,7 +76,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version-file: .nvmrc
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
@@ -95,22 +84,20 @@ jobs:
         run: npm ci
 
       - name: TypeScript type check
-        run: npx tsc --noEmit
+        run: npm run typecheck
 
       - name: Run unit tests
-        if: always()
         run: npm test -- --reporter=verbose
         env:
           VITE_API_URL: http://localhost:8000
 
       - name: Build
-        if: always()
         run: npm run build
 
   report:
     name: Report PR status
     needs: [analyze, run-lint, build-and-test]
-    if: always() && github.event_name == 'pull_request'
+    if: always() && github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
       pull-requests: write
@@ -123,7 +110,7 @@ jobs:
             const buildTest = '${{ needs.build-and-test.result }}';
 
             const icon = r => ({ success: '✅', failure: '❌', cancelled: '🚫', skipped: '⏭️' }[r] ?? '❓');
-            const allPassed = [analyze, lint, buildTest].every(r => ['success', 'skipped'].includes(r));
+            const allPassed = [analyze, lint, buildTest].every(r => r === 'success');
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
             const marker = '<!-- ci-report-frontend -->'; // used to find and update the existing comment
 

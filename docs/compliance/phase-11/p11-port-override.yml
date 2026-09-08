@@ -1,0 +1,6 @@
+# Phase 11 only: host port 8000 is held by an unrelated container on this
+# machine. Remapped so the overlay can start; the container port and every
+# other binding are unchanged.
+services:
+  backend-api:
+    ports: !override ["127.0.0.1:18000:8000"]

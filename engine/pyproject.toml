@@ -13,6 +13,10 @@ dependencies = [
     "pydantic-settings>=2.1.0",
     "cryptography>=48.0.0",
     "dnspython>=2.4.0",
+    # Phase 10: the worker and the dispatcher are the only processes that can
+    # observe collection outcomes and scan staleness. Pure Python, no
+    # transitive dependencies.
+    "prometheus-client>=0.21.0",
 ]
 
 [build-system]
@@ -20,11 +24,11 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["worker", "collectors"]
+packages = ["worker", "collectors", "powershell"]
 include = ["opa_client.py"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 
 [project.optional-dependencies]
-dev = ["pytest>=7.0"]
+dev = ["pytest>=7.0", "fastapi"]

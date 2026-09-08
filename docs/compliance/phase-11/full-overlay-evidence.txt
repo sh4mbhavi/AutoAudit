@@ -1,0 +1,18 @@
+=== production overlay service states (Phase 11, 2026-09-07T02:23:22Z) ===
+db                   running health=healthy restarts=0
+redis                running health=healthy restarts=0
+powershell-service   restarting health=unhealthy restarts=10
+backend-api          running health=healthy restarts=0
+worker               created health=none restarts=0
+dispatcher           running health=healthy restarts=0
+
+=== host port bindings (production overlay must publish only the API) ===
+db                   {}
+redis                {}
+powershell-service   {}
+backend-api          {"8000/tcp":[{"HostIp":"127.0.0.1","HostPort":"18000"}]}
+dispatcher           {}
+
+=== the API's own /readiness answer, from inside the private network ===
+{"status":"ready","checks":{"database":{"ok":true,"detail":"ok"},"broker":{"ok":true,"detail":"ok"}}}
+HTTP 200

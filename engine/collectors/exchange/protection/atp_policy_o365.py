@@ -11,7 +11,7 @@ Required Permissions: Exchange.ManageAsApp + Exchange role assignment
 
 from typing import Any
 
-from collectors.powershell_base import BasePowerShellCollector
+from collectors.powershell_base import BasePowerShellCollector, powershell_object
 from collectors.powershell_client import PowerShellClient
 
 
@@ -32,7 +32,11 @@ class AtpPolicyO365DataCollector(BasePowerShellCollector):
             - enable_safe_docs: Safe Documents status
             - allow_safe_docs_open: Allow Safe Docs open in Protected View
         """
-        policy = await client.run_cmdlet("ExchangeOnline", "Get-AtpPolicyForO365")
+        policy = await client.run_operation(
+            "exchange.protection.atp_policy_o365.read",
+            "exchange.protection.atp_policy_o365",
+        )
+        policy = powershell_object(policy)
 
         return {
             "atp_policy": policy,

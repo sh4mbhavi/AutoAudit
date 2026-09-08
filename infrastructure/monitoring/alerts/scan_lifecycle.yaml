@@ -1,0 +1,141 @@
+# AutoAudit scan lifecycle alerts.
+#
+# Every expression reads a gauge the dispatcher derives from the database in
+# engine/worker/metrics.py and exports on METRICS_PORT. Because the numbers come
+# from the scan and outbox rows themselves, an operator investigating an alert
+# and an auditor reading the evidence are looking at the same rows.
+#
+# Replaces the pre-Phase-10 compliance_alerts.yaml. Two of its three rules are
+# deliberately not reproduced; see RETIRED-ALERTS.md for why, in short:
+#
+#   FailedAuditChecks      alerted the infrastructure team when a *tenant* was
+#                          non-compliant. A failed control is the product working,
+#                          not the system failing, and Phase 0 decisions D01/D02
+#                          are explicit that the two must not be conflated.
+#   MissingControlsDetected  same conflation, plus "missing control" names nothing
+#                          in the product's vocabulary.
+#
+# MissingComplianceScans is replaced rather than dropped: it used
+# `absent_over_time(compliance_scan_success[1h])`, which fires forever in any
+# deployment where scans are user-initiated. A last-completion timestamp is a
+# question that can actually be answered.
+
+groups:
+  - name: autoaudit.scan_lifecycle
+    interval: 1m
+    rules:
+      - alert: ScanExporterDown
+        # First, because every other rule in this file is silent when the
+        # exporter cannot read. Without this, a dead dispatcher looks like a
+        # perfectly healthy system.
+        expr: |
+          autoaudit_collector_exporter_up == 0 or absent(autoaudit_collector_exporter_up)
+        for: 5m
+        labels:
+          severity: critical
+          team: backend
+          service: dispatcher
+        annotations:
+          summary: "Critical: the scan lifecycle exporter is not reporting"
+          description: |
+            The dispatcher could not read the database, or is not running at all.
+            The dispatcher is the only path by which a scan reaches the broker, so
+            while this is firing no new scan can start and every other alert in
+            this group is blind.
+          runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#scanlifecyclescanexporterdown"
+
+      - alert: ScanStalled
+        # SCAN_DEADLINE_SECONDS defaults to 3600 and the reconciler fails a scan
+        # at its deadline. Alerting at half that gives an operator time to look
+        # before the scan is failed out from under them.
+        expr: |
+          autoaudit_scan_oldest_progress_age_seconds > 1800
+        for: 10m
+        labels:
+          severity: high
+          team: backend
+          service: dispatcher
+        annotations:
+          summary: "High: a live scan has not advanced in 30 minutes"
+          description: |
+            No result or status write has landed for the least recently advanced
+            live scan in over half an hour. Check the worker is consuming, the
+            PowerShell service is reachable, and the outbox is draining.
+          runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#scanlifecyclescanstalled"
+
+      - alert: ScansPastDeadline
+        expr: |
+          autoaudit_scans_past_deadline > 0
+        for: 10m
+        labels:
+          severity: high
+          team: backend
+          service: dispatcher
+        annotations:
+          summary: "High: scans are past their deadline and have not been failed"
+          description: |
+            The reconciler fails a scan once its deadline passes. A scan still past
+            its deadline ten minutes later means the reconciler is not running its
+            cycle -- the scan is not merely slow, the recovery path is stuck too.
+          runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#scanlifecyclescanspastdeadline"
+
+      - alert: DispatchBacklogStuck
+        expr: |
+          autoaudit_dispatch_oldest_wait_seconds > 900
+        for: 10m
+        labels:
+          severity: high
+          team: backend
+          service: dispatcher
+        annotations:
+          summary: "High: outbox work is due but unpublished"
+          description: |
+            A row has been due for publication for over fifteen minutes. Phase 6
+            makes the outbox the only authorisation to publish, so a stuck outbox
+            is a stopped product -- usually a broker outage, since a failed publish
+            defers the row rather than dropping it.
+          runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#scanlifecycledispatchbacklogstuck"
+
+      - alert: DispatchRetriesNearExhaustion
+        # DISPATCH_MAX_ATTEMPTS is 8. A row at 6 has two deliveries left before
+        # its scan is failed with dispatch_retry_exhausted; this is the last
+        # useful moment to intervene.
+        expr: |
+          sum(autoaudit_dispatch_attempts{attempts=~"6|7|8"}) > 0
+        for: 5m
+        labels:
+          severity: warning
+          team: backend
+          service: dispatcher
+        annotations:
+          summary: "Warning: outbox rows are close to exhausting their retries"
+          description: |
+            One or more rows have consumed six or more of their eight delivery
+            attempts. When the budget runs out the whole scan fails with
+            dispatch_retry_exhausted.
+          runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#scanlifecycledispatchretriesnearexhaustion"
+
+      - alert: ControlErrorRateHigh
+        # `error` means AutoAudit could not assess the control -- authentication,
+        # transport, collection or evaluation failed. It is explicitly NOT
+        # `failed`, which is a tenant that is non-compliant and is not an
+        # operational event.
+        #
+        # delta(), not increase(): autoaudit_control_results is a GAUGE read from
+        # the row count, not a counter. increase() applies counter-reset
+        # correction, so deleting a scan -- which genuinely lowers the row count --
+        # would be read as a reset and inflate the result instead of lowering it.
+        expr: |
+          sum(delta(autoaudit_control_results{status="error"}[30m])) > 20
+        for: 15m
+        labels:
+          severity: high
+          team: backend
+          service: worker
+        annotations:
+          summary: "High: many controls could not be assessed"
+          description: |
+            Twenty or more control results landed in `error` in thirty minutes.
+            These are collection or evaluation failures, not tenant findings: the
+            scans that produced them under-report coverage.
+          runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#scanlifecyclecontrolerrorratehigh"

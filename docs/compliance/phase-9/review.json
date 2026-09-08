@@ -1,0 +1,255 @@
+{
+  "phase": 9,
+  "method": "six independent reviewers over the landed Phase 9 diff, then three independent refuters per finding with distinct lenses (is it true / is it reachable / is it already handled), defaulting to refuted when uncertain",
+  "candidate_findings": 38,
+  "dimensions": [
+    "Evidence integrity and the audit record",
+    "Lifecycle, idempotency and recovery (Phase 6 guarantees under Phase 9's collection-keyed outbox)",
+    "SECURITY BOUNDARY: the PowerShell batch and the transport (engine/powershell/service/{operations,executor,schemas,main}.py, engine/collectors/{powershell_client,graph_client}.py)",
+    "Collector behaviour equivalence (4 Graph collectors restructured to bounded concurrency, 2 PowerShell collectors restructured to batch)",
+    "The API contract and the frontend (backend-api/app/api/v1/scans.py, schemas/provenance.py, main.py; frontend api/client.ts, hooks/usePoll.ts, Scans/ScanDetailPage.tsx, Scans/ScansPage.tsx)",
+    "Gates, claims and what the tests actually prove (Phase 9 \u2014 performance and maintainability)"
+  ],
+  "note": "The review ran while fixes from an earlier Gemini pass were still landing, so many findings were fixed BEFORE their refuters read the file. A 'refuted' verdict here therefore means 'the refuter could not find the defect in the code as it stood', which for most of these is because it had just been fixed -- not that the finding was wrong. Every finding is listed with what was actually done.",
+  "survived_all_three_refuters": [
+    {
+      "severity": "high",
+      "title": "A per-member failure the code itself marks retryable is written straight to a terminal error row; the identical failure in a single-control group is retried",
+      "location": "engine/worker/tasks.py:388-400 (_run_collection partial-failure branch)",
+      "refuters_against": 1
+    },
+    {
+      "severity": "medium",
+      "title": "The /execute-batch client timeout (120 s) is shorter than the service's own batch budget (300 s), so long batches always fail client-side while the pwsh child keeps burning one of four execution slots",
+      "location": "engine/collectors/powershell_client.py:232 and :327; engine/powershell/service/executor.py:423",
+      "refuters_against": 0
+    },
+    {
+      "severity": "medium",
+      "title": "A completed scan can be stranded on screen as permanently \"running\" with stale counts if the single full read at the terminal transition fails",
+      "location": "frontend/src/pages/Scans/ScanDetailPage.tsx:199-213",
+      "refuters_against": 0
+    },
+    {
+      "severity": "medium",
+      "title": "POWERSHELL_MAX_BATCH is a dead setting: the documented bound on how many operations share one remote session is never read",
+      "location": "engine/worker/config.py:41",
+      "refuters_against": 0
+    }
+  ],
+  "refuted_or_already_fixed": [
+    {
+      "severity": "high",
+      "title": "A transient OPA subprocess failure is classified as deterministic, terminal-erroring a whole collection group on the first attempt with zero retries",
+      "location": "engine/worker/tasks.py:123 (_is_retryable) and engine/worker/tasks.py:876 (runtime_version call site); engine/opa_client.py:96",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "low",
+      "title": "Batched PowerShell serialisation loses one level of ConvertTo-Json depth relative to the single-operation path, and PowerShell degrades silently past the limit",
+      "location": "engine/powershell/service/executor.py:277-288 (build_batch_script) vs :225-239 (build_script)",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "low",
+      "title": "A Graph 401 is never retried even though the pooled client now caches one token for a whole collection group",
+      "location": "engine/worker/tasks.py:112 (NON_RETRYABLE_STATUS) and engine/collectors/graph_client.py:163-177 (_get_access_token)",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "medium",
+      "title": "The `claimed` guard does not prevent double collection: `evaluate_collection` re-derives its members from the database, so a control served by a legacy per-result row is collected twice, concurrently",
+      "location": "engine/worker/dispatcher.py:41-73 (`_unclaimed_pending_plan`) and engine/worker/tasks.py:541-559 (`evaluate_collection` member resolution)",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "medium",
+      "title": "The non-ready fallback still fails the whole scan: an unpublishable per-result row ratchets to `dispatch_retry_exhausted` and errors every control in the scan",
+      "location": "engine/worker/execution_plan.py:96-104 and engine/worker/dispatcher.py:98-114 (`_recreate_pending_children` unplannable branch), with engine/worker/tasks.py:628",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "low",
+      "title": "Drift has no recovery: a worker death between the finalising commit and `_drift_after_finalisation` loses the comparison permanently, and the reconciler's own finalising path never calls drift",
+      "location": "engine/worker/tasks.py:57-66, 228, 411, 480 and engine/worker/dispatcher.py:164-168",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "low",
+      "title": "`run_scan`'s `pragma: no cover - rejected above already` is wrong: a non-string `data_collector_id` reaches the per-result fallback",
+      "location": "engine/worker/tasks.py:196-226",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "medium",
+      "title": "The batch transport gives up at 120s while the service is allowed 300s, so a successful long batch is reported as a collection failure",
+      "location": "engine/collectors/powershell_client.py:327",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "medium",
+      "title": "build_batch_script's ConvertTo-Json depth is off by one: the wrapper costs two levels, not one, so batched evidence is truncated one level earlier than the same operation run singly",
+      "location": "engine/powershell/service/executor.py:284",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "low",
+      "title": "verify_sharepoint_tenant leaks a pooled Graph client on every SharePoint collection group",
+      "location": "engine/worker/tenant_binding.py:28",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "low",
+      "title": "Four concurrent pwsh children, each now living up to 300s, in a 512MB / 1 CPU container",
+      "location": "docker-compose.yml:226",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "high",
+      "title": "Batched PowerShell collapses N x 120s of per-operation budget into a single 120s client timeout, and the 300s server budget is unreachable",
+      "location": "engine/collectors/powershell_client.py:232 (with :327 and :440); engine/powershell/service/executor.py:423",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "medium",
+      "title": "build_batch_script under-compensates ConvertTo-Json depth by one level, so batched evidence truncates earlier than the serial path did",
+      "location": "engine/powershell/service/executor.py:284",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "low",
+      "title": "cloud_only_admins / admin_license_footprint: the two-pass split changes which exception surfaces, turning a retryable transport failure into a non-retryable one",
+      "location": "engine/collectors/entra/roles/cloud_only_admins.py:70 and admin_license_footprint.py:87",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "low",
+      "title": "mailboxes: per-mailbox alignment now depends on UPN uniqueness rather than position, and zip can silently shorten the enrichment",
+      "location": "engine/collectors/exchange/mailbox/mailboxes.py:59",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "high",
+      "title": "A single failed terminal read strands the scan detail page on \"Running\" forever, because the ETag is committed before the work it gates",
+      "location": "frontend/src/pages/Scans/ScanDetailPage.tsx:199 (etag commit) and :209 (terminal full read)",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "medium",
+      "title": "usePoll forks a second poll chain whenever the tab becomes visible while a request is in flight - overlapping ticks and a permanently doubled request rate",
+      "location": "frontend/src/hooks/usePoll.ts:97-105 (onVisibility) with :76 (tick clears `timer` before awaiting) and :72/:94 (schedule overwrites `timer` without clearing)",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "medium",
+      "title": "_summary_etag omits dispatch_count and deadline_at, which the summary reports and the dispatcher mutates on their own - a genuine false 304",
+      "location": "backend-api/app/api/v1/scans.py:86-102 (the digest tuple) vs :673-676 (the fields the summary returns)",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "medium",
+      "title": "The detail page renders fresh counts over a control list frozen at page load: the header says 40 passed while every row below it says PENDING",
+      "location": "frontend/src/pages/Scans/ScanDetailPage.tsx:218-220 (counts-only merge) and :405-407 (the list rendered from scan.results)",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "low",
+      "title": "The result page and X-Total-Count that Phase 9 adds have no consumer anywhere in the repository, and no test exercises them",
+      "location": "backend-api/app/api/v1/scans.py:687-732; frontend/src/api/client.ts:562-574",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "low",
+      "title": "The 304, the ETag response header and X-Total-Count are absent from the OpenAPI schema the repo now generates its typed client from",
+      "location": "backend-api/app/api/v1/scans.py:580 (@router.get decorator, no `responses=`); tools/frontend/generate_api_types.py:148-159",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "low",
+      "title": "The summary validator carries no resource identity, and the client's ETag ref is never reset when the scan id changes",
+      "location": "backend-api/app/api/v1/scans.py:103-106; frontend/src/pages/Scans/ScanDetailPage.tsx:145 (summaryEtag ref) with :186-224 (pollSummary keyed on scanId)",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "low",
+      "title": "GET /scans/{id} now validates every result row three times per request and materialises the policy_source text it is about to discard",
+      "location": "backend-api/app/api/v1/scans.py:502-505 and :61-74",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "high",
+      "title": "PERF-03 \"bounded per-item collector concurrency\" is not verified by any test: all four collectors can be reverted to a strictly serial loop and the entire engine suite stays green",
+      "location": "/Users/clupa/Documents/projects/autoaudit/AutoAudit-phase-9/engine/tests/test_phase9_concurrency.py:158",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "high",
+      "title": "PERF-02 pooled Graph transport: the one assertion that names pooling is dead code, and removing pooling entirely leaves all 30 transport tests green",
+      "location": "/Users/clupa/Documents/projects/autoaudit/AutoAudit-phase-9/engine/tests/test_phase9_graph_transport.py:83",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "high",
+      "title": "tools/perf/scan_load_report.py: two of the seven rows it prints as Phase 9 savings are measurement-order artifacts whose sign flips when the two topologies are swapped",
+      "location": "/Users/clupa/Documents/projects/autoaudit/AutoAudit-phase-9/tools/perf/scan_load_report.py:250",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "medium",
+      "title": "The load report's per_control column does not model the pre-Phase-9 engine, so the PowerShell-session delta it prints understates and mislabels the batching saving",
+      "location": "/Users/clupa/Documents/projects/autoaudit/AutoAudit-phase-9/tools/perf/scan_load_report.py:232",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "medium",
+      "title": "Result pagination is an unreachable feature chain: the backend parameters have no test, and the typed client wrapper has no call site",
+      "location": "/Users/clupa/Documents/projects/autoaudit/AutoAudit-phase-9/backend-api/tests/test_phase9_scan_polling.py:264",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "medium",
+      "title": "The frontend conditional-GET client is the only untested link in the \"conditional summary polling\" chain, and every test that exercises the poll mocks it away",
+      "location": "/Users/clupa/Documents/projects/autoaudit/AutoAudit-phase-9/frontend/src/api/client.ts:534",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "medium",
+      "title": "Two pre-existing \"stops polling\" tests were left watching getScan after Phase 9 moved the poll target to getScanSummary, so they no longer detect continued polling",
+      "location": "/Users/clupa/Documents/projects/autoaudit/AutoAudit-phase-9/frontend/src/pages/Scans/ScanDetailPage.test.tsx:263",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "medium",
+      "title": "The summary ETag is built from a hand-maintained field list that already omits a field the summary publishes (dispatch_count), and the test that claims to cover this is a six-case hardcoded parametrize",
+      "location": "/Users/clupa/Documents/projects/autoaudit/AutoAudit-phase-9/backend-api/app/api/v1/scans.py:77",
+      "refuter_reasons_recorded": 2
+    },
+    {
+      "severity": "medium",
+      "title": "Phase 5's \"every client execution path validates before I/O\" gate was not widened to the three new PowerShell batch entry points, and the batched Docker path has no test at all",
+      "location": "/Users/clupa/Documents/projects/autoaudit/AutoAudit-phase-9/engine/tests/test_phase5_powershell_boundary.py:366",
+      "refuter_reasons_recorded": 0
+    },
+    {
+      "severity": "low",
+      "title": "Vacuous, proxy and self-describing assertions in the new Phase 9 tests",
+      "location": "/Users/clupa/Documents/projects/autoaudit/AutoAudit-phase-9/tools/tests/test_phase9_load_report.py:35",
+      "refuter_reasons_recorded": 0
+    },
+    {
+      "severity": "low",
+      "title": "A pre-existing integration assertion was loosened from equality to set membership, so it now passes under either dispatch shape",
+      "location": "/Users/clupa/Documents/projects/autoaudit/AutoAudit-phase-9/engine/tests/test_phase3_migrated_integration.py:167",
+      "refuter_reasons_recorded": 0
+    }
+  ],
+  "incomplete_verification": {
+    "why": "12 of the 120 agents hit a session limit (resets 02:20 Australia/Melbourne), so three findings received zero refuter verdicts and the script's survival rule classified them as refuted.",
+    "findings": [
+      "Phase 5's \"every client execution path validates before I/O\" gate was not widened to the three new PowerShell batch entry points, and the batched Docker path has no test at all",
+      "Vacuous, proxy and self-describing assertions in the new Phase 9 tests",
+      "A pre-existing integration assertion was loosened from equality to set membership, so it now passes under either dispatch shape"
+    ],
+    "adjudication": "All three were adjudicated by hand and all three were real; all three are fixed (the Phase 5 validates-before-I/O gate widened to the batch entry points, the vacuous no-tenant assertion in the load-harness test replaced with a socket-level one, and the loosened integration assertion tightened back to an exact expectation)."
+  }
+}

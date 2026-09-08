@@ -1,0 +1,141 @@
+{
+  "phase": 8,
+  "date": "2026-09-06",
+  "timezone": "Australia/Melbourne",
+  "status": "local engineering implemented; external acceptance pending",
+  "base_commit": "8736fcb93565dcc1e1a60a06392a879f5a585335",
+  "prerequisite": "complete Phase 7 working source, 895 files, digests in phase-7-snapshot.json",
+  "branch": "fix/soc2-phase-8-coverage-expansion",
+  "upstream_main": "bba14810f558190ee5221017c11864d300f8078a",
+  "migration_head": "a3f5c1d90b47",
+  "environment": {
+    "OPA_BINARY": "<scratchpad>/opa (1.20.2, installed via tools/ci/install_opa.py)",
+    "MIGRATION_TEST_ADMIN_URL": "postgresql://postgres@127.0.0.1:55438/postgres",
+    "AUTOAUDIT_REQUIRE_INTEGRATION": "1",
+    "postgresql": "16.14, disposable local cluster, exercised at timezone=UTC AND timezone=Australia/Melbourne",
+    "frontend_node": "24.20.0"
+  },
+  "baseline_reproduced": {
+    "note": "Phase 7's recorded results were reproduced in this worktree before any Phase 8 change.",
+    "engine": "1375 passed, 1 skipped, 11 xfailed",
+    "backend_and_tools": "453 passed",
+    "opa_test": "550/550",
+    "opa_check_strict": "clean"
+  },
+  "checks": [
+    {
+      "command": "uv run --frozen --project engine --extra dev python -m pytest engine/tests -q",
+      "result": "1764 passed, 1 skipped, 11 xfailed",
+      "baseline": "1375 passed, 1 skipped, 11 xfailed"
+    },
+    {
+      "command": "uv run --frozen --project backend-api --extra dev --extra evidence python -m pytest backend-api/tests tools/tests -q",
+      "result": "588 passed",
+      "baseline": "453 passed"
+    },
+    {
+      "command": "$OPA_BINARY test engine/policies engine/tests",
+      "result": "582/582",
+      "baseline": "550/550"
+    },
+    {
+      "command": "$OPA_BINARY check --strict engine/policies",
+      "result": "clean, exit 0",
+      "note": "covers engine/policies/candidate/ as well as the benchmark tree"
+    },
+    {
+      "command": "python3 tools/docs/generate_control_status.py --check",
+      "result": "4 control status document(s) match metadata."
+    },
+    {
+      "command": "python3 tools/policies/promote_candidate.py --check",
+      "result": "3 candidate policy file(s) verified and unreachable by any scan."
+    },
+    {
+      "command": "python3 tools/policies/promote_candidate.py --apply 3.2.2 --live-validation-evidence /nonexistent",
+      "result": "REFUSED: live validation evidence file not found; exit 1"
+    },
+    {
+      "command": "python3 tools/policies/promote_candidate.py --apply 3.2.2 --live-validation-evidence <an existing file>",
+      "result": "REFUSED: control 3.2.2 has unresolved blocking gates: live_tenant_validation, licensed_v6_procedure, grc_rationale_review, worker_client_wiring, readiness_call_site_wiring, policy_review_reason_code; exit 1"
+    },
+    {
+      "command": "uvx --from bandit==1.8.6 bandit -q -r backend-api/app",
+      "result": "clean at all severities, exit 0"
+    },
+    {
+      "command": "uvx --from bandit==1.8.6 bandit -q -r backend-api/tests -s B101 -f txt",
+      "result": "clean, exit 0"
+    },
+    {
+      "command": "npm exec --yes --package=node@24 -- npm --prefix frontend run typecheck",
+      "result": "clean"
+    },
+    {
+      "command": "npm exec --yes --package=node@24 -- npm --prefix frontend test",
+      "result": "26 files, 243 tests passed",
+      "baseline": "243 passed"
+    },
+    {
+      "command": "npm exec --yes --package=node@24 -- npm --prefix frontend run lint",
+      "result": "9 warnings, all pre-existing and unchanged from Phase 7"
+    },
+    {
+      "command": "npm exec --yes --package=node@24 -- npm --prefix frontend run build",
+      "result": "built successfully"
+    },
+    {
+      "command": "git diff --check",
+      "result": "clean"
+    },
+    {
+      "command": "uvx pre-commit run --files <the 74 Phase 8 code/config files>",
+      "result": "8/8 hooks passed, no file modified",
+      "note": "detect-secrets requires .secrets.baseline to be staged; it was staged for the run and unstaged afterwards, leaving the worktree fully unstaged as in every prior phase."
+    }
+  ],
+  "non_utc_verification": {
+    "why": "Phase 8 computes drift on scan finalisation, so a lifecycle that cannot publish on a non-UTC database server means the phase's own feature never fires.",
+    "method": "the disposable cluster's postgresql.conf timezone was set to Australia/Melbourne and reloaded; both suites re-run in full",
+    "before_phase8": "backend-api/tests/test_phase4_worker_contract.py FAILED with 'IndexError: pop from empty list' (the dispatcher published nothing); PASSED on UTC",
+    "after_phase8": {
+      "engine": "1764 passed, 1 skipped, 11 xfailed - identical to the UTC result",
+      "backend_and_tools": "588 passed - identical to the UTC result",
+      "test_phase4_worker_contract": "1 passed",
+      "note": "Correcting the eleven comparison sites was NOT sufficient on its own: the two naive columns those comparisons read (scan_dispatch.available_at, scan.last_progress_at) still defaulted to a bare now(), which PostgreSQL converts using the server TimeZone, so a new dispatch row was stamped ahead of the UTC clock it is compared against. Both defaults were corrected too."
+    }
+  },
+  "independent_review": {
+    "codex": "UNAVAILABLE. Rate-limited until 2026-09-07 12:38; the same limit Phase 7 recorded. No Codex review was performed for any Phase 8 stream.",
+    "substitute": "Gemini (Antigravity CLI, gemini-3.5-flash) reviewed engine/worker/factprint.py and engine/powershell/service/executor.py.",
+    "substitute_outcome": "5 candidate defects returned. 2 confirmed and fixed (cross-tenant digest comparability; canonical_sorted never called on the digest path). 1 confirmed low and fixed by documentation of key-decoding precedence. 2 adjudicated as not defects and recorded with reasoning: plaintext observed_value is a deliberate, D05-permitted design decision, and the empty-collection path yields indeterminate rather than a false verdict.",
+    "in_session": "A six-dimension adversarial review of the landed code was run with three independent refuters per finding.",
+    "honest_limitation": "This substitution is weaker than the standing Codex instruction. Phase 7's integration work also went un-reviewed for the same reason; this phase should get an independent review before merge."
+  },
+  "not_run": [
+    "Live Microsoft 365 tenant validation of any kind. No tenant was contacted. The Compliance transport has never authenticated.",
+    "Live Security & Compliance PowerShell execution: Connect-IPPSSession has not been run by this build.",
+    "tools/ci/container_smoke.py and any running-container exercise of the new Compose overlay.",
+    "actionlint: Phase 8 adds and edits no GitHub workflow file."
+  ],
+  "remediation": {
+    "why": "A six-dimension adversarial review of the code that actually landed, with independent refuters per finding, produced 34 findings against a fully green suite. The suite passing was never the question; what it did not catch was.",
+    "fixed": [
+      "CRITICAL verify_remediation accepted a run that never compared the finding's axis or its control as proof of remediation. Now requires the axis comparable AND the control absent from controls_skipped. Two regression tests, both confirmed failing without the fix.",
+      "CRITICAL POST /v1/drift/runs enqueued worker.tasks.evaluate_drift, which no worker registered; the endpoint answered 202 and the task was discarded. Task registered; a contract test now reads the literal name from the backend source and asserts the worker registers it.",
+      "HIGH Neither create_connection nor update_connection persisted the Purview binding, so the whole Wave A chain was unreachable from the API. 28 tests now cover create, update, half-binding rejection and clearing as a pair.",
+      "HIGH engine/worker/tasks.py never passed the Purview binding to PowerShellClient; a promoted compliance control would have failed request validation before reaching the tenant.",
+      "HIGH Drift never fired on the retry-exhausted finalisation path, so whether a scan was compared depended on which control finished last. The test that encoded this bug was corrected and split.",
+      "HIGH Rotating DRIFT_FACT_HMAC_KEY manufactured a configuration-changed event for every declared fact against an untouched tenant. A rotation is now an honest comparability break (fingerprint_key_rotated).",
+      "HIGH member_digests and member_tokens were sorted independently and so were not parallel arrays; set-member events could name the wrong value.",
+      "HIGH CIS 3.2.2 used an existential quantifier where the audit applies steps 4 and 5 to every returned policy, and returned a determinate FALSE for E3 tenants outside its E5-only profile.",
+      "MEDIUM promote_candidate.py was single-use and could never succeed on the shipped metadata formatting. The edit is now surgical (four lines changed, all other bytes preserved) and the full three-candidate sequence was exercised end to end.",
+      "LOW coverage_gained carried severity_basis 'coverage_loss'.",
+      "Found while fixing the above: drift_baseline.key_id existed in neither the migration nor the ORM model, so the column did not exist in the database and the rotation guard would have been dead code."
+    ],
+    "recorded_not_fixed": [
+      "drift_notification.thread_key is the unkeyed event_key and baseline_id is on the same row, so a holder of only that table can brute-force which control and fact a thread concerns. Fix specified in the handoff; not attempted because it threads through ~10 call sites and a half-applied change would be worse.",
+      "SKIP_PROJECTION_CHANGED can never fire: projection_id derives only from collector_id with no version bump, so a changed FieldSpec would compare incompatible shapes instead of skipping."
+    ]
+  }
+}

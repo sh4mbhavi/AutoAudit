@@ -1,0 +1,128 @@
+{
+  "phase": 9,
+  "date": "2026-09-06",
+  "timezone": "Australia/Melbourne",
+  "status": "local engineering implemented; external acceptance pending",
+  "base_commit": "8736fcb93565dcc1e1a60a06392a879f5a585335",
+  "prerequisite": "complete Phase 8 working source, 943 files, digests in phase-8-snapshot.json",
+  "branch": "fix/soc2-phase-9-performance",
+  "upstream_main": "bfb8edd44414683ac4adcde3ab79d4520a0a00a3",
+  "upstream_main_at_phase_8": "bba14810f558190ee5221017c11864d300f8078a",
+  "migration_head": "b9d4e17c6a52",
+  "environment": {
+    "OPA_BINARY": "<scratchpad>/opa (1.20.2, digest-verified copy of the reviewed release)",
+    "MIGRATION_TEST_ADMIN_URL": "postgresql://postgres@127.0.0.1:55439/postgres",
+    "AUTOAUDIT_REQUIRE_INTEGRATION": "1",
+    "postgresql": "16.14, disposable local cluster, exercised at timezone=UTC AND timezone=Australia/Melbourne",
+    "frontend_node": "24.20.0 (via npm exec --package=node@24; the .nvmrc version CI uses)"
+  },
+  "baseline_reproduced": {
+    "note": "Phase 8's recorded results were reproduced in this worktree before any Phase 9 change.",
+    "engine": "1764 passed, 1 skipped, 11 xfailed",
+    "backend_and_tools": "588 passed",
+    "opa_test": "582/582",
+    "opa_check_strict": "clean"
+  },
+  "checks": [
+    {
+      "command": "uv run --frozen --project engine --extra dev python -m pytest engine/tests -q",
+      "result": "1914 passed, 1 skipped, 11 xfailed",
+      "baseline": "1764 passed, 1 skipped, 11 xfailed"
+    },
+    {
+      "command": "uv run --frozen --project backend-api --extra dev --extra evidence python -m pytest backend-api/tests tools/tests -q",
+      "result": "639 passed",
+      "baseline": "588 passed"
+    },
+    {
+      "command": "$OPA_BINARY test engine/policies engine/tests",
+      "result": "582/582",
+      "baseline": "582/582",
+      "note": "Phase 9 adds and edits no Rego."
+    },
+    {
+      "command": "$OPA_BINARY check --strict engine/policies",
+      "result": "clean, exit 0"
+    },
+    {
+      "command": "python3 tools/docs/generate_control_status.py --check",
+      "result": "4 control status document(s) match metadata."
+    },
+    {
+      "command": "python3 tools/policies/promote_candidate.py --check",
+      "result": "3 candidate policy file(s) verified and unreachable by any scan.",
+      "note": "Phase 8's promotion gate is untouched; the three candidates are still blocked."
+    },
+    {
+      "command": "uv run --frozen --project backend-api --extra dev --extra evidence python tools/frontend/generate_api_types.py --check",
+      "result": "frontend/src/api/generated/scans.ts matches the backend OpenAPI schema.",
+      "note": "New Phase 9 gate, wired into .github/workflows/ci.backend-api.yml."
+    },
+    {
+      "command": "npm exec --package=node@24 -- npm --prefix frontend run typecheck",
+      "result": "clean"
+    },
+    {
+      "command": "npm exec --package=node@24 -- npm --prefix frontend test",
+      "result": "27 files, 262 tests passed",
+      "baseline": "26 files, 243 tests passed"
+    },
+    {
+      "command": "npm exec --package=node@24 -- npm --prefix frontend run lint",
+      "result": "9 warnings, all pre-existing and unchanged from Phase 8"
+    },
+    {
+      "command": "npm exec --package=node@24 -- npm --prefix frontend run build",
+      "result": "built successfully"
+    },
+    {
+      "command": "uvx --from bandit==1.8.6 bandit -q -r backend-api/app",
+      "result": "clean at all severities, exit 0"
+    },
+    {
+      "command": "uvx --from bandit==1.8.6 bandit -q -r backend-api/tests -s B101 -f txt",
+      "result": "clean, exit 0"
+    },
+    {
+      "command": "git diff --check",
+      "result": "clean"
+    },
+    {
+      "command": "uvx pre-commit run --files <the 66 Phase 9 code/config files>",
+      "result": "8/8 hooks passed, no file modified",
+      "note": "detect-secrets requires .secrets.baseline to be staged; it was staged for the run and unstaged afterwards, leaving the worktree fully unstaged as in every prior phase. The only baseline change is a line-number refresh for engine/tests/test_phase5_powershell_boundary.py: no new file carries a detected secret."
+    }
+  ],
+  "non_utc_verification": {
+    "why": "Phase 8 established this as a required check after the Phase 6 non-UTC dispatcher defect. Phase 9 changes the dispatcher's SQL, so it has to be re-established, not inherited.",
+    "method": "the disposable cluster's postgresql.conf timezone was set to Australia/Melbourne and reloaded; both suites re-run in full, with the final code",
+    "engine": "1914 passed, 1 skipped, 11 xfailed - identical to the UTC result",
+    "backend_and_tools": "639 passed - identical to the UTC result",
+    "note": "Every new timestamp comparison Phase 9 adds is pinned to (now() AT TIME ZONE 'UTC') like the ones it sits beside; the migration adds no datetime column."
+  },
+  "load_measurement": {
+    "harness": "tools/perf/scan_load_report.py",
+    "live_tenant": false,
+    "honest_limitation": "No tenant was contacted. These are exact counts of what the engine WOULD issue against a synthetic tenant, not latency measured against Microsoft. Both columns run the CURRENT collectors, so only the execution topology differs; the pre-Phase-9 PowerShell session count is modelled as one session per reviewed operation, which is exactly what the old code did.",
+    "recorded_run": "docs/compliance/phase-9/load-report.json, --tenant-size 25",
+    "collector_executions": "69 -> 43 (-26)",
+    "graph_requests": "86 -> 72 (-14)",
+    "powershell_sessions_pre_phase9_shape_vs_phase9": "58 -> 23 (-35)",
+    "excluded": "2 of 43 collectors reject the synthetic tenant's shape outright (entra.governance.pim_role_policies, entra.groups.groups, plus entra.roles.admin_license_footprint at larger sizes). They are named in the report and excluded from BOTH columns equally, so the delta stays meaningful and the exclusion is visible."
+  },
+  "independent_review": {
+    "codex": "UNAVAILABLE. Rate-limited until 2026-09-07 12:38 -- the same limit Phase 7 and Phase 8 recorded. This is the THIRD consecutive phase with no Codex review, and it should not be treated as normal.",
+    "substitute": "Gemini (Antigravity CLI, gemini-3.5-flash) reviewed engine/worker/tasks.py and engine/worker/dispatcher.py, the two highest-risk modules.",
+    "substitute_outcome": "4 candidate defects returned; 3 confirmed and fixed (a group failure took the FIRST member's reason code and retryability; a rolling deploy could create both a per-result row and a collection row for the same control; a pending non-ready control could become an unpublishable collection row that failed the whole scan on retry exhaustion). The fourth, a message inconsistency between the single-control and grouped shapes, was confirmed as a narrower defect and fixed: the terminal message said 'after retries' even when no retry was attempted.",
+    "in_session": "A six-dimension adversarial review of the landed code, with three independent refuters per finding on distinct lenses. 38 candidate findings; see review.json.",
+    "verification_gap": "12 of 120 agents hit a session limit, leaving three findings with zero refuter verdicts. All three were adjudicated by hand, all three were real, and all three are fixed.",
+    "honest_limitation": "This substitution is weaker than the standing Codex instruction. Phase 7's and Phase 8's integration work also went un-reviewed for the same reason. Three phases is a pattern, not an accident, and this stack should get an independent human or Codex review before merge."
+  },
+  "not_run": [
+    "Any live Microsoft 365 tenant load test. No tenant was contacted, no token was acquired against Microsoft, and no PowerShell session was opened against a tenant. The before/after numbers are request counts against a synthetic transport.",
+    "tools/ci/container_smoke.py and any running-container exercise. The Compose files gained a POWERSHELL_MAX_CONCURRENCY setting that was not exercised against a running container.",
+    "actionlint: Phase 9 edits one workflow file (.github/workflows/ci.backend-api.yml, one added step) and adds none.",
+    "Any measurement of real Graph or PowerShell latency, throttling behaviour, or worker memory under load.",
+    "Integration with current upstream main. This branch is still Phase 1 8736fcb9 plus the Phase 8 working source."
+  ]
+}

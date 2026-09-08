@@ -25,14 +25,20 @@ services:
   # =============================================================================
 
   db:
-    image: postgres:17
+    # Phase 10 aligned this major version with everything else. It was one major
+    # ahead, while CI (ci.backend-api.yml, ci.engine.yml),
+    # tools/ci/container_smoke.py and docker-compose.production.yml all agreed on
+    # this one -- so developers exercised a version nothing else tested, and a
+    # pg_dump taken from a developer's volume would not have restored into
+    # production. tools/ops/backup.py now refuses a cross-major restore outright.
+    image: postgres:16
     container_name: autoaudit-db
     environment:
       POSTGRES_USER: autoaudit
-      POSTGRES_PASSWORD: autoaudit_dev_password  # pragma: allowlist secret
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
       POSTGRES_DB: autoaudit
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -46,7 +52,7 @@ services:
     image: redis:alpine
     container_name: autoaudit-redis
     ports:
-      - "6379:6379"
+      - "127.0.0.1:6379:6379"
     volumes:
       - redis_data:/data
     healthcheck:
@@ -66,7 +72,7 @@ services:
     container_name: autoaudit-opa
     command: ["run", "--server", "--addr=0.0.0.0:8181", "--log-level=info", "/policies"]
     ports:
-      - "8181:8181"
+      - "127.0.0.1:8181:8181"
     volumes:
       - ./engine/policies:/policies:ro
     healthcheck:
@@ -101,16 +107,16 @@ services:
       - APP_ENV=dev
 
       # Required: Database connection (PostgreSQL with asyncpg driver)
-      - DATABASE_URL=postgresql+asyncpg://autoaudit:autoaudit_dev_password@db:5432/autoaudit
+      - DATABASE_URL=postgresql+asyncpg://autoaudit:${POSTGRES_PASSWORD:?required}@db:5432/autoaudit
 
       # Required: JWT signing key (CHANGE IN PRODUCTION)
-      - SECRET_KEY=dev-secret-key-change-in-production
+      - SECRET_KEY=${SECRET_KEY:?required}
 
       # Public URLs (used for OAuth redirects)
       - BACKEND_PUBLIC_URL=http://localhost:8000
       - FRONTEND_URL=http://localhost:3000
 
-      # Google OAuth (SSO) 
+      # Google OAuth (SSO)
       - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID:-}
       - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET:-}
 
@@ -123,13 +129,26 @@ services:
       # Required: Fernet encryption key for M365 credentials at rest
       # Generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
       # This will be passed in with a secret provider in production. This is for local use only.
-      - ENCRYPTION_KEY=Ps-HiS3ww5QzQPc_Mdu5-JyA_jCNbdFHMdiwWSlAfgM=
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:?required}
+      # Retired decrypt-only keys; empty in the steady state. Present so a
+      # rotation can be rehearsed here before it is performed in production.
+      - ENCRYPTION_KEY_DECRYPT_ONLY=${ENCRYPTION_KEY_DECRYPT_ONLY:-}
 
       # Optional: Path to policies directory (default: /app/policies)
       - POLICIES_DIR=/app/policies
+
+      # Versioned SOC 2 crosswalk mappings, read-only like the policies.
+      - MAPPINGS_DIR=/app/mappings
+
+      # Evidence objects live on a named volume, not the container's writable
+      # layer, so uploads and generated reports survive a restart and can be
+      # retention-managed. Phase 7 keeps them out of the source tree.
+      - EVIDENCE_STORAGE_DIR=/app/evidence-store
     volumes:
       # Mount policies directory for benchmark/control discovery API
       - ./engine/policies:/app/policies:ro
+      - ./engine/mappings:/app/mappings:ro
+      - evidence_store:/app/evidence-store
     ports:
       - "8000:8000"
     depends_on:
@@ -141,11 +160,13 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
-  worker:
+  worker: &worker-runtime
     profiles: ["worker", "all"]
     build:
       context: ./engine
       dockerfile: Dockerfile
+      args:
+        ENGINE_GIT_SHA: ${ENGINE_GIT_SHA:-}
     deploy:
       resources:
         limits:
@@ -154,20 +175,24 @@ services:
     container_name: autoaudit-worker
     environment:
       # Required: Database connection (PostgreSQL - worker uses sync driver)
-      - DATABASE_URL=postgresql+asyncpg://autoaudit:autoaudit_dev_password@db:5432/autoaudit
+      - DATABASE_URL=postgresql+asyncpg://autoaudit:${POSTGRES_PASSWORD:?required}@db:5432/autoaudit
 
       # Required: Redis URL for Celery broker
       - REDIS_URL=redis://redis:6379
 
-      # Required: OPA server URL for policy evaluation
-      - OPA_URL=http://opa:8181
+      # Phase 3 evaluates retained policy snapshots with the image's pinned OPA CLI.
+      - OPA_BINARY=/usr/local/bin/opa
 
       # Required: Must match ENCRYPTION_KEY in backend-api for credential decryption
-      - ENCRYPTION_KEY=Ps-HiS3ww5QzQPc_Mdu5-JyA_jCNbdFHMdiwWSlAfgM=
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY:?required}
+      # Retired decrypt-only keys; empty in the steady state. Present so a
+      # rotation can be rehearsed here before it is performed in production.
+      - ENCRYPTION_KEY_DECRYPT_ONLY=${ENCRYPTION_KEY_DECRYPT_ONLY:-}
 
       # Optional: PowerShell service URL for Exchange/Teams cmdlets
       # When set, worker uses HTTP service instead of spawning Docker containers
       - POWERSHELL_SERVICE_URL=http://powershell-service:8001
+      - POWERSHELL_SERVICE_SECRET=${POWERSHELL_SERVICE_SECRET:?required}
     volumes:
       - ./engine:/app/engine:ro
       - ./engine/policies:/app/policies:ro
@@ -179,6 +204,14 @@ services:
       opa:
         condition: service_healthy
     restart: unless-stopped
+
+  dispatcher:
+    <<: *worker-runtime
+    container_name: autoaudit-dispatcher
+    command: [python, -m, worker.dispatcher]
+    depends_on:
+      db:
+        condition: service_healthy
 
   frontend:
     profiles: ["backend-dev", "all"]
@@ -213,9 +246,17 @@ services:
     build:
       context: ./engine/powershell
       dockerfile: Dockerfile
+    environment:
+      - POWERSHELL_SERVICE_SECRET=${POWERSHELL_SERVICE_SECRET:?required}
+      # Phase 9: how many pwsh children this replica may run at once.
+      # Set explicitly rather than left on the default of 4: this
+      # container is limited to 512M/1.0 CPU above, and each child loads
+      # ExchangeOnlineManagement and now lives for up to a 300-second
+      # batch. Raise it only together with the memory limit.
+      - POWERSHELL_MAX_CONCURRENCY=${POWERSHELL_MAX_CONCURRENCY:-2}
     container_name: autoaudit-powershell-service
     ports:
-      - "8001:8001"
+      - "127.0.0.1:8001:8001"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8001/health"]
       interval: 10s
@@ -226,3 +267,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  evidence_store:

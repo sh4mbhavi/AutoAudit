@@ -1,0 +1,471 @@
+{
+ "phase": 11,
+ "date": "2026-09-07",
+ "repository": "Hardhat-Enterprises/AutoAudit",
+ "upstream_main": "75b919d00b7f7b8743425740b21d79ec7b09cd6f",
+ "upstream_main_at_phase_10": "0a074cc9255029e3c337c6fba6db5964ba89e7c9",
+ "upstream_main_at_phase_9": "bfb8edd44414683ac4adcde3ab79d4520a0a00a3",
+ "stack_base": "8736fcb93565dcc1e1a60a06392a879f5a585335",
+ "commits_upstream_ahead_of_stack_base": 96,
+ "open_pull_requests": 38,
+ "open_pull_requests_overlapping_this_stack": 28,
+ "files_this_stack_changes": 478,
+ "contended_files": [
+  {
+   "path": "engine/policies/cis/microsoft-365-foundations/v6.0.0/metadata.json",
+   "open_prs": 9
+  },
+  {
+   "path": "engine/collectors/registry.py",
+   "open_prs": 7
+  },
+  {
+   "path": "backend-api/app/main.py",
+   "open_prs": 5
+  },
+  {
+   "path": "backend-api/app/api/v1/auth.py",
+   "open_prs": 3
+  },
+  {
+   "path": ".github/workflows/ci.backend-api.yml",
+   "open_prs": 3
+  },
+  {
+   "path": "backend-api/pyproject.toml",
+   "open_prs": 3
+  },
+  {
+   "path": "frontend/src/pages/Auth/components/SignupFormPanel.tsx",
+   "open_prs": 3
+  },
+  {
+   "path": "backend-api/app/core/users.py",
+   "open_prs": 2
+  },
+  {
+   "path": "engine/collectors/sharepoint/pnp/tenant.py",
+   "open_prs": 2
+  },
+  {
+   "path": "backend-api/tests/conftest.py",
+   "open_prs": 2
+  },
+  {
+   "path": "backend-api/uv.lock",
+   "open_prs": 2
+  },
+  {
+   "path": "engine/worker/tasks.py",
+   "open_prs": 2
+  },
+  {
+   "path": ".github/workflows/ci.engine.yml",
+   "open_prs": 2
+  },
+  {
+   "path": ".github/workflows/ci.frontend.yml",
+   "open_prs": 2
+  },
+  {
+   "path": "backend-api/app/api/v1/evidence.py",
+   "open_prs": 2
+  },
+  {
+   "path": "frontend/src/pages/AccountPage.test.tsx",
+   "open_prs": 2
+  },
+  {
+   "path": "frontend/src/pages/AccountPage.tsx",
+   "open_prs": 2
+  },
+  {
+   "path": "frontend/src/pages/Auth/components/SignupFormPanel.test.tsx",
+   "open_prs": 2
+  },
+  {
+   "path": "security/evidence_ui/app.py",
+   "open_prs": 2
+  },
+  {
+   "path": "backend-api/app/api/v1/router.py",
+   "open_prs": 2
+  },
+  {
+   "path": "README.md",
+   "open_prs": 2
+  }
+ ],
+ "pull_requests": [
+  {
+   "number": 350,
+   "title": "Feature/google sso auth",
+   "draft": false,
+   "mergeable": "CONFLICTING",
+   "head": "feature/google-sso-auth",
+   "updated": "2026-09-05",
+   "overlapping_files": [
+    ".github/workflows/ci.backend-api.yml",
+    ".github/workflows/ci.engine.yml",
+    ".github/workflows/ci.frontend.yml",
+    "backend-api/app/api/v1/auth.py",
+    "backend-api/app/api/v1/evidence.py",
+    "backend-api/app/core/users.py",
+    "backend-api/app/main.py",
+    "backend-api/pyproject.toml",
+    "backend-api/tests/conftest.py",
+    "backend-api/tests/test_manual_verification.py",
+    "backend-api/uv.lock",
+    "engine/collectors/entra/devices/asr_rules.py",
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/metadata.json",
+    "frontend/package-lock.json",
+    "frontend/src/api/client.test.ts",
+    "frontend/src/api/client.ts",
+    "frontend/src/context/AuthContext.test.tsx",
+    "frontend/src/context/AuthContext.tsx",
+    "frontend/src/pages/AccountPage.test.tsx",
+    "frontend/src/pages/AccountPage.tsx",
+    "frontend/src/pages/Admin/ContactAdminPage.test.tsx",
+    "frontend/src/pages/Auth/GoogleCallbackPage.test.tsx",
+    "frontend/src/pages/Auth/GoogleCallbackPage.tsx",
+    "frontend/src/pages/Auth/LoginPage.test.tsx",
+    "frontend/src/pages/Auth/components/SignInPanel.test.tsx",
+    "frontend/src/pages/Auth/components/SignupFormPanel.test.tsx",
+    "frontend/src/pages/Auth/components/SignupFormPanel.tsx",
+    "security/evidence_ui/app.py"
+   ]
+  },
+  {
+   "number": 266,
+   "title": "Implement HPA/KEDA scaling and prove with demo runs on synthetic load endpoints, with J6",
+   "draft": true,
+   "mergeable": "UNKNOWN",
+   "head": "feature/proof-of-concept-deployment-26t1-imp-dha-003",
+   "updated": "2026-09-03",
+   "overlapping_files": [
+    ".gitignore",
+    "backend-api/Dockerfile",
+    "backend-api/app/core/config.py",
+    "backend-api/app/main.py",
+    "backend-api/app/services/celery_client.py",
+    "backend-api/pyproject.toml",
+    "docker-compose.yml",
+    "engine/powershell/service/executor.py",
+    "engine/powershell/service/main.py",
+    "engine/pyproject.toml",
+    "engine/uv.lock",
+    "engine/worker/celery_app.py",
+    "engine/worker/tasks.py"
+   ]
+  },
+  {
+   "number": 296,
+   "title": "Feature/fix ci starter task 1",
+   "draft": false,
+   "mergeable": "UNKNOWN",
+   "head": "feature/fix-ci-starter-task-1",
+   "updated": "2026-09-06",
+   "overlapping_files": [
+    "backend-api/app/api/v1/auth.py",
+    "backend-api/app/api/v1/evidence.py",
+    "frontend/src/pages/AccountPage.test.tsx",
+    "frontend/src/pages/AccountPage.tsx",
+    "frontend/src/pages/Auth/components/SignupFormPanel.test.tsx",
+    "frontend/src/pages/Auth/components/SignupFormPanel.tsx",
+    "security/evidence_ui/app.py"
+   ]
+  },
+  {
+   "number": 313,
+   "title": "ci: Add top-level permissions block to workflows missing explicit permissions",
+   "draft": false,
+   "mergeable": "UNKNOWN",
+   "head": "feature/workflow-permissions-hardening",
+   "updated": "2026-09-03",
+   "overlapping_files": [
+    ".github/workflows/ci.backend-api.yml",
+    ".github/workflows/ci.engine.yml",
+    ".github/workflows/ci.frontend.yml",
+    ".github/workflows/ci.validate-alerts.yml",
+    ".github/workflows/ops.short-test.yml"
+   ]
+  },
+  {
+   "number": 355,
+   "title": "Improve backend-api test coverage and CI coverage check",
+   "draft": false,
+   "mergeable": "MERGEABLE",
+   "head": "26T2-BE-PG-003-PeibingGu",
+   "updated": "2026-09-06",
+   "overlapping_files": [
+    ".github/workflows/ci.backend-api.yml",
+    "backend-api/pyproject.toml",
+    "backend-api/tests/conftest.py",
+    "backend-api/uv.lock"
+   ]
+  },
+  {
+   "number": 320,
+   "title": "feature: add new collector to compliance engine | priority account protection | CIS 2.4.1 and 2.4.2",
+   "draft": false,
+   "mergeable": "UNKNOWN",
+   "head": "feature/cis2.4.1_priority_account_protection_collector",
+   "updated": "2026-09-06",
+   "overlapping_files": [
+    "docs/engine/policies/cis/microsoft-365-foundations/v6.0.0/controls.md",
+    "engine/collectors/registry.py",
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/metadata.json"
+   ]
+  },
+  {
+   "number": 363,
+   "title": "Feature/be jn 002 password reset flow",
+   "draft": true,
+   "mergeable": "UNKNOWN",
+   "head": "feature/BE-JN-002-password-reset-flow",
+   "updated": "2026-09-06",
+   "overlapping_files": [
+    "backend-api/app/api/v1/auth.py",
+    "backend-api/app/core/users.py"
+   ]
+  },
+  {
+   "number": 361,
+   "title": "feat(api): add database readiness health check",
+   "draft": false,
+   "mergeable": "CONFLICTING",
+   "head": "feature/backend-readiness-check",
+   "updated": "2026-09-06",
+   "overlapping_files": [
+    "backend-api/app/core/health.py",
+    "backend-api/app/main.py"
+   ]
+  },
+  {
+   "number": 357,
+   "title": "Completing task 7.2.6",
+   "draft": false,
+   "mergeable": "UNKNOWN",
+   "head": "Feature/7.2.6_restrict_external_domain_sharing",
+   "updated": "2026-09-05",
+   "overlapping_files": [
+    "engine/collectors/sharepoint/pnp/tenant.py",
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/metadata.json"
+   ]
+  },
+  {
+   "number": 351,
+   "title": "Add multi-client collector support for controls needing multiple APIs",
+   "draft": false,
+   "mergeable": "UNKNOWN",
+   "head": "feature/26T2-SEC-EG-005-multi-api",
+   "updated": "2026-09-02",
+   "overlapping_files": [
+    "engine/tests/test_wiring.py",
+    "engine/worker/tasks.py"
+   ]
+  },
+  {
+   "number": 348,
+   "title": "Implement CIS 7.2.1 - Modern authentication required for SharePoint",
+   "draft": false,
+   "mergeable": "CONFLICTING",
+   "head": "feature/7-2-1-modern-auth-sharepoint",
+   "updated": "2026-09-06",
+   "overlapping_files": [
+    "engine/collectors/sharepoint/pnp/tenant.py",
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/metadata.json"
+   ]
+  },
+  {
+   "number": 342,
+   "title": "feat(2.4.2): add Priority account Strict protection preset collector \u2026",
+   "draft": false,
+   "mergeable": "MERGEABLE",
+   "head": "feature/cis-2-4-2-priority-account-strict-protection",
+   "updated": "2026-09-03",
+   "overlapping_files": [
+    "engine/collectors/registry.py",
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/metadata.json"
+   ]
+  },
+  {
+   "number": 318,
+   "title": "feat(api): add security response headers",
+   "draft": false,
+   "mergeable": "CONFLICTING",
+   "head": "security-response-headers",
+   "updated": "2026-09-04",
+   "overlapping_files": [
+    "backend-api/app/core/middleware.py",
+    "backend-api/app/main.py"
+   ]
+  },
+  {
+   "number": 300,
+   "title": "Feat/add version endpoint",
+   "draft": false,
+   "mergeable": "UNKNOWN",
+   "head": "feat/add-version-endpoint",
+   "updated": "2026-09-03",
+   "overlapping_files": [
+    "README.md",
+    "backend-api/app/main.py"
+   ]
+  },
+  {
+   "number": 364,
+   "title": "feat(engine): add E8 UAH Settings Catalog support",
+   "draft": true,
+   "mergeable": "UNKNOWN",
+   "head": "feature/e8-uah-configuration-policies",
+   "updated": "2026-09-06",
+   "overlapping_files": [
+    "engine/collectors/entra/devices/configuration_policies.py"
+   ]
+  },
+  {
+   "number": 359,
+   "title": "Implement CIS 7.2.11 SharePoint default link permission",
+   "draft": false,
+   "mergeable": "UNKNOWN",
+   "head": "feature/cis-7-2-11-default-link-permission",
+   "updated": "2026-09-05",
+   "overlapping_files": [
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/metadata.json"
+   ]
+  },
+  {
+   "number": 354,
+   "title": "Add E8-PA-1.1 Patch Applications control",
+   "draft": false,
+   "mergeable": "UNKNOWN",
+   "head": "feature/26T2-SEC-EG-003_e8-pa-1-1",
+   "updated": "2026-09-03",
+   "overlapping_files": [
+    "engine/collectors/registry.py"
+   ]
+  },
+  {
+   "number": 349,
+   "title": "Add E8-POS-1.1 Operating System Patching control",
+   "draft": false,
+   "mergeable": "MERGEABLE",
+   "head": "feature/e8-pos-1-1-patch-operating-systems",
+   "updated": "2026-09-06",
+   "overlapping_files": [
+    "engine/collectors/registry.py"
+   ]
+  },
+  {
+   "number": 347,
+   "title": "Add E8-BAK-1.1 Regular Backups control",
+   "draft": false,
+   "mergeable": "MERGEABLE",
+   "head": "feature/26T2-SEC-EG-001_e8-bak-1-1",
+   "updated": "2026-09-05",
+   "overlapping_files": [
+    "engine/collectors/registry.py"
+   ]
+  },
+  {
+   "number": 334,
+   "title": "feat(tooling): add SharePoint collector support to test_collector.py",
+   "draft": false,
+   "mergeable": "UNKNOWN",
+   "head": "feature/sharepoint-collector-test-support",
+   "updated": "2026-09-05",
+   "overlapping_files": [
+    "engine/collectors/registry.py"
+   ]
+  },
+  {
+   "number": 328,
+   "title": "feat(cis): automate control 5.1.4.2 device limit",
+   "draft": false,
+   "mergeable": "UNKNOWN",
+   "head": "karan/5.1.4.2-device-limit",
+   "updated": "2026-09-05",
+   "overlapping_files": [
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/metadata.json"
+   ]
+  },
+  {
+   "number": 325,
+   "title": "WIP: Control 7.2.4 - implement SharePoint collector, fix registry and\u2026",
+   "draft": true,
+   "mergeable": "UNKNOWN",
+   "head": "feature/control-7.2.4-onedrive-sharing",
+   "updated": "2026-09-04",
+   "overlapping_files": [
+    "engine/collectors/registry.py"
+   ]
+  },
+  {
+   "number": 317,
+   "title": "feat: implement Azure connection CRUD endpoints",
+   "draft": false,
+   "mergeable": "UNKNOWN",
+   "head": "feat/azure-connection-endpoints",
+   "updated": "2026-09-03",
+   "overlapping_files": [
+    "backend-api/app/api/v1/router.py"
+   ]
+  },
+  {
+   "number": 307,
+   "title": "Implement CIS 1.3.6 Customer Lockbox policy and tests",
+   "draft": false,
+   "mergeable": "UNKNOWN",
+   "head": "feature/cis-1-3-6-customer-lockbox",
+   "updated": "2026-09-06",
+   "overlapping_files": [
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/metadata.json"
+   ]
+  },
+  {
+   "number": 301,
+   "title": "feat: implement AWS connection CRUD endpoints",
+   "draft": false,
+   "mergeable": "UNKNOWN",
+   "head": "feat/aws-connection-endpoints",
+   "updated": "2026-09-06",
+   "overlapping_files": [
+    "backend-api/app/api/v1/router.py"
+   ]
+  },
+  {
+   "number": 299,
+   "title": "Fix/cleanup init files",
+   "draft": false,
+   "mergeable": "UNKNOWN",
+   "head": "fix/cleanup-init-files",
+   "updated": "2026-09-03",
+   "overlapping_files": [
+    "README.md"
+   ]
+  },
+  {
+   "number": 297,
+   "title": "Implement CIS control 1.3.3: Ensure 'External sharing' of calendars is not available",
+   "draft": false,
+   "mergeable": "UNKNOWN",
+   "head": "feature/cis-1.3.3-external-calendar-sharing",
+   "updated": "2026-09-03",
+   "overlapping_files": [
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/metadata.json"
+   ]
+  },
+  {
+   "number": 234,
+   "title": "feature/ email validation to signup form",
+   "draft": false,
+   "mergeable": "UNKNOWN",
+   "head": "feature/email-validation",
+   "updated": "2026-08-19",
+   "overlapping_files": [
+    "frontend/src/pages/Auth/components/SignupFormPanel.tsx"
+   ]
+  }
+ ]
+}

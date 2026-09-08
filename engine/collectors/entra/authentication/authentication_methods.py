@@ -49,7 +49,8 @@ class AuthenticationMethodsDataCollector(BaseDataCollector):
             method = methods_by_type.get(method_id)
             if method is None:
                 return None
-            return method.get("state") == "enabled"
+            state = method.get("state")
+            return state == "enabled" if state in ("enabled", "disabled") else None
 
         return {
             "authentication_methods_policy": policy,
@@ -59,7 +60,9 @@ class AuthenticationMethodsDataCollector(BaseDataCollector):
             "voice_enabled": is_method_enabled("Voice"),
             "email_otp_enabled": is_method_enabled("Email"),
             "fido2_enabled": is_method_enabled("Fido2"),
-            "microsoft_authenticator_enabled": is_method_enabled("MicrosoftAuthenticator"),
+            "microsoft_authenticator_enabled": is_method_enabled(
+                "MicrosoftAuthenticator"
+            ),
             "temporary_access_pass_enabled": is_method_enabled("TemporaryAccessPass"),
             "software_oath_enabled": is_method_enabled("SoftwareOath"),
             "hardware_oath_enabled": is_method_enabled("HardwareOath"),

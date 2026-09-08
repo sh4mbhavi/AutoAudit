@@ -1,0 +1,228 @@
+{
+  "phase": 9,
+  "date": "2026-09-06",
+  "timezone": "Australia/Melbourne",
+  "baseline": "Phase 8 working source, 943 files, digests in phase-8-snapshot.json",
+  "counts": {
+    "added": 27,
+    "modified": 46,
+    "removed": 0,
+    "total_changed": 73
+  },
+  "added": {
+    "backend-api/alembic/versions/b9d4e17c6a52_phase9_collection_dispatch.py": "756fe728347da43755e22062d9f22320fc7362f4324459fe2c7a932b2dcdbbb1",
+    "backend-api/app/schemas/provenance.py": "c8c28e77022e02451dec553d8619c4d885abb9d629234c8c9ba3918543a4e669",
+    "backend-api/tests/test_phase9_migration.py": "841749942fde097196286463ef1d90abbd5f0ca95fdfa3eeb8944d036da39295",
+    "backend-api/tests/test_phase9_scan_polling.py": "aa2b86649cab04d9c13ecc1dff1671177956b98d40548b652ab3132670a35586",
+    "docs/compliance/phase-9/collisions.json": "0049b5c08e365904c2effec060f322f4815a0e3306951d321f06ede2b7cc0279",
+    "docs/compliance/phase-9/coordination-review.md": "f4f8fae0c81f7fd81619e8c036caa6df032c618635f55654623278050994acd9",
+    "docs/compliance/phase-9/load-report.json": "0bb695519dfb89c0998b07062ceb079e9e4da2af1d19f500eb26b310913ba01d",
+    "docs/compliance/phase-9/phase-8-snapshot.json": "acc00e277c8107c653e5e7d71eb5338dae1a2a0f2987573650eb8dd2582a9f7b",
+    "docs/compliance/phase-9/phase-9-changes.json": "0b019ddf6fc200f2609657de3821215b0a3be9b71d520e2659bfa5723659936e",
+    "docs/compliance/phase-9/pull-requests-2026-09-06.json": "f0076213fb8d363a1d1c4aea30582ca3fe5dcec7eb9e78351a881cf9300d9b8e",
+    "docs/compliance/phase-9/review.json": "85ed9666ff975876951525f4d9a72b6d94ecf7cffbc27bec77eed80fd790f622",
+    "engine/collectors/concurrency.py": "a6f50d3fed4dc5e8b275ceed2933410edebd7c337dc5824b138b668ebf6df939",
+    "engine/collectors/routing.py": "c0ba11f11c6b93d51cf5d49da09b70e500b5c28fa9ef9471e72778f27cea3a86",
+    "engine/tests/test_phase9_concurrency.py": "dfc191734d626646f417d61cda8bca4ef9e0d024deb16d61d497a0759bca215b",
+    "engine/tests/test_phase9_dispatch_recovery.py": "615c4660567416021ee1e88717576267cc66049156d04f782f3c233c677dd74d",
+    "engine/tests/test_phase9_execution_plan.py": "2d45d966ee84aed1c6b1e957c67c87c4915a6ecb5942b84fb46667151070db35",
+    "engine/tests/test_phase9_graph_transport.py": "a62970f3f5a4ff3b3cf1a2517ab65c3ec3746b36ecc56b7062ae3c57237410fb",
+    "engine/tests/test_phase9_powershell_batch.py": "a18d436952657c5cdc849b458d146d06806c9eef4282e34c3fc434f6e30dc648",
+    "engine/worker/execution_plan.py": "c9f8e12ab3da718b80dded6339fdb8ac10faa15b278d76762454a734726b731a",
+    "frontend/src/api/generated/scans.ts": "34f6c6482548bd4ab74e897a5825b8f382d56d02c6489656a698b642eb510182",
+    "frontend/src/hooks/usePoll.test.ts": "fb5eea78b9b4715344ae5e82e0f0aa9089ce4f12fa2893c90275bcba7c67e9e8",
+    "frontend/src/hooks/usePoll.ts": "efea109ad258d87f13cd29a083f38188c38bf5471d7f0a6acb119ea89403f889",
+    "frontend/src/test/partial.ts": "e8027dee24822fb557f0c1704625e2c3100b29d9fb567828aa7ba566a50030ab",
+    "tools/frontend/generate_api_types.py": "4e83558c0a5797d831f4693ba5f750c2cd8ea90f04fe0be69bd929f1fc848ad9",
+    "tools/perf/scan_load_report.py": "6c5cd061fc9c9f466733e43cceb60fd80317d3025620d95e18b9beb0231d17f7",
+    "tools/tests/test_phase9_api_types.py": "92be2d7827aec69461dba2aa19b6dede3f19fb5fa73e4e3ba4291059e522ab90",
+    "tools/tests/test_phase9_load_report.py": "4a62359a7c81285878997c7604079b8a4a56fbf20616d3037b1d5edb32a46a7b"
+  },
+  "modified": {
+    ".github/workflows/ci.backend-api.yml": {
+      "before": "7538de19648f5b8973d500d3c099375e4dc0cd9814f3c4a137720bb83a4e921e",
+      "after": "5b7159e86a9da2b789803a3b37638696c1e75ddc391664b393ca015bad688163"
+    },
+    ".secrets.baseline": {
+      "before": "8285585926df3d71e18cfab89c40de46ff24a1d481ce53ef6648c8855917fe1a",
+      "after": "97a37d1a6a6040f391c6384be8ee144ee54e8c24eede793f415dc0eddc30f958"
+    },
+    "backend-api/app/api/v1/scans.py": {
+      "before": "84981185ba07adcb855f0cce7206b747abdb650565c9747cd3560307729b190c",
+      "after": "f83213af699f3fc564458f9ca2560d40f963aa56b5bfe5dca8bfbeddf8f68424"
+    },
+    "backend-api/app/api/v1/soc2.py": {
+      "before": "dfd95af1a731ec3bf60a66d0b099ebfcf916583ce15b1bdca52c87729a675790",
+      "after": "3e232cd5fa1a4bc50e205feeeeaac7ac48a68ae87f8db2be583393077ad0a060"
+    },
+    "backend-api/app/main.py": {
+      "before": "ad95f8a1838ad4ef54578356d66ca695d244af04df50ddf3aca50078e8ede39d",
+      "after": "e9e428b63d3b5bb6153b91b422d8a3fa21d61cb8d438eeba5ee0f1e4b9947f8a"
+    },
+    "backend-api/app/models/scan_dispatch.py": {
+      "before": "6ffb3419cf92e0535a10e6a6f128316764db9a5809f30e005ad04155a660c47f",
+      "after": "81d2e3bb38208944345c6e5000d378227ca8ffd82d3aaf1d09ce045d00fa1d40"
+    },
+    "backend-api/tests/test_phase4_worker_contract.py": {
+      "before": "6a536157a2718d55e7868ed5502397ce6ba45ed947b7c9a7df34ba051b92c042",
+      "after": "61847ef4aa407f44507d48ff9179716c7eef1488ce07ec100d17dd6bddc5494f"
+    },
+    "backend-api/tests/test_phase6_lifecycle.py": {
+      "before": "1a80dee71a8d2a18f71d52fe8e52c7f512faa3c6726db576fcbcb7d9fed87a05",
+      "after": "3587fdcab5e90c5403c5655c327f2bfbb5ae2e804c1721dee7e7826c0cebe6fa"
+    },
+    "backend-api/tests/test_phase8_migration.py": {
+      "before": "5212aa8b1abb563fa31b0d5cd8f8106df39b3529fb340f48a69049b1a8527b21",
+      "after": "ede349f819432804de73405933aaff288bb06b35cb6471f0b19027a1ca6cc4f7"
+    },
+    "docker-compose.production.yml": {
+      "before": "db4ae2a617cc7d11374a76b334714196c1be0d1b20076d7356b78d6cd937f3b0",
+      "after": "dcc77ae548e35bea52b4026eea9c0581a18a05110890ef1df35b1826393a1eb1"
+    },
+    "docker-compose.yml": {
+      "before": "52233d6d1a7e322f68c569b7cc00c958495bf356c8ca38e26114ff07e5965fdd",
+      "after": "7695fe030a47596e3320f0000aa74083efe3e35223f03ef0f02ac13a5c99de08"
+    },
+    "engine/collectors/entra/devices/asr_rules.py": {
+      "before": "38561bb8156d8f21173d1f35fd766d91107d0b5b2ec8578e17ba95cc47d5ba33",
+      "after": "7f5a49d9f44f5379832c275afce31c9dd3bb53f4d903bc2edea1ec5e9647d8f3"
+    },
+    "engine/collectors/entra/devices/configuration_policies.py": {
+      "before": "58208b44951ac37adb7cf6e99f2bd162ecf133b57e1c1817bb62049a36e268b8",
+      "after": "9edfd49490cc4c2744750bb00ddedbae136872017104cd3e0427c5c640e9617a"
+    },
+    "engine/collectors/entra/roles/admin_license_footprint.py": {
+      "before": "f9972c2a64c659a893dc5da806c51997d256cc88f42c30353a4a40d25685b3eb",
+      "after": "a0ce21ed9dd5142e0ce41ab653fbac6a02b8496927eb86763e6b255c899ffafd"
+    },
+    "engine/collectors/entra/roles/cloud_only_admins.py": {
+      "before": "1a80f5a02ea1fa1e164fa2828ddac0efd25ba03bf26c80f11403d9080b001139",
+      "after": "48932d13e22033b6771a04d0c8aedebe78b35ac7c010c1579d86fb826f502a77"
+    },
+    "engine/collectors/exchange/mailbox/mailboxes.py": {
+      "before": "1e07c47ee9c6989d11d3dd8dd85343291b9d1cd6e65a8f58e0b24d5832e85d75",
+      "after": "80f1da59d238df93b01c273016db0cd91506c0048e8bd28148099bcf93c49803"
+    },
+    "engine/collectors/exchange/protection/anti_phish_policy.py": {
+      "before": "346b10b7f8ac5eacdc02563b8e19f5224d9827736e225c66aeb8f19c3f7b3fa5",
+      "after": "61c7d7a029d0d9ab1177daf2a895f1630951040a94ec319583f439a83f6d2b22"
+    },
+    "engine/collectors/graph_client.py": {
+      "before": "b835486acb70c2afd6a97e72e63dfcbd25bfb4a497d5a5e3c0e250392b91b92e",
+      "after": "ac874904956d2af5f54e3495e740429dec699bd7bd975fc8c6ae180e9351d90c"
+    },
+    "engine/collectors/powershell_client.py": {
+      "before": "e276f54c3cdff05f2b4d7917a91e04d15346ea0d51c75902d1122b9f7f144dfd",
+      "after": "2f8d4f83269f439a21c96ac7496f8a116f27d090e618cd513491e8b7a2f719db"
+    },
+    "engine/powershell/service/executor.py": {
+      "before": "ebabc728e4df808dedc83251335bb7cf7b54764133d5f8dde0d3f1efca185d17",
+      "after": "4de92dcf51e52cda8893dae799f07774866300cbaf927f07d673b0aa1e6158c9"
+    },
+    "engine/powershell/service/main.py": {
+      "before": "4fbda2da4a8bc5e54ecdb956d130c9bd042e161aa6751e6611f8df2de0feeadb",
+      "after": "caaab331db304313c1ee10e8b468ebf6ad8caca5081cdee22dee605565d1b748"
+    },
+    "engine/powershell/service/operations.py": {
+      "before": "b5d29866ec6aafa0ff0062a2712d47edd1d38652a48bd74a8c05760f547e448d",
+      "after": "395f2423a876df53915dc0d483058cd19652b47a0781885ef7ff5880c51388e5"
+    },
+    "engine/powershell/service/schemas.py": {
+      "before": "ee084f8b3bf0934e443e1e7fc5574d693ef4470dd86d7a9af85ba6ff60fdb075",
+      "after": "020c8f3106ecbe49acbe2a6fdc4a9f356614ac7560f7b5e0800454f5febc5eb8"
+    },
+    "engine/tests/test_crosswalk_semantic_coverage.py": {
+      "before": "55278c4d64cf2d1f3afcf53d12bd317bc68a626c32d7769460798b591539e3e2",
+      "after": "3f750844c7516497a31a302dd651e4b9401488fe33a1df054e668bdefc2326e9"
+    },
+    "engine/tests/test_phase3_migrated_integration.py": {
+      "before": "b9e9d3707c601b51a34512aeb9eb52841bcfcbd1435b4c49343b8295df17b8ee",
+      "after": "d130477cc53b1844957782f966b901ac7d74a655703aea1480f3e1f2a340f0b1"
+    },
+    "engine/tests/test_phase4_collector_contracts.py": {
+      "before": "c030a99b6ea667e50a3900a43a1616f11c83d594e61c1dba12a87858ee748faa",
+      "after": "d6e3508410a3577b5f067357906cbb19a4722eccdc57c08f36d9b3914ae32a48"
+    },
+    "engine/tests/test_phase5_powershell_boundary.py": {
+      "before": "45d310bf2344e7bbbbe134bad35728ee1af1e8bb21707c9ce855ce484ee389db",
+      "after": "9050475d67d3ac24b44b2ee0d341dff1b2ab09411d458fd019e4ca22939f338f"
+    },
+    "engine/tests/test_phase5_task_boundary.py": {
+      "before": "3eadd8a64403b8ed95ec4e3971a08543939b67f561a2edee3fabf463314a4462",
+      "after": "4dcbbd65c705c4f5a57df8c0208652aac31e2a6ff50c8160b16b0a6441a94ab1"
+    },
+    "engine/tests/test_phase6_correlation.py": {
+      "before": "1c03d448c5807001ba554a0918b0dfcc3ad2c2371200b0bb350be4832e26dc20",
+      "after": "7a18eb71e227d480058636bb7dc1a58de5852932a587086bf31588633e3c5309"
+    },
+    "engine/tests/test_phase6_lifecycle.py": {
+      "before": "be38d79b1a3d9a6cdbdf23230d3f9a8ea8bf914092436b4425e0a15279c8564a",
+      "after": "b82a168c31466c57b87db99abdc5d283283be01aeb5a7473e8323502e707ef0a"
+    },
+    "engine/tests/test_phase8_factprint.py": {
+      "before": "039e9f7b83d5d29a22445de598e942914cd471da57d058940b96f256ae61157b",
+      "after": "44aab4c115a36ce50260340533ea1cd6207f87dfaa2db5e499a0be1138d3514b"
+    },
+    "engine/worker/config.py": {
+      "before": "360a110ecec31a1e68da8a46ad19347554f649e840ffde55b956abf2eb0b9a5d",
+      "after": "d6f3c9f38d6b3e780afec7ea7ea0f1bcdeba5ea041fb2708d4ef558f25f4c2c6"
+    },
+    "engine/worker/db.py": {
+      "before": "708ac3b31b9986f62b935c8174a198296efb6e963b0a2fd02e3156e1ec6b6021",
+      "after": "e2c7b1a5b7c93df3de38667ae486042b33c88d479221637ca7b63779917af8ad"
+    },
+    "engine/worker/dispatcher.py": {
+      "before": "41d654d8ce33822455c2b45c0e4133423e129cc301f704ea8b0348607e7846cc",
+      "after": "7c31e5db21befb9b3c36f4bdd0b5d568ee9250c3e386aa24fdd1d91e736eeac6"
+    },
+    "engine/worker/lifecycle.py": {
+      "before": "9ca48b0f83b6647f38d93fd75bdb077d19d89a060e9c661ba737723b9386135c",
+      "after": "bef74a7cbb75749816d9ea47fb07d28c132f39f8457aa412b389f55c8d7b381e"
+    },
+    "engine/worker/tasks.py": {
+      "before": "5f1f2bf262264c4741e74f22f4a8d53381b644fd4fe021ad82a13777100349e5",
+      "after": "0ccb7837ae4c44a3ffdff79914ab1237f4834175fcf8bc20bcdd69d9eac68d57"
+    },
+    "engine/worker/tenant_binding.py": {
+      "before": "e0527da0719990171a37289b7d109821d0a115ad96a86b2931bd56521a813714",
+      "after": "15d537fb70f7ce93320731a4ca010b07e45dce0a55efcceb59df3cfc3d4b4d02"
+    },
+    "env.example": {
+      "before": "fb6cdfd3846a9746b233a5a1f04978175bf3b8350178ea65a6cb300fae1df098",
+      "after": "7d0bbe54888804aae41ece93ad7e21a04eef38568cde59d2ce237f371388ea66"
+    },
+    "frontend/src/api/client.test.ts": {
+      "before": "b741bbf69612e682b9fc746a14e55431cb08419e85eb0691b8004e6c17cc7392",
+      "after": "5b595fc9a0c4b59b45d5a73a22d52dee7b294a5895e4bb305b4e2ae24975980c"
+    },
+    "frontend/src/api/client.ts": {
+      "before": "ed5eb2e759744b0c38fa1fde4aa4d741b674bb27f035fb0575aee21b6a6cccfa",
+      "after": "7f193671b2d2de8ab505974c4aa94047fa2492bbb48ba6fbe2862e1555b7cae4"
+    },
+    "frontend/src/pages/Dashboard.test.tsx": {
+      "before": "e7cc7daf0cce7fcb16ca22ffc1885cd370b8604c314ef1c175972672d2e6213b",
+      "after": "6b4d5d6e64a941142e2c782f2844f04524ab7d05310bb417683b797d9029d785"
+    },
+    "frontend/src/pages/Scans/ScanDetailPage.test.tsx": {
+      "before": "c316115869cba62db769b99fda6cb851a954127737e9b55fb6e1843a0bd953c0",
+      "after": "8e617e900f9884851c7bed6e33ac30a26fbaacdb643d76c4c06f5ef2a1fb4448"
+    },
+    "frontend/src/pages/Scans/ScanDetailPage.tsx": {
+      "before": "ad6ed34205788073edb6f7d9bcd470c246aef5b957b82ced4468792f01cdb61b",
+      "after": "bad6ba95d18d12c61c67da10ceea45801e03e782e2c2fd97484df422dbefd65e"
+    },
+    "frontend/src/pages/Scans/ScansPage.test.tsx": {
+      "before": "2b431119dc95a2f7b59f82b2978cc9c7ccb9a0ea62f65cf5f7b7dd700b2e08e8",
+      "after": "87af5f1ab22d0feb5edb0cfeb09018de7ef59417f74518326fd4e3ea13490f10"
+    },
+    "frontend/src/pages/Scans/ScansPage.tsx": {
+      "before": "1250c69c5b5e84dd648555abf35f3c3e746349ae64cece0fc60071f3751a3e67",
+      "after": "37f32cfa9c53c2864d51ab0af37e1bd585c69344a4805ab74b46cfa35f78c030"
+    },
+    "frontend/src/types/scan.ts": {
+      "before": "bf217174f0700d390dd767c19050d5b9e4c8b606714280d2984444c35f4a848e",
+      "after": "fdc58c1c4387689f8db13e515107c6a7290ffb4fc6a2089e58b98fe00ba00193"
+    }
+  },
+  "removed": []
+}

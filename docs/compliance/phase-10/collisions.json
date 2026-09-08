@@ -1,0 +1,122 @@
+{
+  "open_pull_requests": 43,
+  "collisions": [
+    {
+      "number": 361,
+      "title": "feat(api): add database readiness health check",
+      "branch": "feature/backend-readiness-check",
+      "updated": "2026-09-06T03:17:21Z",
+      "files": [
+        "backend-api/app/core/health.py",
+        "backend-api/app/main.py"
+      ]
+    },
+    {
+      "number": 358,
+      "title": "chore(backend): organize imports in main.py",
+      "branch": "chore/26t2-be-hg-003-sort-main-imports",
+      "updated": "2026-09-05T12:39:06Z",
+      "files": [
+        "backend-api/app/main.py"
+      ]
+    },
+    {
+      "number": 355,
+      "title": "Improve backend-api test coverage and CI coverage check",
+      "branch": "26T2-BE-PG-003-PeibingGu",
+      "updated": "2026-09-04T10:32:17Z",
+      "files": [
+        "backend-api/app/api/v1/evidence.py",
+        "backend-api/app/core/config.py",
+        "backend-api/pyproject.toml",
+        "backend-api/uv.lock"
+      ]
+    },
+    {
+      "number": 350,
+      "title": "Feature/google sso auth",
+      "branch": "feature/google-sso-auth",
+      "updated": "2026-09-05T12:43:08Z",
+      "files": [
+        ".github/workflows/ci.engine.yml",
+        "backend-api/app/api/v1/evidence.py",
+        "backend-api/app/main.py",
+        "backend-api/pyproject.toml",
+        "backend-api/uv.lock"
+      ]
+    },
+    {
+      "number": 318,
+      "title": "feat(api): add security response headers",
+      "branch": "security-response-headers",
+      "updated": "2026-09-04T10:17:05Z",
+      "files": [
+        "backend-api/app/core/middleware.py",
+        "backend-api/app/main.py"
+      ]
+    },
+    {
+      "number": 313,
+      "title": "ci: Add top-level permissions block to workflows missing explicit permissions",
+      "branch": "feature/workflow-permissions-hardening",
+      "updated": "2026-09-03T13:26:34Z",
+      "files": [
+        ".github/workflows/ci.engine.yml",
+        ".github/workflows/ci.validate-alerts.yml",
+        ".github/workflows/ops.short-test.yml"
+      ]
+    },
+    {
+      "number": 302,
+      "title": "feat(api): add readiness & health endpoint ",
+      "branch": "yifeng/add-readiness-endpoint",
+      "updated": "2026-09-06T12:54:10Z",
+      "files": [
+        "backend-api/app/main.py"
+      ]
+    },
+    {
+      "number": 300,
+      "title": "Feat/add version endpoint",
+      "branch": "feat/add-version-endpoint",
+      "updated": "2026-09-03T12:15:54Z",
+      "files": [
+        "README.md",
+        "backend-api/app/main.py"
+      ]
+    },
+    {
+      "number": 299,
+      "title": "Fix/cleanup init files",
+      "branch": "fix/cleanup-init-files",
+      "updated": "2026-09-03T11:47:51Z",
+      "files": [
+        "README.md"
+      ]
+    },
+    {
+      "number": 296,
+      "title": "Feature/fix ci starter task 1",
+      "branch": "feature/fix-ci-starter-task-1",
+      "updated": "2026-09-06T12:24:01Z",
+      "files": [
+        "backend-api/app/api/v1/evidence.py"
+      ]
+    },
+    {
+      "number": 266,
+      "title": "Implement HPA/KEDA scaling and prove with demo runs on synthetic load endpoints, with J6",
+      "branch": "feature/proof-of-concept-deployment-26t1-imp-dha-003",
+      "updated": "2026-09-03T11:18:55Z",
+      "files": [
+        ".gitignore",
+        "backend-api/app/core/config.py",
+        "backend-api/app/main.py",
+        "backend-api/pyproject.toml",
+        "docker-compose.yml",
+        "engine/pyproject.toml",
+        "engine/uv.lock"
+      ]
+    }
+  ]
+}

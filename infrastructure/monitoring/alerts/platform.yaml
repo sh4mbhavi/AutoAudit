@@ -1,0 +1,186 @@
+# AutoAudit platform alerts.
+#
+# Unlike application.yaml and scan_lifecycle.yaml, NOTHING in this file reads a
+# series AutoAudit emits. Every expression here needs a third-party exporter that
+# the deployment platform must provide:
+#
+#   node_cpu_seconds_total, node_memory_*, node_filesystem_*   node_exporter
+#   container_network_receive_bytes_total                      cAdvisor
+#   kube_pod_container_status_restarts_total                   kube-state-metrics
+#   kubelet_volume_stats_*                                     kubelet
+#
+# The last two exist only on Kubernetes. The only deployment descriptors in this
+# repository are docker-compose files, and no chart, manifest or IaC of any kind
+# is present -- so those two rules describe a platform that has not been selected,
+# let alone built. They are kept because they are correct for the AKS target the
+# monitoring README assumes, and are marked `platform: kubernetes` so a
+# non-Kubernetes deployment can drop them by label rather than by editing.
+#
+# tools/ci/check_alert_metrics.py permits these names only because they are
+# declared as external in tools/ci/external_metrics.json. Adding a new bare
+# metric name here without declaring it there fails the build, which is what
+# stops this file quietly growing more alerts nothing can fire.
+
+groups:
+- name: platform.node
+  interval: 30s
+
+  rules:
+
+  - alert: NodeCPUSaturation
+
+    expr: |
+      100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 90
+
+    for: 5m
+
+    labels:
+      severity: critical
+      team: devops
+      service: node-exporter
+      environment: production
+
+    annotations:
+
+      summary: "Critical: Node CPU saturation above 90%"
+
+      description: |
+        CPU idle time below 10% sustained for more than 5 minutes on node instance {{ $labels.instance }}.
+        This indicates potential CPU resource exhaustion, which may affect node performance.
+      runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#infrastructurenodecpusaturation"
+
+  - alert: PodRestartsHigh
+
+    expr: |
+      increase(kube_pod_container_status_restarts_total[10m]) > 3
+
+    for: 10m
+
+    labels:
+      platform: kubernetes
+      severity: warning
+      team: devops
+      service: kubelet
+      environment: production
+
+    annotations:
+
+      summary: "Warning: High pod container restarts"
+
+      description: |
+        More than three container restarts detected in the last 10 minutes for pod {{ $labels.pod }}.
+        Frequent restarts may indicate application instability or resource constraints.
+      runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#infrastructurepodrestartshigh"
+
+  - alert: DiskSpaceLow
+
+    expr: |
+      (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"}) * 100 < 15
+
+    for: 15m
+
+    labels:
+      severity: critical
+      team: devops
+      service: node-exporter
+      environment: production
+
+    annotations:
+
+      summary: "Critical: Disk space below 15% on root filesystem"
+
+      description: |
+        Available disk space on root filesystem is below 15% for more than 15 minutes on node {{ $labels.instance }}.
+        Immediate cleanup or capacity expansion is required to prevent service disruption.
+      runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#infrastructurediskspacelow"
+
+
+  - alert: ClusterStorageCapacityWarning
+
+    expr: |
+      (kubelet_volume_stats_available_bytes / kubelet_volume_stats_capacity_bytes) * 100 < 15
+
+    for: 10m
+
+    labels:
+      platform: kubernetes
+      severity: warning
+      team: infra
+      service: kubelet
+      environment: production
+
+    annotations:
+
+      summary: "Warning: Cluster storage capacity below 15%"
+
+      description: |
+        The available storage capacity has been below 15% for more than 10 minutes.
+        Monitor storage usage and plan capacity expansion or cleanup.
+
+      runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#resourceutilisationclusterstoragecapacitywarning"
+
+  - alert: NetworkBandwidthThreshold
+
+    expr: |
+      rate(container_network_receive_bytes_total[5m]) > 125000000
+
+    for: 5m
+
+    labels:
+      severity: warning
+      team: infra
+      service: network
+      environment: production
+
+    annotations:
+
+      summary: "Warning: High network bandwidth usage"
+
+      description: |
+        Network bandwidth usage exceeds 1Gbps for more than 5 minutes.
+        Investigate potential network congestion or abnormal traffic.
+      runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#resourceutilisationnetworkbandwidththreshold"
+
+  - alert: CPUUsageHigh
+
+    expr: |
+      100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100) > 85
+
+    for: 10m
+
+    labels:
+      severity: warning
+      team: infra
+      service: node-exporter
+      environment: production
+
+    annotations:
+
+      summary: "Warning: High CPU usage above 85%"
+
+      description: |
+        CPU usage has been above 85% for more than 10 minutes on node {{ $labels.instance }}.
+        Monitor workloads and consider scaling or optimisation.
+      runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#resourceutilisationcpuusagehigh"
+
+  - alert: MemoryUsageHigh
+
+    expr: |
+      (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes) * 100 < 15
+
+    for: 10m
+
+    labels:
+      severity: warning
+      team: infra
+      service: node-exporter
+      environment: production
+
+    annotations:
+
+      summary: "Warning: Low available memory below 15%"
+
+      description: |
+        Available memory is below 15% for more than 10 minutes on node {{ $labels.instance }}.
+        Investigate memory leaks or increase capacity.
+      runbook: "https://github.com/Hardhat-Enterprises/AutoAudit/blob/main/infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md#resourceutilisationmemoryusagehigh"

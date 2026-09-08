@@ -1,0 +1,196 @@
+{
+  "schema_version": "1.0.0",
+  "register_id": "soc2-common-criteria-organizational-register",
+  "register_version": "v1.0.0",
+  "status": "draft",
+  "purpose": "The organizational half of SOC 2 CC1-CC9: the controls that code and tenant configuration cannot evidence on their own. This register records the STRUCTURE those controls need -- owner, cadence, evidence, reviewer, retention -- and does not assert that any of them operates.",
+  "relationship_to_the_crosswalk": "Deliberately a separate artifact from engine/mappings/soc2/common-criteria/v1.0.0/mapping.json. That file's SHA-256 is pinned into every scan at creation and covered by the Phase 3 immutability trigger, so adding organizational fields to it would change the mapping digest of every future scan and desynchronise it from every historical scan's pinned snapshot. This register carries no rating and cannot influence one.",
+  "counted_in_automated_coverage": false,
+  "counted_in_automated_coverage_note": "Structural, not advisory. Organizational assurance must never enter the automated compliance or coverage arithmetic, which Phase 3 defined over selected CIS controls only. The same guarantee is expressed as a Literal[False] field in backend-api/app/schemas/soc2.py.",
+  "approval": {
+    "approved": false,
+    "reviewer_name": null,
+    "reviewer_role": null,
+    "approved_at": null,
+    "decision_reference": null,
+    "note": "No owner in this register is assigned, because none has been appointed. Phase 0 decisions D01-D10 remain unapproved drafts with no named owners, recorded identically in the Phase 7, 8 and 9 handoffs. Engineering has no authority to name a control owner, and a register populated with guessed owners would be worse than an empty one: it would read as accountability that does not exist."
+  },
+  "retention": {
+    "policy_version": "phase10-draft-1",
+    "note": "An engineering label bound to an unapproved policy, following the phase7-draft-1 and phase8-draft-1 precedent. Phase 0 decision D04 governs retention, states that it is not a legal minimum or an existing product commitment, and states that no automatic cleanup is authorized by it. Nothing enforces any period."
+  },
+  "operating_status_vocabulary": {
+    "not_designed": "No artifact and no procedure exists.",
+    "designed_not_operating": "An artifact exists in the repository that would evidence this control if it were run and reviewed on a cadence. No execution record exists.",
+    "operating": "Executed on its cadence with retained records and a named reviewer. NOTHING in this register is in this state, and nothing may be moved into it by an engineering change."
+  },
+  "criteria": [
+    {
+      "criterion": "CC1",
+      "title": "Control environment",
+      "configuration_coverage_classification": "Governance only",
+      "required_organizational_evidence": "Control owners, governance charter, board/management oversight, code of conduct, HR screening and termination, a responsibility matrix, and an assessment of physical controls inherited from the hosting provider.",
+      "cadence": "annual",
+      "owner": null,
+      "owner_status": "unassigned",
+      "owner_blocked_by": "D06 (control ownership and approval authority) is unapproved",
+      "reviewer": null,
+      "reviewer_status": "unassigned",
+      "operating_status": "not_designed",
+      "supporting_repository_artifacts": [],
+      "supporting_artifacts_note": "No repository artifact contributes to this criterion; it is entirely organizational.",
+      "retention_policy_version": "phase10-draft-1"
+    },
+    {
+      "criterion": "CC2",
+      "title": "Communication and information",
+      "configuration_coverage_classification": "Governance only",
+      "required_organizational_evidence": "Security policies, communication of roles, training records, customer and security communications, and documented change and incident notification procedures.",
+      "cadence": "annual",
+      "owner": null,
+      "owner_status": "unassigned",
+      "owner_blocked_by": "D06 (control ownership and approval authority) is unapproved",
+      "reviewer": null,
+      "reviewer_status": "unassigned",
+      "operating_status": "not_designed",
+      "supporting_repository_artifacts": [],
+      "supporting_artifacts_note": "No repository artifact contributes to this criterion; it is entirely organizational.",
+      "retention_policy_version": "phase10-draft-1"
+    },
+    {
+      "criterion": "CC3",
+      "title": "Risk assessment",
+      "configuration_coverage_classification": "Governance only",
+      "required_organizational_evidence": "A scoped risk register, annual and change-triggered risk assessments, fraud risk consideration, and recorded risk treatment, acceptance and review.",
+      "cadence": "annual",
+      "owner": null,
+      "owner_status": "unassigned",
+      "owner_blocked_by": "D06 (control ownership and approval authority) is unapproved",
+      "reviewer": null,
+      "reviewer_status": "unassigned",
+      "operating_status": "not_designed",
+      "supporting_repository_artifacts": [],
+      "supporting_artifacts_note": "No repository artifact contributes to this criterion; it is entirely organizational.",
+      "retention_policy_version": "phase10-draft-1"
+    },
+    {
+      "criterion": "CC4",
+      "title": "Monitoring activities",
+      "configuration_coverage_classification": "Governance; AutoAudit supports monitoring evidence",
+      "required_organizational_evidence": "Recurring control evaluations, a defined AutoAudit scan cadence, an exception and remediation workflow, and deficiency escalation with management review.",
+      "cadence": "quarterly",
+      "owner": null,
+      "owner_status": "unassigned",
+      "owner_blocked_by": "D06 (control ownership and approval authority) is unapproved",
+      "reviewer": null,
+      "reviewer_status": "unassigned",
+      "operating_status": "designed_not_operating",
+      "supporting_repository_artifacts": [
+        "infrastructure/monitoring/alerts/scan_lifecycle.yaml",
+        "engine/worker/metrics.py",
+        "tools/ops/retention_report.py"
+      ],
+      "supporting_artifacts_note": "These artifacts DESIGN part of this control. A workflow file is not a record that the workflow ran, and an alert rule is not a record that anyone responded. None of them is operating evidence.",
+      "retention_policy_version": "phase10-draft-1"
+    },
+    {
+      "criterion": "CC5",
+      "title": "Control activities",
+      "configuration_coverage_classification": "Mostly governance with a technology-control pocket",
+      "required_organizational_evidence": "A control catalogue naming owner, frequency, evidence, reviewer and approval, plus the technology-baseline selection and its residual-risk rationale.",
+      "cadence": "annual",
+      "owner": null,
+      "owner_status": "unassigned",
+      "owner_blocked_by": "D06 (control ownership and approval authority) is unapproved",
+      "reviewer": null,
+      "reviewer_status": "unassigned",
+      "operating_status": "not_designed",
+      "supporting_repository_artifacts": [],
+      "supporting_artifacts_note": "No repository artifact contributes to this criterion; it is entirely organizational.",
+      "retention_policy_version": "phase10-draft-1"
+    },
+    {
+      "criterion": "CC6",
+      "title": "Logical and physical access",
+      "configuration_coverage_classification": "Strong automated overlap; fully mapped in the crosswalk",
+      "required_organizational_evidence": "Asset inventory, joiner/mover/leaver records, access reviews, physical and provider inheritance, data classification, disposal, and endpoint/removable-media and encryption evidence.",
+      "cadence": "quarterly",
+      "owner": null,
+      "owner_status": "unassigned",
+      "owner_blocked_by": "D06 (control ownership and approval authority) is unapproved",
+      "reviewer": null,
+      "reviewer_status": "unassigned",
+      "operating_status": "designed_not_operating",
+      "supporting_repository_artifacts": [
+        "backend-api/app/core/sessions.py",
+        "backend-api/app/core/permissions.py",
+        "backend-api/app/services/encryption.py",
+        "tools/ops/rotate_encryption_key.py"
+      ],
+      "supporting_artifacts_note": "These artifacts DESIGN part of this control. A workflow file is not a record that the workflow ran, and an alert rule is not a record that anyone responded. None of them is operating evidence.",
+      "retention_policy_version": "phase10-draft-1"
+    },
+    {
+      "criterion": "CC7",
+      "title": "System operations",
+      "configuration_coverage_classification": "Strong monitoring/detection overlap; fully mapped in the crosswalk",
+      "required_organizational_evidence": "Incident response plan, severity model, on-call roles, SIEM and tool-health monitoring, tabletop exercises, incident records, postmortems and recovery tests.",
+      "cadence": "quarterly",
+      "owner": null,
+      "owner_status": "unassigned",
+      "owner_blocked_by": "D06 (control ownership and approval authority) is unapproved",
+      "reviewer": null,
+      "reviewer_status": "unassigned",
+      "operating_status": "designed_not_operating",
+      "supporting_repository_artifacts": [
+        "infrastructure/monitoring/alerts/application.yaml",
+        "infrastructure/monitoring/alerts/runbooks/RUNBOOKS.md",
+        "backend-api/app/core/health.py",
+        "docs/compliance/phase-6/lifecycle-runbook.md"
+      ],
+      "supporting_artifacts_note": "These artifacts DESIGN part of this control. A workflow file is not a record that the workflow ran, and an alert rule is not a record that anyone responded. None of them is operating evidence.",
+      "retention_policy_version": "phase10-draft-1"
+    },
+    {
+      "criterion": "CC8",
+      "title": "Change management",
+      "configuration_coverage_classification": "Partial M365 pocket; broader change management is organizational",
+      "required_organizational_evidence": "Required checks, review records, change tickets, segregation of duties, deployment approvals, rollback, emergency changes and migration evidence.",
+      "cadence": "quarterly",
+      "owner": null,
+      "owner_status": "unassigned",
+      "owner_blocked_by": "D06 (control ownership and approval authority) is unapproved",
+      "reviewer": null,
+      "reviewer_status": "unassigned",
+      "operating_status": "designed_not_operating",
+      "supporting_repository_artifacts": [
+        ".github/workflows/ci.backend-api.yml",
+        ".github/workflows/ci.engine.yml",
+        ".github/workflows/ci.supply-chain.yml",
+        ".github/CODEOWNERS",
+        "docs/compliance/phase-4/change-control.md"
+      ],
+      "supporting_artifacts_note": "These artifacts DESIGN part of this control. A workflow file is not a record that the workflow ran, and an alert rule is not a record that anyone responded. None of them is operating evidence.",
+      "retention_policy_version": "phase10-draft-1"
+    },
+    {
+      "criterion": "CC9",
+      "title": "Risk mitigation",
+      "configuration_coverage_classification": "Governance only",
+      "required_organizational_evidence": "BCP/DR plans, a vendor and subprocessor inventory, due diligence, contracts, annual reviews, concentration risk and disruption mitigation.",
+      "cadence": "annual",
+      "owner": null,
+      "owner_status": "unassigned",
+      "owner_blocked_by": "D06 (control ownership and approval authority) is unapproved",
+      "reviewer": null,
+      "reviewer_status": "unassigned",
+      "operating_status": "designed_not_operating",
+      "supporting_repository_artifacts": [
+        "tools/ops/backup.py",
+        "docs/compliance/phase-10/backup-and-recovery.md"
+      ],
+      "supporting_artifacts_note": "These artifacts DESIGN part of this control. A workflow file is not a record that the workflow ran, and an alert rule is not a record that anyone responded. None of them is operating evidence.",
+      "retention_policy_version": "phase10-draft-1"
+    }
+  ]
+}

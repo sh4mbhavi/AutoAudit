@@ -3,7 +3,11 @@ name: "Short Test Workflow"
 on:
   push:
     paths:
-      - ".github/workflows/short-test.yml"  # Only trigger when this file changes
+      # Phase 10: this named "short-test.yml", but the file is
+      # ops.short-test.yml, so the workflow could never trigger -- and it is
+      # the canary for ops.workflow-cleanup, meaning the cleanup behaviour
+      # had never been exercised by its own test.
+      - ".github/workflows/ops.short-test.yml"
 
 jobs:
   quick-job:

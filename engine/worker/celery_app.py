@@ -1,5 +1,7 @@
 """Celery application configuration for AutoAudit worker."""
 
+import ssl
+
 from celery import Celery
 
 from worker.config import settings
@@ -8,6 +10,9 @@ from worker.config import settings
 celery_app = Celery(
     "autoaudit",
     broker=settings.REDIS_URL,
+    broker_use_ssl={"ssl_cert_reqs": ssl.CERT_REQUIRED, "ssl_check_hostname": True}
+    if settings.REDIS_URL.startswith("rediss://")
+    else None,
     # No result backend - results are written directly to PostgreSQL
 )
 
@@ -21,9 +26,24 @@ celery_app.conf.update(
     timezone="UTC",
     enable_utc=True,
     # Task tracking
-    task_track_started=True,
+    task_track_started=False,
+    task_ignore_result=True,
+    task_store_errors_even_if_ignored=False,
+    task_send_sent_event=False,
+    worker_send_task_events=False,
+    result_expires=3600,
+    broker_transport_options={
+        "visibility_timeout": 3600,
+        "socket_connect_timeout": 5,
+        "socket_timeout": 5,
+        "retry_on_timeout": False,
+    },
     # Task routing
     task_default_queue="autoaudit",
+    # Bound a publisher outage while it holds the parent lifecycle lock.
+    broker_connection_timeout=5,
+    broker_pool_limit=10,
+    task_publish_retry=False,
     # Retry settings
     task_acks_late=True,
     task_reject_on_worker_lost=True,

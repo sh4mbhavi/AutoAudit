@@ -13,11 +13,11 @@ vi.mock('../../context/AuthContext', () => ({
 function setupAuthMock() {
   vi.mocked(useAuth).mockReturnValue({
     user: null,
-    token: null,
+
     isAuthenticated: false,
     isLoading: false,
     login: vi.fn(),
-    loginWithAccessToken: vi.fn(),
+    completeOAuthLogin: vi.fn(),
     logout: vi.fn(),
   });
 }

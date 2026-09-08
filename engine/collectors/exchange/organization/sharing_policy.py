@@ -31,7 +31,10 @@ class SharingPolicyDataCollector(BasePowerShellCollector):
             - default_policy: The default sharing policy
             - policies_allowing_external: Policies that allow external sharing
         """
-        policies = await client.run_cmdlet("ExchangeOnline", "Get-SharingPolicy")
+        policies = await client.run_operation(
+            "exchange.organization.sharing_policy.read",
+            "exchange.organization.sharing_policy",
+        )
 
         # Handle None, single policy, or list
         if policies is None:
@@ -41,8 +44,7 @@ class SharingPolicyDataCollector(BasePowerShellCollector):
 
         # Find default policy
         default_policy = next(
-            (p for p in policies if p.get("Default")),
-            policies[0] if policies else None
+            (p for p in policies if p.get("Default")), policies[0] if policies else None
         )
 
         # Check for policies allowing external sharing
@@ -51,11 +53,13 @@ class SharingPolicyDataCollector(BasePowerShellCollector):
         for policy in policies:
             domains = policy.get("Domains", [])
             if domains:
-                policies_allowing_external.append({
-                    "name": policy.get("Name"),
-                    "domains": domains,
-                    "enabled": policy.get("Enabled"),
-                })
+                policies_allowing_external.append(
+                    {
+                        "name": policy.get("Name"),
+                        "domains": domains,
+                        "enabled": policy.get("Enabled"),
+                    }
+                )
 
         return {
             "sharing_policies": policies,

@@ -1,0 +1,401 @@
+{
+  "count": 66,
+  "files": [
+    {
+      "path": ".secrets.baseline",
+      "change": "modified",
+      "phase5_sha256": "e184f1223251ff476f73628ef7548def9a0626aedf10250ef41af23558a72fff",
+      "phase6_sha256": "469dfaca5b4147a0e9aa5617d48c01764f16e25bd2a42b536c39e014a5b16c62"
+    },
+    {
+      "path": "backend-api/alembic/versions/e6a13c95d842_phase6_scan_lifecycle.py",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "15d26e34937ffe1d944e6e7e0d11cb656610db72d530048d620d2efb80794aaa"
+    },
+    {
+      "path": "backend-api/app/api/v1/m365_connections.py",
+      "change": "modified",
+      "phase5_sha256": "3e988ff703ec399ef459ff6981bd083ff30bd56708721bce2e9d2dc3d7631881",
+      "phase6_sha256": "fbbcf7c0b5dcb97f215c30ca91b18d5074b07fcb97a47498a63b1426d2228bb8"
+    },
+    {
+      "path": "backend-api/app/api/v1/scans.py",
+      "change": "modified",
+      "phase5_sha256": "7f56affbfc11886378f97cf67f52fd98ae922123bede55078eb1e01ef40cbdfe",
+      "phase6_sha256": "a55cb925d574e6a0603dadd1a20fd9dd03d970c30d52284730454f0dee0024f7"
+    },
+    {
+      "path": "backend-api/app/core/config.py",
+      "change": "modified",
+      "phase5_sha256": "9471dad880e3fc8751687afa1a8f776ae55ddd0dbbc25bbe6cb9d2ad27764165",
+      "phase6_sha256": "ce6f78775bda19b802caa6161fdc8778a585214b8337fbadebc08d3ce624bc71"
+    },
+    {
+      "path": "backend-api/app/core/middleware.py",
+      "change": "modified",
+      "phase5_sha256": "4a7e3ca9d65654606875a37c41f4a2df27dd4d64e8c8721a4c7ac859759a5ef5",
+      "phase6_sha256": "1d8308c59036f120406a6ba22411355d62b6a8020b95808f768cab395edc9718"
+    },
+    {
+      "path": "backend-api/app/models/__init__.py",
+      "change": "modified",
+      "phase5_sha256": "9d15750b2508b03392e6539a43493377cd7c61b5edc83128962906e3fa8dd0b1",
+      "phase6_sha256": "678c33a3abd2e84d1e1008d8341f273d88bf9ded76ddb5ee45d58d36df110d8a"
+    },
+    {
+      "path": "backend-api/app/models/compliance.py",
+      "change": "modified",
+      "phase5_sha256": "e67802e7ce2f1be34c0964a3cb167ac9be7a476137ed1ab8e4f7a35cfbf41707",
+      "phase6_sha256": "6610e2f077d4b0883f8dec83a66a82618ddf7e034dee65e364f964a3f921795f"
+    },
+    {
+      "path": "backend-api/app/models/m365_connection.py",
+      "change": "modified",
+      "phase5_sha256": "2abb4a5da3abd3d116c8ef34738f112a0eff74a7de18c9291544804db86e5636",
+      "phase6_sha256": "ca20a6d8812b718b718ea750bcd5359cbf9ea6ea42b63e53d395e8de869592ad"
+    },
+    {
+      "path": "backend-api/app/models/scan_dispatch.py",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "0e57fcc4219a00535f8c253c2b409f19f96314cd655d2f71338365c0f5796c49"
+    },
+    {
+      "path": "backend-api/app/schemas/m365_connection.py",
+      "change": "modified",
+      "phase5_sha256": "085742fb66992113264a667848e94525cf325966a30fc917c9c7c0781a01d0e8",
+      "phase6_sha256": "5fdb7f4568a5e768b7f9d8be7642a3efe77ff6d6930c52a38350f39793ae1691"
+    },
+    {
+      "path": "backend-api/app/schemas/scan.py",
+      "change": "modified",
+      "phase5_sha256": "4c46fe6e3bb561964a4ce9421863098145162380e64f550c44cecee2cbefc07b",
+      "phase6_sha256": "c3197c2da90c195d0451df38e52b58334b6f48a684d7fc3f85d0d512dd68517c"
+    },
+    {
+      "path": "backend-api/app/services/scan_readiness.py",
+      "change": "modified",
+      "phase5_sha256": "a385be4b7fd88bd83f99c6b15ed03eb9ef0d9998e031222dd7115868070eed8b",
+      "phase6_sha256": "3eabfcb107bc4ee189a8c15e5d1fff1091565dda1119e8739fa4157762704a08"
+    },
+    {
+      "path": "backend-api/tests/test_phase3_scans.py",
+      "change": "modified",
+      "phase5_sha256": "55da973d7cdca8a86674cd7879d811e0ab96361889e17f0979d48c62c98e526f",
+      "phase6_sha256": "2751a9ef5b87afb32e4769b57e82f593e6fe149fd6165c2a76d29dce38408214"
+    },
+    {
+      "path": "backend-api/tests/test_phase4_worker_contract.py",
+      "change": "modified",
+      "phase5_sha256": "00b24df57a98319280feb99bb1e29056d61ec909f373bcde3585dc932f5a1c3b",
+      "phase6_sha256": "6a536157a2718d55e7868ed5502397ce6ba45ed947b7c9a7df34ba051b92c042"
+    },
+    {
+      "path": "backend-api/tests/test_phase5_cookie_auth.py",
+      "change": "modified",
+      "phase5_sha256": "6948d5174ab1bc11e558476345e9af1b9f7df55e45f06af2d986f9d4fb9fb732",
+      "phase6_sha256": "41ac5d00da158c7050dc0d9c99fb8b413668b4d4beb6fab4010bb2a81993fc0f"
+    },
+    {
+      "path": "backend-api/tests/test_phase6_lifecycle.py",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "1a80dee71a8d2a18f71d52fe8e52c7f512faa3c6726db576fcbcb7d9fed87a05"
+    },
+    {
+      "path": "docker-compose.production.yml",
+      "change": "modified",
+      "phase5_sha256": "0fa71f6f18c2354ccc5af4336e3d5465d4f7820d9dae629652537dc55e989835",
+      "phase6_sha256": "b100fde91de1efdd51a41bb9ce62f355423344ceafe26cf416abf43ce2122911"
+    },
+    {
+      "path": "docker-compose.sharepoint.yml",
+      "change": "modified",
+      "phase5_sha256": "91783cfbdeb85cea3f218f2f4b3a905b58d1e232c0a3060b169fc2fda4bbba1c",
+      "phase6_sha256": "9c5c27f9e12cec32ed10ba1789ae6e793671d2cd17ba3bc55dc563cf07dea627"
+    },
+    {
+      "path": "docker-compose.yml",
+      "change": "modified",
+      "phase5_sha256": "04c49462e99557039c933d92dcb69b2886b404b3c588509bb725e478f37ae302",
+      "phase6_sha256": "ddb5aa24308594c1a8a11fba23dcd29adf3440cc9d48f2eaa74bf9794c947fd5"
+    },
+    {
+      "path": "docs/compliance/phase-6/README.md",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "50162f42bf1d8da5636f286f04cacb327b91320edadf6d340a44540871c1394b"
+    },
+    {
+      "path": "docs/compliance/phase-6/coordination-review.md",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "334ec42c4a1028031e8bb7bed2eeeaa946564e9838b3cddde1ef58f7f615358a"
+    },
+    {
+      "path": "docs/compliance/phase-6/coordination-snapshot.json",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "ba2d1dae2ca4b8ba8a3e9cab424660956e33655b8c4a13dfc0b04986b4b13007"
+    },
+    {
+      "path": "docs/compliance/phase-6/lifecycle-runbook.md",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "ff39e0e3a41e036a312d8ccf9178be1ba0b0707fd4fefa71801e30d60e90a84f"
+    },
+    {
+      "path": "docs/compliance/phase-6/phase-5-snapshot.json",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "41c26b7d56eabd8b41a6315dc88a6bf50dbda0a9a3c3165e83dc440cc37b945d"
+    },
+    {
+      "path": "docs/compliance/phase-6/verification.json",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "0610a216656249a2ca2182f8b6a253d324c45cb2b1cfaaca61d50fbfb1730550"
+    },
+    {
+      "path": "docs/compliance/phase-6/verification/backend_tools.log",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "3538705028da294ab1f2b1992fddcf333d3be7225ce9818cf15854768069ec50"
+    },
+    {
+      "path": "docs/compliance/phase-6/verification/bandit_backend_app.log",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs/compliance/phase-6/verification/bandit_backend_tests.log",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "51c37157098e0ed7215881cac6856c7b5c04c807c4ffc954b7ffacf8aca56fee"
+    },
+    {
+      "path": "docs/compliance/phase-6/verification/containers.log",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "7149c3c9a3cf53c7cd335e3da10719f0025d7ee03e5b41e3028b5fbae8d289f1"
+    },
+    {
+      "path": "docs/compliance/phase-6/verification/engine.log",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "91c3e46e52cad8945c1c1548294b9096193a927de0973efbe82ebbaf48728eab"
+    },
+    {
+      "path": "docs/compliance/phase-6/verification/frontend.log",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "6c09bc7a463c010821d0a6882cc0278afb5492e2c9e100388be704cb72b17b02"
+    },
+    {
+      "path": "docs/compliance/phase-6/verification/frontend_build.log",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "b7a95949e41055fdb7a096d581761a87886ab53ddadb4b31a6a85aafc686062f"
+    },
+    {
+      "path": "docs/compliance/phase-6/verification/frontend_lint.log",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "b0bb78e6327dbb4425fd6a5f5bf31e8289475511d6d7684827a1a4e37e4e976e"
+    },
+    {
+      "path": "docs/compliance/phase-6/verification/frontend_typecheck.log",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "857e7fb3cb4042eb21204cc9ef932bdd62a51348888d4d9a2ba59ced9d8fd8fa"
+    },
+    {
+      "path": "docs/compliance/phase-6/verification/precommit.log",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "00750c0ccee80c95bdf37409fb60ea78a8ad5566aaf87283e202b8b739d16328"
+    },
+    {
+      "path": "engine/collectors/graph_client.py",
+      "change": "modified",
+      "phase5_sha256": "cfee7a449110cafa22c906286ea7c6bd420d4b771ea69beea7b743125090a5ab",
+      "phase6_sha256": "b835486acb70c2afd6a97e72e63dfcbd25bfb4a497d5a5e3c0e250392b91b92e"
+    },
+    {
+      "path": "engine/collectors/powershell_client.py",
+      "change": "modified",
+      "phase5_sha256": "3a9d34d589f75253125e467790aa1304d2af71b7a37b94b5eeb54667fbaa72c7",
+      "phase6_sha256": "0f4ee036754ba6ebc5f45a1492bd51e839cf61cdaf6ea50201077fa6dd74cb5d"
+    },
+    {
+      "path": "engine/opa_client.py",
+      "change": "modified",
+      "phase5_sha256": "fd4d10d74f6877dc539b1febfce188feb96c0058c914428c00847dbe0733543d",
+      "phase6_sha256": "92c6d4806ff3fc95373972c1d14d9a5a660549882f2109e9d64461dad04f5685"
+    },
+    {
+      "path": "engine/powershell/service/main.py",
+      "change": "modified",
+      "phase5_sha256": "2dbff32720056c46d23a2810cf627c09b097932225b8d33258f55373c5f30c7f",
+      "phase6_sha256": "4fbda2da4a8bc5e54ecdb956d130c9bd042e161aa6751e6611f8df2de0feeadb"
+    },
+    {
+      "path": "engine/tests/test_phase3_migrated_integration.py",
+      "change": "modified",
+      "phase5_sha256": "c646d6165358cce17b8c9350d9f31b7e503589534a25534d83ebd52f61b3e449",
+      "phase6_sha256": "b9e9d3707c601b51a34512aeb9eb52841bcfcbd1435b4c49343b8295df17b8ee"
+    },
+    {
+      "path": "engine/tests/test_phase3_persistence.py",
+      "change": "modified",
+      "phase5_sha256": "91543b49470b17e6dcad2ebec0d7018bd0ccb6545927e4524ac207130579d168",
+      "phase6_sha256": "ece5b91ceb9f28a617070211afa18de88a80a6ffa6f5b109278ecbab17b7f4d6"
+    },
+    {
+      "path": "engine/tests/test_phase3_worker.py",
+      "change": "modified",
+      "phase5_sha256": "df7534ecebde338cb44c9118f6057184f5f31f09fac502ab9dd91dd45fa49c6b",
+      "phase6_sha256": "9af754bf3a239794b0a2c1b26874b1ad0c155ba22924e8da85cb0bdc528d2486"
+    },
+    {
+      "path": "engine/tests/test_phase5_task_boundary.py",
+      "change": "modified",
+      "phase5_sha256": "a99bf0f7e74c8adf29fcf0066546182507ba753103b8b52e4abc9d6dd50f5677",
+      "phase6_sha256": "3eadd8a64403b8ed95ec4e3971a08543939b67f561a2edee3fabf463314a4462"
+    },
+    {
+      "path": "engine/tests/test_phase6_correlation.py",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "1c03d448c5807001ba554a0918b0dfcc3ad2c2371200b0bb350be4832e26dc20"
+    },
+    {
+      "path": "engine/tests/test_phase6_dispatch_fairness.py",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "e9639e5be942e45eb661f2973ae20bdc670dd1f64194b1122c6e0147a55250a3"
+    },
+    {
+      "path": "engine/tests/test_phase6_lifecycle.py",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "2f663a00f843901783492047d02a619abe4aceab28121c42799207d4ebce8125"
+    },
+    {
+      "path": "engine/tests/test_phase6_tenant.py",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "5cc0909846e7b2a8d203c010f30a3c4eb454edcee7be99fac05603b8e40ed2d6"
+    },
+    {
+      "path": "engine/worker/celery_app.py",
+      "change": "modified",
+      "phase5_sha256": "f98ac68b3dd94090b829485daf5d3e5656776a5a4be29619305285cb6c3337db",
+      "phase6_sha256": "539728dd708ec15ff4e2cf235790a3dc868b95546eef23cd494fbf2296134733"
+    },
+    {
+      "path": "engine/worker/config.py",
+      "change": "modified",
+      "phase5_sha256": "98224f05f1b8a314aabdacaff39623e0d9d6c53af423bcccb4e70b1174265f8f",
+      "phase6_sha256": "dc28f8fdde7902e3198ede91dcd0c3e2f176b882551f021d2117df0ef63a3e3c"
+    },
+    {
+      "path": "engine/worker/correlation.py",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "d62dc97210d506b7c3b7e41978eca21c88d8d7afd929944760fe73c945405155"
+    },
+    {
+      "path": "engine/worker/db.py",
+      "change": "modified",
+      "phase5_sha256": "3481a94b44fbda21ec75dd9f418a88e7c39a710e9efb8f7e43ba6911e68283f5",
+      "phase6_sha256": "ac226a1ce6a115e7cba43dffbc9fd31467d0a63a64c098d3511b659de9ef768d"
+    },
+    {
+      "path": "engine/worker/dispatcher.py",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "34fec68856e09fc26a2a8f04567db901234711339fe2952879ad49bb9122d506"
+    },
+    {
+      "path": "engine/worker/lifecycle.py",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "8bafc7becce9b700635933e4445a138976512b80168dae3611271adeb8533eec"
+    },
+    {
+      "path": "engine/worker/tasks.py",
+      "change": "modified",
+      "phase5_sha256": "cf6ebc3ed63167581480681ff4d2f943e77be9e69a5edb374569ca21a05f009c",
+      "phase6_sha256": "739955159cb2ceefac2c7c3f62209b90a0b71d4ffc21ad9f5ba4ec2ba4e526ad"
+    },
+    {
+      "path": "engine/worker/tenant_binding.py",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "e0527da0719990171a37289b7d109821d0a115ad96a86b2931bd56521a813714"
+    },
+    {
+      "path": "frontend/src/api/client.test.ts",
+      "change": "modified",
+      "phase5_sha256": "9d94a320a6f26d3d86633fce4e6dfddaedf14751323ade87c9d7e2647062d93e",
+      "phase6_sha256": "b741bbf69612e682b9fc746a14e55431cb08419e85eb0691b8004e6c17cc7392"
+    },
+    {
+      "path": "frontend/src/api/client.ts",
+      "change": "modified",
+      "phase5_sha256": "0a515483eaffb52678a9120691e2703bb7f7d7d2fef86a968b0cc5cebde957ea",
+      "phase6_sha256": "ed5eb2e759744b0c38fa1fde4aa4d741b674bb27f035fb0575aee21b6a6cccfa"
+    },
+    {
+      "path": "frontend/src/pages/Connections/ConnectionsPage.test.tsx",
+      "change": "modified",
+      "phase5_sha256": "cbf46305de38a26028285bbafe9c1a59ef905b28cca2ce14a4bd0c6139cc0ee9",
+      "phase6_sha256": "d916320e8614afd8301dc43c1c251bfb90a144ea7355f85da895c66277347ba5"
+    },
+    {
+      "path": "frontend/src/pages/Connections/ConnectionsPage.tsx",
+      "change": "modified",
+      "phase5_sha256": "22a44beaa291a7a8010f90904262970a21f5e4618ce28965114b9d8e9b1de9f1",
+      "phase6_sha256": "af87ab4ec1965e8102025f3c19828a171400248d361a073d4a4a6d705bd78269"
+    },
+    {
+      "path": "frontend/src/pages/Scans/ScanDetailPage.test.tsx",
+      "change": "modified",
+      "phase5_sha256": "c598d0af231cef9886fc423951d13d8a3528ff13095437bcab3f324d483bf234",
+      "phase6_sha256": "c316115869cba62db769b99fda6cb851a954127737e9b55fb6e1843a0bd953c0"
+    },
+    {
+      "path": "frontend/src/pages/Scans/ScanDetailPage.tsx",
+      "change": "modified",
+      "phase5_sha256": "b40b3d63ffa80ab864f54d8f7046ef6c0621bf9ea8e98b8b28487ab6e2867ed7",
+      "phase6_sha256": "ad6ed34205788073edb6f7d9bcd470c246aef5b957b82ced4468792f01cdb61b"
+    },
+    {
+      "path": "frontend/src/pages/Scans/ScansPage.test.tsx",
+      "change": "added",
+      "phase5_sha256": null,
+      "phase6_sha256": "2b431119dc95a2f7b59f82b2978cc9c7ccb9a0ea62f65cf5f7b7dd700b2e08e8"
+    },
+    {
+      "path": "frontend/src/pages/Scans/ScansPage.tsx",
+      "change": "modified",
+      "phase5_sha256": "3ac4465a099856ead8387d635dbffd51baaa303a293ae60484eed161f4ca5606",
+      "phase6_sha256": "1250c69c5b5e84dd648555abf35f3c3e746349ae64cece0fc60071f3751a3e67"
+    },
+    {
+      "path": "tools/ci/container_smoke.py",
+      "change": "modified",
+      "phase5_sha256": "bd7973959a08b7a4c1a9b72d0e166919a296359a38d3205bffa332bc30ccc616",
+      "phase6_sha256": "a1ff2432ed96e7aee04e66930bc44a3b02355d3780480f8f2e7a2e51744be98a"
+    },
+    {
+      "path": "tools/tests/test_phase5_deployment.py",
+      "change": "modified",
+      "phase5_sha256": "df8b475a160c19fe5161fb2ae76d50f510c20a7a05917d1114f2627607b521ac",
+      "phase6_sha256": "5c94e998866171db8e49af91027bf9187a3bdbd62367d08ede549cbf7f9e36e8"
+    }
+  ]
+}

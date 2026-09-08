@@ -8,14 +8,15 @@ import {
   ShieldCheck,
   User,
 } from "lucide-react";
+import type { SignUpFormData, SignUpSubmitPayload } from "../signUpTypes";
 
-const TERMS_ERROR_MESSAGE = "Please agree to the terms and privacy policy";
+const TERMS_ERROR_MESSAGE = "Please accept the terms and privacy policy";
 const PASSWORD_MISMATCH_MESSAGE = "These passwords do not match"; // pragma: allowlist secret
 
 type SignupFormPanelProps = {
-  formData: any;
-  onFormChange: (field: string, value: string) => void;
-  onSubmit: (data: any) => void | Promise<void>;
+  formData: SignUpFormData;
+  onFormChange: (field: keyof SignUpFormData, value: string) => void;
+  onSubmit: (data: SignUpSubmitPayload) => void | Promise<void>;
   onBackToLogin: () => void;
   submitError: string;
 };
@@ -134,10 +135,6 @@ const SignupFormPanel = ({
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    onFormChange(e.target.name, e.target.value);
-  };
-
   const handleAgreeTermsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setAgreeTerms(e.target.checked);
   };
@@ -169,7 +166,7 @@ const SignupFormPanel = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!validate()) return;
-    onSubmit(formData);
+    onSubmit({ ...formData, agreeTerms });
   };
 
   const strength = getPasswordStrength(formData.password);
@@ -224,7 +221,7 @@ const SignupFormPanel = ({
                     type={field.type}
                     name={field.name}
                     value={formData[field.name]}
-                    onChange={handleChange}
+                    onChange={(e) => onFormChange(field.name, e.target.value)}
                     placeholder={field.placeholder}
                     required
                     className="py-4 px-4 pl-12 w-full rounded-xl border-2 transition outline-none border-brand-blue/20 bg-surface-2/30 text-[1rem] text-text-strong placeholder:text-text-muted/70 focus:border-brand-blue focus:bg-surface-2/40 focus:shadow-[0_0_0_4px_rgb(var(--brand-blue)/0.12)]"
@@ -250,7 +247,7 @@ const SignupFormPanel = ({
                   type={field.type}
                   name={field.name}
                   value={formData[field.name]}
-                  onChange={handleChange}
+                  onChange={(e) => onFormChange(field.name, e.target.value)}
                   placeholder={field.placeholder}
                   required
                   className="py-4 px-4 pl-12 w-full rounded-xl border-2 transition outline-none border-brand-blue/20 bg-surface-2/30 text-[1rem] text-text-strong placeholder:text-text-muted/70 focus:border-brand-blue focus:bg-surface-2/40 focus:shadow-[0_0_0_4px_rgb(var(--brand-blue)/0.12)]"
@@ -272,7 +269,7 @@ const SignupFormPanel = ({
                 type={showPassword ? "text" : "password"}
                 name="password"
                 value={formData.password}
-                onChange={handleChange}
+                onChange={(e) => onFormChange("password", e.target.value)}
                 placeholder="Create a strong password"
                 required
                 className="py-4 px-4 pr-12 pl-12 w-full rounded-xl border-2 transition outline-none border-brand-blue/20 bg-surface-2/30 text-[1rem] text-text-strong placeholder:text-text-muted/70 focus:border-brand-blue focus:bg-surface-2/40 focus:shadow-[0_0_0_4px_rgb(var(--brand-blue)/0.12)]"
@@ -327,7 +324,7 @@ const SignupFormPanel = ({
                 type={showConfirmPassword ? "text" : "password"}
                 name="confirmPassword"
                 value={formData.confirmPassword}
-                onChange={handleChange}
+                onChange={(e) => onFormChange("confirmPassword", e.target.value)}
                 placeholder="Confirm your password"
                 required
                 className="py-4 px-4 pr-12 pl-12 w-full rounded-xl border-2 transition outline-none border-brand-blue/20 bg-surface-2/30 text-[1rem] text-text-strong placeholder:text-text-muted/70 focus:border-brand-blue focus:bg-surface-2/40 focus:shadow-[0_0_0_4px_rgb(var(--brand-blue)/0.12)]"
