@@ -1,4 +1,13 @@
-"""Manual scan result detail API endpoints."""
+"""Manual scan result detail API endpoints (legacy free-text comment).
+
+Phase 7 keeps these routes working unchanged in shape, and fixes one
+authorization defect: a record belonging to another tenant used to answer 403
+while a missing record answered 404, which made every read here an existence
+oracle. Both now answer 404, and ownership is revalidated through the parent
+``Scan`` rather than trusting the detail row's own ``user_id``.
+
+The audited replacement for this endpoint is ``app.api.v1.manual_evidence``.
+"""
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
@@ -19,17 +28,29 @@ from app.schemas.manual_scan_result_detail import (
 
 router = APIRouter(prefix="/manual-verification", tags=["Manual Verification"])
 
+# One answer for "does not exist" and "is not yours", so a caller cannot use
+# these routes to discover another tenant's scan results.
+_NOT_FOUND = "Manual verification not found"
 
-def _check_ownership(detail: ManualScanResultDetail, user: User) -> None:
-    """Raise 403 if the current user does not own this record."""
+
+async def _check_ownership(
+    db: AsyncSession, detail: ManualScanResultDetail, user: User
+) -> None:
+    """Raise 404 unless the caller owns both the record and its parent scan."""
     if detail.user_id != user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to access this record",
-        )
+        raise HTTPException(status_code=404, detail=_NOT_FOUND)
+    owner = await db.execute(
+        select(Scan)
+        .join(ScanResult, ScanResult.scan_id == Scan.id)
+        .where(ScanResult.id == detail.scan_result_id, Scan.user_id == user.id)
+    )
+    if owner.scalar_one_or_none() is None:
+        raise HTTPException(status_code=404, detail=_NOT_FOUND)
 
 
-@router.post("/", response_model=ManualScanResultDetailRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=ManualScanResultDetailRead, status_code=status.HTTP_201_CREATED
+)
 async def create_manual_verification(
     data: ManualScanResultDetailCreate,
     current_user: User = Depends(get_current_user),
@@ -44,16 +65,12 @@ async def create_manual_verification(
     if not scan_result:
         raise HTTPException(status_code=404, detail="Scan result not found")
 
-    owner_result = await db.execute(
-        select(Scan).where(Scan.id == scan_result.scan_id)
-    )
+    owner_result = await db.execute(select(Scan).where(Scan.id == scan_result.scan_id))
     scan = owner_result.scalar_one_or_none()
 
     if not scan or scan.user_id != current_user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="You do not have permission to verify this scan result",
-        )
+        # Matches the "scan result not found" answer above on purpose.
+        raise HTTPException(status_code=404, detail="Scan result not found")
 
     detail = ManualScanResultDetail(
         scan_result_id=data.scan_result_id,
@@ -89,13 +106,15 @@ async def get_manual_verification(
     detail = result.scalar_one_or_none()
 
     if not detail:
-        raise HTTPException(status_code=404, detail="Manual verification not found")
+        raise HTTPException(status_code=404, detail=_NOT_FOUND)
 
-    _check_ownership(detail, current_user)
+    await _check_ownership(db, detail, current_user)
     return detail
 
 
-@router.get("/by-scan-result/{scan_result_id}", response_model=ManualScanResultDetailRead)
+@router.get(
+    "/by-scan-result/{scan_result_id}", response_model=ManualScanResultDetailRead
+)
 async def get_manual_verification_by_scan_result(
     scan_result_id: int,
     current_user: User = Depends(get_current_user),
@@ -110,12 +129,9 @@ async def get_manual_verification_by_scan_result(
     detail = result.scalar_one_or_none()
 
     if not detail:
-        raise HTTPException(
-            status_code=404,
-            detail="Manual verification not found for this scan result",
-        )
+        raise HTTPException(status_code=404, detail=_NOT_FOUND)
 
-    _check_ownership(detail, current_user)
+    await _check_ownership(db, detail, current_user)
     return detail
 
 
@@ -133,9 +149,9 @@ async def update_manual_verification(
     detail = result.scalar_one_or_none()
 
     if not detail:
-        raise HTTPException(status_code=404, detail="Manual verification not found")
+        raise HTTPException(status_code=404, detail=_NOT_FOUND)
 
-    _check_ownership(detail, current_user)
+    await _check_ownership(db, detail, current_user)
 
     if update.comment is not None:
         detail.comment = update.comment
@@ -158,9 +174,9 @@ async def delete_manual_verification(
     detail = result.scalar_one_or_none()
 
     if not detail:
-        raise HTTPException(status_code=404, detail="Manual verification not found")
+        raise HTTPException(status_code=404, detail=_NOT_FOUND)
 
-    _check_ownership(detail, current_user)
+    await _check_ownership(db, detail, current_user)
 
     await db.delete(detail)
     await db.commit()

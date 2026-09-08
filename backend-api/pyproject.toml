@@ -25,9 +25,14 @@ dependencies = [
     "cryptography>=42.0.0",
     # Celery client for queueing tasks
     "celery[redis]>=5.3.0",
+    # Phase 10: the Prometheus client is the only way the alert rules in
+    # infrastructure/monitoring/alerts/ can ever fire. It is a pure-Python,
+    # dependency-free package.
+    "prometheus-client>=0.21.0",
 ]
 
 [project.optional-dependencies]
+dev = ["pytest==8.4.2"]
 # Heavy OCR/reporting stack lives in the "evidence" extra so backend devs
 # aren't forced to install it unless they touch evidence scanning.
 evidence = [

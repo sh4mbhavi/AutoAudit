@@ -1,0 +1,879 @@
+{
+  "schema_version": 1,
+  "mapping_id": "soc2-common-criteria-to-cis-m365",
+  "mapping_version": "v1.0.0",
+  "status": "proposed_pending_grc_approval",
+  "source": {
+    "document": "docs/compliance/SOC2_EXECUTION_PLAN.md",
+    "section": "Appendix A — Authoritative SOC 2 → CIS M365 v6 crosswalk",
+    "plan_baseline_commit": "be241f52beb5ffec10904771bf7cfa4b98233ab0"
+  },
+  "benchmark": {
+    "framework": "cis",
+    "benchmark": "CIS Microsoft 365 Foundations",
+    "slug": "microsoft-365-foundations",
+    "version": "v6.0.0"
+  },
+  "soc2": {
+    "framework": "SOC 2",
+    "criteria_family": "Common Criteria",
+    "authoritative_criteria": [
+      "CC6",
+      "CC7"
+    ]
+  },
+  "rating_vocabulary": [
+    "Yes",
+    "Partial",
+    "No"
+  ],
+  "approval": {
+    "approved": false,
+    "reviewer_name": null,
+    "reviewer_role": null,
+    "approved_at": null,
+    "decision_reference": null,
+    "note": "Ratings are human-owned GRC judgments transcribed verbatim from the plan's Appendix A. No engineering process may create, promote or alter a rating. Phase 0 decision D06 (crosswalk ownership and approval authority) is unapproved."
+  },
+  "criteria_coverage_summary": [
+    {
+      "criterion": "CC1",
+      "configuration_coverage_classification": "Governance only"
+    },
+    {
+      "criterion": "CC2",
+      "configuration_coverage_classification": "Governance only"
+    },
+    {
+      "criterion": "CC3",
+      "configuration_coverage_classification": "Governance only"
+    },
+    {
+      "criterion": "CC4",
+      "configuration_coverage_classification": "Governance; AutoAudit supports monitoring evidence"
+    },
+    {
+      "criterion": "CC5",
+      "configuration_coverage_classification": "Mostly governance with a technology-control pocket"
+    },
+    {
+      "criterion": "CC6",
+      "configuration_coverage_classification": "Strong automated overlap; fully mapped above"
+    },
+    {
+      "criterion": "CC7",
+      "configuration_coverage_classification": "Strong monitoring/detection overlap; fully mapped above"
+    },
+    {
+      "criterion": "CC8",
+      "configuration_coverage_classification": "Partial M365 pocket; broader change management is organizational"
+    },
+    {
+      "criterion": "CC9",
+      "configuration_coverage_classification": "Governance only"
+    }
+  ],
+  "points_of_focus": [
+    {
+      "point_id": "CC6.1-P01",
+      "criterion": "CC6.1",
+      "point_of_focus": "Identifies and Manages the Inventory of Information Assets",
+      "rating": "No",
+      "cis_control_ids": [],
+      "evidence_selector": null,
+      "residual_limitation": "Organization-level asset register.",
+      "residual_scope": "organizational_or_inherited"
+    },
+    {
+      "point_id": "CC6.1-P02",
+      "criterion": "CC6.1",
+      "point_of_focus": "Restricts Logical Access",
+      "rating": "Yes",
+      "cis_control_ids": [
+        "1.1.3",
+        "5.2.2.3",
+        "5.2.3.4",
+        "5.3.1"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Technical evidence still depends on reliable policy execution.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC6.1-P03",
+      "criterion": "CC6.1",
+      "point_of_focus": "Identifies and Authenticates Users",
+      "rating": "Yes",
+      "cis_control_ids": [
+        "1.3.1",
+        "5.2.3.4",
+        "5.2.3.5",
+        "5.2.3.6"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Technical evidence still depends on reliable policy execution.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC6.1-P04",
+      "criterion": "CC6.1",
+      "point_of_focus": "Considers Network Segmentation",
+      "rating": "No",
+      "cis_control_ids": [],
+      "evidence_selector": null,
+      "residual_limitation": "Not an M365 tenant setting.",
+      "residual_scope": "organizational_or_inherited"
+    },
+    {
+      "point_id": "CC6.1-P05",
+      "criterion": "CC6.1",
+      "point_of_focus": "Manages Points of Access",
+      "rating": "Yes",
+      "cis_control_ids": [
+        "1.2.1",
+        "5.1.6.1",
+        "5.1.6.2",
+        "5.1.6.3"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "5.1.6.1 requires technical revalidation.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC6.1-P06",
+      "criterion": "CC6.1",
+      "point_of_focus": "Restricts Access to Information Assets",
+      "rating": "Partial",
+      "cis_control_ids": [
+        "6.1.1",
+        "6.1.2",
+        "6.2.1"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Data classification and DLP are not currently automated.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC6.2-P07",
+      "criterion": "CC6.2",
+      "point_of_focus": "Controls Access Credentials to Protected Assets",
+      "rating": "Yes",
+      "cis_control_ids": [
+        "1.3.1",
+        "5.2.3.2",
+        "5.2.3.3",
+        "5.2.3.7"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Technical evidence still depends on reliable policy execution.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC6.2-P08",
+      "criterion": "CC6.2",
+      "point_of_focus": "Removes Access to Protected Assets When Appropriate",
+      "rating": "Yes",
+      "cis_control_ids": [
+        "5.3.2",
+        "5.3.3"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Organizational offboarding evidence remains separate.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC6.3-P09",
+      "criterion": "CC6.3",
+      "point_of_focus": "Creates or Modifies Access to Protected Information Assets",
+      "rating": "Yes",
+      "cis_control_ids": [
+        "1.1.3",
+        "5.3.1",
+        "5.3.4",
+        "5.3.5"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Organizational authorization/change evidence remains separate.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC6.3-P10",
+      "criterion": "CC6.3",
+      "point_of_focus": "Removes Access to Protected Assets",
+      "rating": "Yes",
+      "cis_control_ids": [
+        "5.3.2",
+        "5.3.3"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Organizational offboarding evidence remains separate.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC6.3-P11",
+      "criterion": "CC6.3",
+      "point_of_focus": "Uses Role-Based Access Controls",
+      "rating": "Yes",
+      "cis_control_ids": [
+        "1.1.1",
+        "1.1.3",
+        "1.1.4",
+        "5.3.1"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Empty-evidence behavior must be corrected.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC6.4-P12",
+      "criterion": "CC6.4",
+      "point_of_focus": "Restricts Physical Access",
+      "rating": "No",
+      "cis_control_ids": [],
+      "evidence_selector": null,
+      "residual_limitation": "Physical/provider inherited control.",
+      "residual_scope": "organizational_or_inherited"
+    },
+    {
+      "point_id": "CC6.4-P13",
+      "criterion": "CC6.4",
+      "point_of_focus": "Protects and Monitors the Physical Infrastructure",
+      "rating": "No",
+      "cis_control_ids": [],
+      "evidence_selector": null,
+      "residual_limitation": "Physical/provider inherited control.",
+      "residual_scope": "organizational_or_inherited"
+    },
+    {
+      "point_id": "CC6.5-P14",
+      "criterion": "CC6.5",
+      "point_of_focus": "Identifies Data Requiring Disposal",
+      "rating": "No",
+      "cis_control_ids": [],
+      "evidence_selector": null,
+      "residual_limitation": "Policy/process activity.",
+      "residual_scope": "organizational_or_inherited"
+    },
+    {
+      "point_id": "CC6.5-P15",
+      "criterion": "CC6.5",
+      "point_of_focus": "Destroys and Disposes of Data and Assets in Accordance with Policy",
+      "rating": "No",
+      "cis_control_ids": [],
+      "evidence_selector": null,
+      "residual_limitation": "Manual or retention-policy-driven process.",
+      "residual_scope": "organizational_or_inherited"
+    },
+    {
+      "point_id": "CC6.6-P16",
+      "criterion": "CC6.6",
+      "point_of_focus": "Restricts Access",
+      "rating": "Partial",
+      "cis_control_ids": [
+        "2.1.1",
+        "2.1.4",
+        "6.2.3"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Email boundary only, not the full network boundary.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC6.6-P17",
+      "criterion": "CC6.6",
+      "point_of_focus": "Protects Identification and Authentication Credentials",
+      "rating": "Yes",
+      "cis_control_ids": [
+        "5.2.2.3",
+        "5.2.3.1",
+        "5.2.3.5"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Technical evidence still depends on reliable policy execution.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC6.6-P18",
+      "criterion": "CC6.6",
+      "point_of_focus": "Requires Additional Authentication or Credentials",
+      "rating": "Yes",
+      "cis_control_ids": [
+        "5.2.3.4",
+        "5.2.3.6"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Technical evidence still depends on reliable policy execution.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC6.6-P19",
+      "criterion": "CC6.6",
+      "point_of_focus": "Implements Boundary Protection Systems",
+      "rating": "Partial",
+      "cis_control_ids": [
+        "2.1.1",
+        "2.1.4",
+        "2.1.7"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Firewalls and IDS are outside M365 tenant scope.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC6.7-P20",
+      "criterion": "CC6.7",
+      "point_of_focus": "Restricts the Ability to Perform Transmission",
+      "rating": "Partial",
+      "cis_control_ids": [
+        "6.2.1",
+        "6.2.2",
+        "6.5.5"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Full DLP is not currently automated.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC6.7-P21",
+      "criterion": "CC6.7",
+      "point_of_focus": "Uses Encryption Technologies or Secure Communication Channels",
+      "rating": "Partial",
+      "cis_control_ids": [
+        "6.5.1",
+        "6.5.4"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Message encryption is not directly checked.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC6.7-P22",
+      "criterion": "CC6.7",
+      "point_of_focus": "Protects Removable Media",
+      "rating": "No",
+      "cis_control_ids": [],
+      "evidence_selector": null,
+      "residual_limitation": "Endpoint/Intune scope, not current M365 tenant configuration.",
+      "residual_scope": "organizational_or_inherited"
+    },
+    {
+      "point_id": "CC6.8-P23",
+      "criterion": "CC6.8",
+      "point_of_focus": "Restricts Installation of Unauthorized Software",
+      "rating": "Partial",
+      "cis_control_ids": [
+        "1.3.4",
+        "4.2",
+        "5.1.2.2",
+        "5.1.5.1"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Covers the M365 application/device-enrollment angle only.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC6.8-P24",
+      "criterion": "CC6.8",
+      "point_of_focus": "Detects Unauthorized Software",
+      "rating": "Partial",
+      "cis_control_ids": [
+        "2.1.4",
+        "2.1.11"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Malicious attachment detection, not general software inventory.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC6.8-P25",
+      "criterion": "CC6.8",
+      "point_of_focus": "Uses a Defined Change Control Process",
+      "rating": "No",
+      "cis_control_ids": [],
+      "evidence_selector": null,
+      "residual_limitation": "Organizational CC8 process.",
+      "residual_scope": "organizational_or_inherited"
+    },
+    {
+      "point_id": "CC7.1-P26",
+      "criterion": "CC7.1",
+      "point_of_focus": "Uses Defined Configuration Standards",
+      "rating": "Yes",
+      "cis_control_ids": [],
+      "evidence_selector": "all_automated_cis_m365_v6",
+      "residual_limitation": "Current repository has 69 ready controls; preserve version/provenance.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC7.1-P27",
+      "criterion": "CC7.1",
+      "point_of_focus": "Monitors Infrastructure and Software",
+      "rating": "Partial",
+      "cis_control_ids": [
+        "6.1.1",
+        "6.1.2",
+        "6.1.3"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "M365-scoped; not wider CSPM monitoring.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC7.1-P28",
+      "criterion": "CC7.1",
+      "point_of_focus": "Implements Change-Detection Mechanisms",
+      "rating": "Partial",
+      "cis_control_ids": [
+        "6.1.1",
+        "6.1.2",
+        "6.1.3"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Audit logging is after-the-fact, not real-time drift detection.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC7.1-P29",
+      "criterion": "CC7.1",
+      "point_of_focus": "Detects Unknown or Unauthorized Components",
+      "rating": "Partial",
+      "cis_control_ids": [
+        "1.3.4",
+        "5.1.2.2",
+        "5.1.5.2"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Endpoint asset discovery is outside scope.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC7.1-P30",
+      "criterion": "CC7.1",
+      "point_of_focus": "Conducts Vulnerability Scans",
+      "rating": "No",
+      "cis_control_ids": [],
+      "evidence_selector": null,
+      "residual_limitation": "Configuration compliance is not CVE vulnerability scanning.",
+      "residual_scope": "organizational_or_inherited"
+    },
+    {
+      "point_id": "CC7.2-P31",
+      "criterion": "CC7.2",
+      "point_of_focus": "Implements Detection Policies, Procedures, and Tools",
+      "rating": "Yes",
+      "cis_control_ids": [
+        "2.1.1",
+        "2.1.2",
+        "2.1.4",
+        "2.1.5",
+        "2.1.7",
+        "2.1.11"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "CIS 2.1.5 must be corrected before reliance.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC7.2-P32",
+      "criterion": "CC7.2",
+      "point_of_focus": "Designs Detection Measures",
+      "rating": "Yes",
+      "cis_control_ids": [
+        "2.1.3",
+        "2.1.6",
+        "2.1.7"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Organizational alert response remains separate.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC7.2-P33",
+      "criterion": "CC7.2",
+      "point_of_focus": "Implements Filters to Analyze Anomalies",
+      "rating": "Partial",
+      "cis_control_ids": [
+        "2.1.2",
+        "2.1.11",
+        "5.2.3.1"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Full SIEM correlation is outside tenant configuration.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC7.2-P34",
+      "criterion": "CC7.2",
+      "point_of_focus": "Monitors Detection Tools for Effective Operation",
+      "rating": "Partial",
+      "cis_control_ids": [
+        "2.1.6",
+        "6.1.1"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Tool-health meta-monitoring is a process.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC7.3-P35",
+      "criterion": "CC7.3",
+      "point_of_focus": "Responds to Security Incidents",
+      "rating": "Partial",
+      "cis_control_ids": [
+        "2.4.4"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "CIS 2.4.4 must be corrected; human incident evaluation remains a process.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC7.3-P36",
+      "criterion": "CC7.3",
+      "point_of_focus": "Communicates and Reviews Detected Security Events",
+      "rating": "Partial",
+      "cis_control_ids": [
+        "2.1.3",
+        "2.1.6"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Review is a human process.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC7.3-P37",
+      "criterion": "CC7.3",
+      "point_of_focus": "Develops and Implements Procedures to Analyze Security Incidents",
+      "rating": "No",
+      "cis_control_ids": [],
+      "evidence_selector": null,
+      "residual_limitation": "Organizational incident-response procedure.",
+      "residual_scope": "organizational_or_inherited"
+    },
+    {
+      "point_id": "CC7.3-P38",
+      "criterion": "CC7.3",
+      "point_of_focus": "Assesses the Effectiveness of Incident Response",
+      "rating": "No",
+      "cis_control_ids": [],
+      "evidence_selector": null,
+      "residual_limitation": "Management review activity.",
+      "residual_scope": "organizational_or_inherited"
+    },
+    {
+      "point_id": "CC7.4-P39",
+      "criterion": "CC7.4",
+      "point_of_focus": "Assigns Roles and Responsibilities",
+      "rating": "No",
+      "cis_control_ids": [],
+      "evidence_selector": null,
+      "residual_limitation": "Organizational role assignment.",
+      "residual_scope": "organizational_or_inherited"
+    },
+    {
+      "point_id": "CC7.4-P40",
+      "criterion": "CC7.4",
+      "point_of_focus": "Contains Security Incidents",
+      "rating": "Partial",
+      "cis_control_ids": [
+        "2.4.4"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "ZAP covers a narrow delivered-item threat; 2.4.4 must be corrected.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC7.4-P41",
+      "criterion": "CC7.4",
+      "point_of_focus": "Mitigates Ongoing Security Incidents",
+      "rating": "No",
+      "cis_control_ids": [],
+      "evidence_selector": null,
+      "residual_limitation": "Live incident mitigation process.",
+      "residual_scope": "organizational_or_inherited"
+    },
+    {
+      "point_id": "CC7.4-P42",
+      "criterion": "CC7.4",
+      "point_of_focus": "Ends Threats Posed by Security Incidents",
+      "rating": "Partial",
+      "cis_control_ids": [
+        "2.4.4"
+      ],
+      "evidence_selector": null,
+      "residual_limitation": "Narrow ZAP evidence only; 2.4.4 must be corrected.",
+      "residual_scope": "automated_m365_configuration"
+    },
+    {
+      "point_id": "CC7.4-P43",
+      "criterion": "CC7.4",
+      "point_of_focus": "Restores Affected Systems",
+      "rating": "No",
+      "cis_control_ids": [],
+      "evidence_selector": null,
+      "residual_limitation": "Recovery and backup process.",
+      "residual_scope": "organizational_or_inherited"
+    },
+    {
+      "point_id": "CC7.4-P44",
+      "criterion": "CC7.4",
+      "point_of_focus": "Communicates About Security Incidents",
+      "rating": "No",
+      "cis_control_ids": [],
+      "evidence_selector": null,
+      "residual_limitation": "Organizational communication process.",
+      "residual_scope": "organizational_or_inherited"
+    },
+    {
+      "point_id": "CC7.5-P45",
+      "criterion": "CC7.5",
+      "point_of_focus": "Restores the Affected Environment",
+      "rating": "No",
+      "cis_control_ids": [],
+      "evidence_selector": null,
+      "residual_limitation": "Recovery and backup process.",
+      "residual_scope": "organizational_or_inherited"
+    },
+    {
+      "point_id": "CC7.5-P46",
+      "criterion": "CC7.5",
+      "point_of_focus": "Communicates Information About the Event",
+      "rating": "No",
+      "cis_control_ids": [],
+      "evidence_selector": null,
+      "residual_limitation": "Organizational communication process.",
+      "residual_scope": "organizational_or_inherited"
+    },
+    {
+      "point_id": "CC7.5-P47",
+      "criterion": "CC7.5",
+      "point_of_focus": "Evaluates the Effectiveness of Incident Response",
+      "rating": "No",
+      "cis_control_ids": [],
+      "evidence_selector": null,
+      "residual_limitation": "Post-incident management review.",
+      "residual_scope": "organizational_or_inherited"
+    }
+  ],
+  "control_resolution": [
+    {
+      "control_id": "1.1.1",
+      "policy_file": "1.1.1_admin_cloud_only.rego",
+      "data_collector_id": "entra.roles.cloud_only_admins"
+    },
+    {
+      "control_id": "1.1.3",
+      "policy_file": "1.1.3_global_admin_count.rego",
+      "data_collector_id": "entra.roles.privileged_roles"
+    },
+    {
+      "control_id": "1.1.4",
+      "policy_file": "1.1.4_admin_license_footprint.rego",
+      "data_collector_id": "entra.roles.admin_license_footprint"
+    },
+    {
+      "control_id": "1.2.1",
+      "policy_file": "1.2.1_no_unmanaged_public_groups.rego",
+      "data_collector_id": "entra.groups.groups"
+    },
+    {
+      "control_id": "1.3.1",
+      "policy_file": "1.3.1_password_expiration.rego",
+      "data_collector_id": "entra.domains.password_policy"
+    },
+    {
+      "control_id": "1.3.4",
+      "policy_file": "1.3.4_user_owned_apps_restricted.rego",
+      "data_collector_id": "entra.applications.apps_and_services_settings"
+    },
+    {
+      "control_id": "2.1.1",
+      "policy_file": "2.1.1_SafeLinks_OfficeApplications_Enabled.rego",
+      "data_collector_id": "exchange.protection.safe_links_policy"
+    },
+    {
+      "control_id": "2.1.2",
+      "policy_file": "2.1.2_Common_AttachmentTypes_Filter_Enabled.rego",
+      "data_collector_id": "exchange.protection.malware_filter_policy"
+    },
+    {
+      "control_id": "2.1.3",
+      "policy_file": "2.1.3_Notifications_InternalUsers_sendingMalware_Enabled.rego",
+      "data_collector_id": "exchange.protection.malware_filter_policy"
+    },
+    {
+      "control_id": "2.1.4",
+      "policy_file": "2.1.4_Safe_AttachementsPolicy_Enabled.rego",
+      "data_collector_id": "exchange.protection.safe_attachment_policy"
+    },
+    {
+      "control_id": "2.1.5",
+      "policy_file": "2.1.5_Safe_Attachments_SharePoint_OneDrive_MSTeams_Enabled.rego",
+      "data_collector_id": "exchange.protection.atp_policy_o365"
+    },
+    {
+      "control_id": "2.1.6",
+      "policy_file": "2.1.6_Exchange_OnlineSpam_Policies_Notify_Administrators.rego",
+      "data_collector_id": "exchange.protection.hosted_outbound_spam_filter"
+    },
+    {
+      "control_id": "2.1.7",
+      "policy_file": "2.1.7_AntiPhishing_Policy_is_created.rego",
+      "data_collector_id": "exchange.protection.anti_phish_policy"
+    },
+    {
+      "control_id": "2.1.11",
+      "policy_file": "2.1.11_Comprehensive_Attachment_Filtering_Applied.rego",
+      "data_collector_id": "exchange.protection.malware_filter_policy"
+    },
+    {
+      "control_id": "2.4.4",
+      "policy_file": "2.4.4_Zero_hour_AutoPurge_MSTeams_is_On.rego",
+      "data_collector_id": "exchange.protection.teams_protection_policy"
+    },
+    {
+      "control_id": "4.2",
+      "policy_file": "4.2_block_personal_device_enrollment.rego",
+      "data_collector_id": "entra.devices.enrollment_restrictions"
+    },
+    {
+      "control_id": "5.1.2.2",
+      "policy_file": "5.1.2.2_block_third_party_integrated_apps.rego",
+      "data_collector_id": "entra.policies.authorization_policy"
+    },
+    {
+      "control_id": "5.1.5.1",
+      "policy_file": "5.1.5.1_block_user_app_consent.rego",
+      "data_collector_id": "entra.policies.authorization_policy"
+    },
+    {
+      "control_id": "5.1.5.2",
+      "policy_file": "5.1.5.2_admin_consent_workflow_enabled.rego",
+      "data_collector_id": "entra.policies.admin_consent_request_policy"
+    },
+    {
+      "control_id": "5.1.6.1",
+      "policy_file": "5.1.6.1_restrict_collaboration_invite_domains.rego",
+      "data_collector_id": "entra.policies.b2b_policy"
+    },
+    {
+      "control_id": "5.1.6.2",
+      "policy_file": "5.1.6.2_restrict_guest_user_access.rego",
+      "data_collector_id": "entra.policies.authorization_policy"
+    },
+    {
+      "control_id": "5.1.6.3",
+      "policy_file": "5.1.6.3_limit_guest_invitations.rego",
+      "data_collector_id": "entra.policies.authorization_policy"
+    },
+    {
+      "control_id": "5.2.2.3",
+      "policy_file": "5.2.2.3_block_legacy_auth.rego",
+      "data_collector_id": "entra.conditional_access.legacy_auth_block"
+    },
+    {
+      "control_id": "5.2.3.1",
+      "policy_file": "5.2.3.1_mfa_fatigue_protection.rego",
+      "data_collector_id": "entra.authentication.mfa_fatigue_protection"
+    },
+    {
+      "control_id": "5.2.3.2",
+      "policy_file": "5.2.3.2_custom_banned_passwords_enabled.rego",
+      "data_collector_id": "entra.authentication.password_protection"
+    },
+    {
+      "control_id": "5.2.3.3",
+      "policy_file": "5.2.3.3_enable_on_prem_password_protection.rego",
+      "data_collector_id": "entra.authentication.password_protection"
+    },
+    {
+      "control_id": "5.2.3.4",
+      "policy_file": "5.2.3.4_all_members_mfa_capable.rego",
+      "data_collector_id": "entra.authentication.mfa_registration_report"
+    },
+    {
+      "control_id": "5.2.3.5",
+      "policy_file": "5.2.3.5_disable_weak_auth_methods.rego",
+      "data_collector_id": "entra.authentication.authentication_methods"
+    },
+    {
+      "control_id": "5.2.3.6",
+      "policy_file": "5.2.3.6_enable_system_preferred_mfa.rego",
+      "data_collector_id": "entra.authentication.authentication_methods"
+    },
+    {
+      "control_id": "5.2.3.7",
+      "policy_file": "5.2.3.7_disable_email_otp.rego",
+      "data_collector_id": "entra.authentication.authentication_methods"
+    },
+    {
+      "control_id": "5.3.1",
+      "policy_file": "5.3.1_pim_enabled.rego",
+      "data_collector_id": "entra.governance.pim_role_policies"
+    },
+    {
+      "control_id": "5.3.2",
+      "policy_file": "5.3.2_guest_access_reviews_configured.rego",
+      "data_collector_id": "entra.governance.access_reviews"
+    },
+    {
+      "control_id": "5.3.3",
+      "policy_file": "5.3.3_privileged_role_access_reviews_configured.rego",
+      "data_collector_id": "entra.governance.access_reviews"
+    },
+    {
+      "control_id": "5.3.4",
+      "policy_file": "5.3.4_ga_activation_requires_approval.rego",
+      "data_collector_id": "entra.governance.pim_role_policies"
+    },
+    {
+      "control_id": "5.3.5",
+      "policy_file": "5.3.5_pra_activation_requires_approval.rego",
+      "data_collector_id": "entra.governance.pim_role_policies"
+    },
+    {
+      "control_id": "6.1.1",
+      "policy_file": "6.1.1_audit_disabled.rego",
+      "data_collector_id": "exchange.organization.organization_config"
+    },
+    {
+      "control_id": "6.1.2",
+      "policy_file": "6.1.2_mailbox_audit_actions.rego",
+      "data_collector_id": "exchange.mailbox.mailbox_audit_actions"
+    },
+    {
+      "control_id": "6.1.3",
+      "policy_file": "6.1.3_audit_bypass.rego",
+      "data_collector_id": "exchange.mailbox.mailbox_audit"
+    },
+    {
+      "control_id": "6.2.1",
+      "policy_file": "6.2.1_mail_forwarding_blocked.rego",
+      "data_collector_id": "exchange.transport.transport_rules"
+    },
+    {
+      "control_id": "6.2.2",
+      "policy_file": "6.2.2_transport_whitelist.rego",
+      "data_collector_id": "exchange.transport.transport_rules"
+    },
+    {
+      "control_id": "6.2.3",
+      "policy_file": "6.2.3_external_sender_tagging.rego",
+      "data_collector_id": "exchange.transport.external_in_outlook"
+    },
+    {
+      "control_id": "6.5.1",
+      "policy_file": "6.5.1_modern_auth.rego",
+      "data_collector_id": "exchange.organization.organization_config"
+    },
+    {
+      "control_id": "6.5.4",
+      "policy_file": "6.5.4_smtp_auth.rego",
+      "data_collector_id": "exchange.organization.transport_config"
+    },
+    {
+      "control_id": "6.5.5",
+      "policy_file": "6.5.5_direct_send.rego",
+      "data_collector_id": "exchange.organization.organization_config"
+    }
+  ]
+}

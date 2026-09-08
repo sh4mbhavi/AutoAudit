@@ -18,54 +18,79 @@ package cis.microsoft_365_foundations.v6_0_0.control_5_1_5_1
 
 import rego.v1
 
-default result := {
-  "compliant": false,
-  "message": "Unable to determine user consent settings (permissionGrantPoliciesAssigned)",
-  "details": {},
+default assessed_result := {
+	"compliant": null,
+	"message": "Unable to determine user consent settings (permissionGrantPoliciesAssigned)",
+	"details": {},
 }
 
 compliant if {
-  perms := input.default_user_role_permissions
-  assigned := perms.permissionGrantPoliciesAssigned
-  assigned == []
+	perms := input.default_user_role_permissions
+	assigned := perms.permissionGrantPoliciesAssigned
+	assigned == []
 }
 
-compliant_value := true if { compliant } else := false if { true }
+compliant_value if compliant
+
+else := false
 
 assigned_count := count(assigned) if {
-  perms := input.default_user_role_permissions
-  assigned := perms.permissionGrantPoliciesAssigned
-  assigned != null
-} else := null if { true }
+	perms := input.default_user_role_permissions
+	assigned := perms.permissionGrantPoliciesAssigned
+	assigned != null
+} else := null
 
 msg := "User consent to apps is disabled (permissionGrantPoliciesAssigned is empty)" if {
-  compliant
+	compliant
 } else := sprintf(
-  "User consent to apps is enabled/restricted (permissionGrantPoliciesAssigned has %d entries)",
-  [assigned_count],
+	"User consent to apps is enabled/restricted (permissionGrantPoliciesAssigned has %d entries)",
+	[assigned_count],
 ) if {
-  perms := input.default_user_role_permissions
-  assigned := perms.permissionGrantPoliciesAssigned
-  assigned != null
-  not compliant
-} else := "Unable to determine user consent settings (permissionGrantPoliciesAssigned missing)" if { true }
+	perms := input.default_user_role_permissions
+	assigned := perms.permissionGrantPoliciesAssigned
+	assigned != null
+	not compliant
+} else := "Unable to determine user consent settings (permissionGrantPoliciesAssigned missing)"
 
 # According to Graph, user consent is controlled by authorizationPolicy.defaultUserRolePermissions.permissionGrantPoliciesAssigned.
 # CIS intent: user consent should be disabled (empty list).
-result := out if {
-  perms := input.default_user_role_permissions
-  assigned := perms.permissionGrantPoliciesAssigned
+assessed_result := out if {
+	perms := input.default_user_role_permissions
+	assigned := perms.permissionGrantPoliciesAssigned
 
-  is_empty := assigned == []  # strict: disabled
-  ok := is_empty
-
-  out := {
-    "compliant": compliant_value,
-    "message": msg,
-    "details": {
-      "permission_grant_policies_assigned": assigned,
-      "permission_grant_policies_assigned_count": assigned_count,
-    },
-  }
+	out := {
+		"compliant": compliant_value,
+		"message": msg,
+		"details": {
+			"permission_grant_policies_assigned": assigned,
+			"permission_grant_policies_assigned_count": assigned_count,
+		},
+	}
 }
 
+# Typed, complete collector evidence is required before an assessed result is emitted.
+# Kept in this module so captured-source evaluation remains self-contained.
+default result := {
+	"compliant": null,
+	"message": "Unable to evaluate: required evidence is missing, malformed, or incomplete",
+	"affected_resources": [],
+	"details": {"evaluation_status": "indeterminate"},
+}
+
+result := assessed_result if evidence_complete
+
+evidence_complete if {
+	is_object(input)
+	not evidence_error
+	is_array(input.default_user_role_permissions.permissionGrantPoliciesAssigned)
+	every value in input.default_user_role_permissions.permissionGrantPoliciesAssigned { is_string(value) }
+}
+
+# A nested collector error invalidates a partial response as well as a top-level error.
+evidence_error if {
+	some path, value
+	walk(input, [path, value])
+	count(path) > 0
+	path[count(path) - 1] in {"collector_error", "error"}
+	value != null
+}

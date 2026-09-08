@@ -1,0 +1,161 @@
+{
+  "date": "2026-09-06",
+  "timezone": "Australia/Melbourne",
+  "status": "local engineering verified; upstream, hosted, deployment and GRC acceptance pending",
+  "branch": "fix/soc2-phase-5-runtime-trust",
+  "base_commit": "8736fcb9",
+  "prerequisite_snapshot": "phase-4-snapshot.json",
+  "uncommitted": true,
+  "unpushed": true,
+  "integration_environment": {
+    "database": "disposable PostgreSQL 16 on loopback; unique per-test databases",
+    "opa": "real OPA executable",
+    "mandatory_integration": true,
+    "credentials": "synthetic only"
+  },
+  "checks": [
+    {
+      "name": "engine",
+      "command": "uv run --frozen --project engine --extra dev python -m pytest engine/tests -q",
+      "passed": 1196,
+      "skipped": 1,
+      "skip_reason": "existing structural skip",
+      "log": "/tmp/autoaudit-phase5-engine-final.log"
+    },
+    {
+      "name": "backend and tools",
+      "command": "uv run --frozen --project backend-api --extra dev --extra evidence python -m pytest backend-api/tests tools/tests -q",
+      "passed": 151,
+      "cookie_auth_tests": 50,
+      "log": "/tmp/autoaudit-phase5-backend-final.log"
+    },
+    {
+      "name": "OPA",
+      "commands": [
+        "opa check --strict engine/policies",
+        "opa test engine/policies engine/tests"
+      ],
+      "passed": 550
+    },
+    {
+      "name": "frontend",
+      "commands": [
+        "npm exec --yes --package=node@24 -- npm --prefix frontend test",
+        "npm exec --yes --package=node@24 -- npm --prefix frontend run typecheck",
+        "npm exec --yes --package=node@24 -- npm --prefix frontend run lint",
+        "npm exec --yes --package=node@24 -- npm --prefix frontend run build"
+      ],
+      "passed": 232,
+      "test_files": 25,
+      "exit_codes": [
+        0,
+        0,
+        0,
+        0
+      ],
+      "warnings": "9 lint warnings; existing large-chunk advisory",
+      "logs_prefix": "/tmp/autoaudit-phase5-frontend-"
+    },
+    {
+      "name": "PowerShell adversarial boundary",
+      "passed": 101,
+      "included_in_engine": true,
+      "log": "/tmp/autoaudit-phase5-powershell-final.log"
+    },
+    {
+      "name": "API and worker container startup",
+      "command": "python3 tools/ci/container_smoke.py",
+      "result": "passed: actual image builds, migration, API liveness and Celery ping",
+      "log": "/tmp/autoaudit-phase5-container-final.log"
+    },
+    {
+      "name": "Redis TLS authentication and retention",
+      "command": "uv run --frozen --project backend-api python tools/ci/runtime_tls_smoke.py",
+      "result": "passed: verified TLS/auth success, anonymous/wrong password/untrusted CA/plaintext rejection, persistence disabled"
+    },
+    {
+      "name": "PowerShell interpreter and timeout",
+      "command": "uv run --frozen --project engine --extra dev python tools/ci/runtime_powershell_smoke.py",
+      "result": "passed: real PowerShell 7.5 returns clean JSON; success and forced-timeout containers removed; synthetic token absent from argv",
+      "limitation": "Microsoft cmdlets stubbed; no live tenant or module acceptance"
+    },
+    {
+      "name": "browser authentication",
+      "command": "uv run --frozen --project backend-api --with playwright python /tmp/autoaudit-phase5-browser-run.py",
+      "result": "passed",
+      "harness": "temporary local Playwright Chromium harness; real Vite frontend and FastAPI with migrated disposable PostgreSQL; random synthetic user password",
+      "assertions": [
+        "UI login redirects to dashboard",
+        "HttpOnly/Lax session cookie inaccessible to JavaScript",
+        "no bearer storage, Authorization header or token URL",
+        "unsafe logout without CSRF returns403",
+        "refresh rotates cookie and keeps dashboard authenticated after pending requests settle",
+        "old cookie replay returns401",
+        "logout removes cookie and revokes current cookie server-side"
+      ],
+      "limitations": [
+        "loopback HTTP development run; production Secure/HTTPS behavior covered by backend/config tests",
+        "Google provider network callback mocked in backend tests; no live provider sign-in"
+      ],
+      "log": "/tmp/autoaudit-phase5-browser.log",
+      "screenshot": "/tmp/autoaudit-phase5-browser-dashboard.png"
+    },
+    {
+      "name": "pre-commit",
+      "result": "all8 hooks passed with temporary index; real index unstaged",
+      "log": "/tmp/autoaudit-phase5-hooks-final.log"
+    },
+    {
+      "name": "Bandit1.8.6",
+      "result": "application and test checks passed; zero findings",
+      "logs": [
+        "/tmp/autoaudit-phase5-bandit-app.log",
+        "/tmp/autoaudit-phase5-bandit-tests.log"
+      ],
+      "scope": "test assertions excluded only in test command; narrow annotation for deliberate empty provider credential"
+    },
+    {
+      "name": "actionlint",
+      "command": "actionlint .github/workflows/ci.runtime.yml",
+      "result": "passed"
+    },
+    {
+      "name": "Grype",
+      "result": "critical gate passed",
+      "findings": {
+        "critical": 0,
+        "high": 51,
+        "medium": 49,
+        "low": 12
+      },
+      "snapshot_files": 821,
+      "report": "/tmp/autoaudit-phase5-grype.json",
+      "suppressions_added": false
+    },
+    {
+      "name": "git diff --check",
+      "result": "passed"
+    }
+  ],
+  "reviews": {
+    "queue_config": "spec and quality approved after TLS failover/hostname enforcement, redaction and transient-context retry fixes",
+    "powershell": "spec and quality approved after real stdin/timeout behavior and SharePoint provisioning fixes",
+    "authentication": "spec and quality approved after activity-based expiry, malformed CSRF, cross-tab and in-flight refresh fixes",
+    "response_cleanup": "independent review: no findings; discarded response cancellation preserves caller-owned response; four regressions and real browser passed"
+  },
+  "pending_acceptance": [
+    "reviewed integration of complete Phase1-5 stack with current upstream",
+    "publish and verify hosted checks and enforced-check proof",
+    "deployment owner provisions/verifies real TLS, Redis ACL and network boundaries",
+    "same-site HTTPS origins and Google redirect registration",
+    "live Microsoft365 and SharePoint module/tenant acceptance",
+    "prior credential incident follow-up and GRC decisions",
+    "Phase6 transactional queueing and complete selected-tenant SharePoint binding"
+  ],
+  "artifact_notes": "Temporary log/harness paths are local evidence from this session and may expire. Durable smoke tools and tests remain in the source tree; README contains reproducible suite commands.",
+  "final_upstream_observed": "bba14810f558190ee5221017c11864d300f8078a",
+  "prerequisite_preservation": {
+    "files": 171,
+    "result": "original Phase4 worktree files still match initial snapshot exactly"
+  }
+}

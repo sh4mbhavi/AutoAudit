@@ -1,5 +1,305 @@
 # AutoAudit Runbooks
 
+One section per alert. `tools/tests/test_phase10_alert_metrics.py` asserts the
+correspondence in both directions: every alert's `runbook:` anchor resolves to a
+section here, and every section here is referenced by a live alert. Before
+Phase 10 neither held -- two alerts had no runbook at all, and three sections
+described CI/CD alerts that did not exist.
+
+**Which commands apply.** The AutoAudit application sections use `docker compose`,
+because `docker-compose.production.yml` is the only deployment descriptor this
+repository contains. The platform sections at the end use `kubectl`, because the
+series they read come from kube-state-metrics and the kubelet, which exist only
+on Kubernetes -- a platform this repository does not define and whose selection is
+still open (see `docs/compliance/phase-10/deployment-platform-decision.md`).
+Translate them when the platform is chosen.
+
+---
+
+## API/APIServerErrorRateHigh
+
+### Summary
+More than twenty 5xx responses in five minutes, from
+`autoaudit_api_errors_total{class="5xx"}`. Client errors are excluded.
+
+### Impact
+The API is failing requests. Scans cannot be created and the dashboard cannot
+load; this is user-visible.
+
+### Investigation
+1. Which routes: `sum by (route, status) (increase(autoaudit_api_errors_total{class="5xx"}[15m]))`.
+2. Check readiness, which reports the dependencies rather than the process:
+   `curl -fsS localhost:8000/readiness | jq`.
+3. Look for the correlated request ids in the API log. Every request logs
+   `request_id`, and the same value is echoed in the `X-Request-ID` response
+   header and stored on `scan.correlation_id` for anything scan-related.
+4. `docker compose -f docker-compose.production.yml logs --tail=200 backend-api`.
+
+### Remediation
+- If `/readiness` reports the database or broker unhealthy, treat that as the
+  incident; the 5xx rate is a symptom.
+- If errors are concentrated on one route, that route's recent change is the
+  first suspect.
+
+### Verification
+The rate returns below the threshold and `/readiness` reports `ready`.
+
+---
+
+## API/APIClientErrorRateHigh
+
+### Summary
+A sustained 4xx rate, from `autoaudit_api_errors_total{class="4xx"}`.
+
+### Impact
+Usually none to the service. It normally means a client build is calling the API
+incorrectly, or a large number of sessions have expired at once.
+
+### Investigation
+1. Split by status: a 401 spike is sessions; a 422 spike is a client sending
+   payloads the schema rejects; a 403 spike is CSRF or role.
+2. If it is 403 on unsafe methods, check that `FRONTEND_URL` matches the origin
+   the browser actually sends -- `CSRFMiddleware` requires an exact match.
+
+### Remediation
+- Correct the client, or the `FRONTEND_URL`/CORS configuration.
+- This alert is a warning on purpose. It does not warrant a wake-up.
+
+### Verification
+The rate returns below the threshold.
+
+---
+
+## API/APILatencyHigh
+
+### Summary
+p95 above five seconds on a route, from
+`autoaudit_api_request_duration_seconds_bucket`.
+
+### Impact
+The UI feels broken. The scan detail page polls a summary endpoint that is meant
+to answer a 304 in milliseconds.
+
+### Investigation
+1. Identify the route from the alert label. `/v1/evidence` upload routes are
+   bounded by `EVIDENCE_PROCESSING_TIMEOUT_SECONDS` (default 120) and are
+   expected to be slow; the scan poll routes are not.
+2. If a scan route is slow, check the database: the summary endpoint's ETag path
+   avoids the per-control query entirely, so slowness there suggests the
+   conditional path is not being taken -- confirm clients are sending
+   `If-None-Match`.
+3. Check connection-pool saturation. Neither the API nor the worker sets an
+   explicit pool size; see the known gaps in the Phase 10 handoff.
+
+### Remediation
+- Scale the API, or reduce concurrent scan load.
+
+### Verification
+p95 for the route returns below five seconds.
+
+---
+
+## API/StoredCredentialUnreadable
+
+### Summary
+`autoaudit_decryption_failures_total` increased: stored ciphertext that no key in
+the encryption key ring can read.
+
+### Impact
+**Every affected tenant cannot be scanned.** This is almost never a code fault.
+
+### Investigation
+1. The overwhelmingly likely cause is a key rotation: a retired key was removed
+   from `ENCRYPTION_KEY_DECRYPT_ONLY` before the rewrite pass finished.
+2. Confirm with `tools/ops/rotate_encryption_key.py --check`. It reports rows it
+   cannot read, by connection id, and never prints ciphertext or key material.
+3. Confirm the API and the worker carry the *same* ring. They are configured
+   independently and are updated at different times by construction.
+
+### Remediation
+- **Restore the removed key to `ENCRYPTION_KEY_DECRYPT_ONLY` first.** The data is
+  recoverable only while a key that can read it exists somewhere.
+- Then run `tools/ops/rotate_encryption_key.py` to completion, and only remove
+  the retired key once `--check` reports nothing outstanding.
+- If the key is genuinely lost, the affected connections must have their client
+  secrets re-entered by their owners. There is no recovery path.
+
+### Verification
+`--check` reports zero unreadable rows and the counter stops rising.
+
+---
+
+## ScanLifecycle/ScanExporterDown
+
+### Summary
+`autoaudit_collector_exporter_up` is 0 or absent.
+
+### Impact
+Severe, and larger than it looks. The dispatcher is the only path by which a scan
+reaches the broker: while it is down, no scan starts, nothing recovers, and every
+other alert in the scan-lifecycle group is blind because its gauges are stale.
+
+### Investigation
+1. Is the process running?
+   `docker compose -f docker-compose.production.yml ps dispatcher`.
+2. `docker compose -f docker-compose.production.yml logs --tail=100 dispatcher`.
+   The dispatcher deliberately logs `dispatcher_cycle_failed` without exception
+   text, because a database URL carries credentials; correlate with the database.
+3. If the process is up but the gauge is 0, the database read is failing rather
+   than the process being dead.
+
+### Remediation
+- Restore database connectivity, then restart the dispatcher.
+- A single recovery pass can be run by hand: `python -m worker.dispatcher --once`.
+  Note that a `--once` run starts no metrics server by design.
+
+### Verification
+The gauge returns to 1 and `autoaudit_dispatch_backlog{state="due"}` starts falling.
+
+---
+
+## ScanLifecycle/ScanStalled
+
+### Summary
+`autoaudit_scan_oldest_progress_age_seconds` above 1800: a live scan has not
+advanced in half an hour.
+
+### Impact
+The scan will be failed with `scan_deadline_exceeded` when it reaches
+`SCAN_DEADLINE_SECONDS` (default 3600). This alert fires at roughly the halfway
+point so there is time to intervene.
+
+### Investigation
+1. Which scan: `SELECT id, status, last_progress_at, deadline_at FROM scan
+   WHERE status IN ('pending','running') ORDER BY last_progress_at LIMIT 5;`
+2. Is the worker consuming? `docker compose ... logs --tail=100 worker`.
+3. Is the PowerShell service reachable? Exchange collections hold a session for
+   up to a 300-second batch, so a hung service stalls a scan without erroring.
+4. Is the outbox draining? See ScanLifecycle/DispatchBacklogStuck.
+
+### Remediation
+- Restore whichever dependency is stuck. The outbox is durable: work resumes
+  without re-creating the scan.
+- Do not delete the scan to "unstick" it. The deadline path is the designed
+  recovery and it records a reason code.
+
+### Verification
+The age falls, or the scan reaches a terminal state.
+
+---
+
+## ScanLifecycle/ScansPastDeadline
+
+### Summary
+`autoaudit_scans_past_deadline` above zero for ten minutes.
+
+### Impact
+Worse than a stalled scan. The reconciler is supposed to fail a scan the moment
+its deadline passes, so a scan still past its deadline ten minutes later means
+the recovery path itself is not running.
+
+### Investigation
+1. Check ScanLifecycle/ScanExporterDown first -- the same process runs both the
+   reconciler and the exporter, so they usually fail together.
+2. If the exporter is up, the reconcile pass is failing while `publish_due`
+   continues; check the dispatcher log for `dispatcher_cycle_failed`.
+
+### Remediation
+- Restart the dispatcher and confirm a cycle completes.
+- `python -m worker.dispatcher --once` exits non-zero on a failed pass, which is
+  the quickest way to see whether reconcile can run at all.
+
+### Verification
+The gauge returns to zero as the overdue scans are failed.
+
+---
+
+## ScanLifecycle/DispatchBacklogStuck
+
+### Summary
+`autoaudit_dispatch_oldest_wait_seconds` above 900: outbox work has been due for
+over fifteen minutes without being published.
+
+### Impact
+No new scan work reaches the worker. Because Phase 6 makes the outbox the only
+authorisation to publish, a stuck outbox is a stopped product.
+
+### Investigation
+1. Almost always the broker. A failed publish defers the row and records
+   `last_error='broker_unavailable'` rather than dropping it:
+   `SELECT last_error, count(*) FROM scan_dispatch GROUP BY last_error;`
+2. Check Redis. Note that `infrastructure/runtime/redis.conf` sets
+   `maxmemory-policy noeviction`, so under memory pressure Redis refuses writes
+   rather than dropping messages -- which is correct for an outbox and presents
+   as publish failures.
+3. Check the dispatcher is running at all (ScanExporterDown).
+
+### Remediation
+- Restore the broker. The backlog drains on the next cycle with no manual
+  requeue: retry state lives in PostgreSQL, not in Redis.
+
+### Verification
+`autoaudit_dispatch_backlog{state="due"}` and the wait gauge both fall.
+
+---
+
+## ScanLifecycle/DispatchRetriesNearExhaustion
+
+### Summary
+Rows have consumed six or more of their eight delivery attempts.
+
+### Impact
+When the budget is exhausted the **whole scan** fails with
+`dispatch_retry_exhausted`, not just the one task.
+
+### Investigation
+1. `SELECT id, scan_id, task_name, attempts, last_error FROM scan_dispatch
+   WHERE attempts >= 6;`
+2. `last_error` distinguishes a broker problem from a task that is being
+   redelivered and failing.
+3. A known pre-existing case: a pending control whose metadata is not `ready`
+   falls back to a per-result row that `evaluate_control` refuses, so it
+   exhausts. This is recorded as an unfixed finding in the Phase 9 and Phase 10
+   handoffs.
+
+### Remediation
+- Fix the underlying delivery failure. Attempts are not resettable by design;
+  the budget is what stops an unrecoverable scan from retrying forever.
+
+### Verification
+No rows remain at six or more attempts.
+
+---
+
+## ScanLifecycle/ControlErrorRateHigh
+
+### Summary
+More than twenty control results landed in `error` in thirty minutes.
+
+### Impact
+Those scans under-report coverage. Note what this is **not**: `error` means
+AutoAudit could not assess the control. A `failed` control is a tenant that is
+non-compliant -- a true product finding, not an operational event -- and this
+alert deliberately does not fire on it.
+
+### Investigation
+1. Group by reason: `SELECT reason_code, count(*) FROM scan_result
+   WHERE status='error' AND updated_at > now() - interval '1 hour'
+   GROUP BY reason_code ORDER BY 2 DESC;`
+2. `authentication_error` or `authorization_error` concentrated on one tenant is
+   a credential or consent problem, not a system fault. If it is spread across
+   tenants, see API/StoredCredentialUnreadable.
+3. `evaluation_error` points at OPA; `collection_error` at Graph, Exchange or the
+   PowerShell service.
+
+### Remediation
+- Address the dominant reason code. A scan can be re-run once the cause is fixed;
+  results are versioned, and re-running creates new evidence rather than
+  overwriting the old.
+
+### Verification
+The error count stops rising.
+
 ---
 
 ## ResourceUtilisation/ClusterStorageCapacityWarning
@@ -124,150 +424,6 @@ Low memory can cause pod evictions, OOM kills, and degraded performance.
 
 ---
 
-## CICD/BuildFailures
-
-### Summary
-Alert triggers when one or more CI build failures occur within 15 minutes.
-
-### Impact
-Build failures block deployment pipelines and delay releases.
-
-### Investigation Steps
-1. Access CI system logs for failed builds.
-2. Identify failure causes: compilation errors, test failures, environment issues.
-3. Check recent code changes or dependency updates.
-
-### Remediation
-- Fix build errors or flaky tests.
-- Roll back problematic commits if needed.
-- Verify build environment stability.
-
-### Verification
-- Confirm successful builds in subsequent runs.
-- Alert resolves after no failures detected.
-
----
-
-## CICD/DeploymentRollback
-
-### Summary
-Alert triggers when deployment rollbacks occur within 10 minutes.
-
-### Impact
-Rollbacks indicate failed deployments impacting production stability.
-
-### Investigation Steps
-1. Review deployment logs and events.
-2. Identify rollback reasons: failed health checks, crashes, config errors.
-3. Check recent changes in deployment manifests or images.
-
-### Remediation
-- Fix deployment issues.
-- Test changes in staging before production.
-- Coordinate with development teams.
-
-### Verification
-- Confirm successful deployments without rollbacks.
-- Alert clears after stable deployment.
-
----
-
-## CICD/SecurityScanFailures
-
-### Summary
-Alert triggers when security scans in CI pipeline fail within 15 minutes.
-
-### Impact
-Failed scans may allow vulnerabilities to reach production.
-
-### Investigation Steps
-1. Review security scan logs and reports.
-2. Identify scan tool errors or misconfigurations.
-3. Check for network or credential issues.
-
-### Remediation
-- Fix scan tool configuration.
-- Resolve network or permission problems.
-- Re-run scans after fixes.
-
-### Verification
-- Confirm successful scan completions.
-- Alert resolves when no failures detected.
-
----
-
-## Application/APIErrorRateHigh
-
-### Summary
-Alert triggers when API error rate exceeds 20 errors in 5 minutes.
-
-### Impact
-High error rates degrade user experience and indicate service issues.
-
-### Investigation Steps
-1. Check API gateway logs for error details.
-2. Identify error types (4xx, 5xx) and affected endpoints.
-3. Review recent deployments or configuration changes.
-
-### Remediation
-- Fix application bugs or misconfigurations.
-- Roll back recent changes if needed.
-- Scale backend services if overloaded.
-
-### Verification
-- Confirm error rate drops below threshold.
-- Alert clears after stabilisation.
-
----
-
-## Application/ScanEngineFailure
-
-### Summary
-Alert triggers when scan engine errors occur within 1 minute.
-
-### Impact
-Scan engine failures reduce security and compliance coverage.
-
-### Investigation Steps
-1. Review scan engine logs for error messages.
-2. Check resource usage and connectivity.
-3. Verify scan engine service health.
-
-### Remediation
-- Restart scan engine service.
-- Fix configuration or dependency issues.
-- Allocate additional resources if needed.
-
-### Verification
-- Confirm scan engine operates without errors.
-- Alert clears after recovery.
-
----
-
-## Application/JobFailureRateHigh
-
-### Summary
-Alert triggers when batch job failures exceed 5 in 10 minutes.
-
-### Impact
-High job failure rates affect data processing and system reliability.
-
-### Investigation Steps
-1. Review batch job logs and error messages.
-2. Identify common failure causes.
-3. Check resource availability and dependencies.
-
-### Remediation
-- Fix job scripts or code.
-- Increase resource allocation.
-- Retry failed jobs if appropriate.
-
-### Verification
-- Confirm job success rates improve.
-- Alert clears after sustained success.
-
----
-
 ## Infrastructure/NodeCPUSaturation
 
 ### Summary
@@ -339,169 +495,3 @@ Low disk space can cause system failures and data loss.
 - Alert clears after remediation.
 
 ---
-
-## Compliance/MissingComplianceScans
-
-### Summary
-Alert triggers when no successful compliance scans occur in 1 hour.
-
-### Impact
-Lack of scans risks undetected compliance violations.
-
-### Investigation Steps
-1. Verify compliance scanner service status.
-2. Check scan schedules and logs.
-3. Investigate connectivity or permission issues.
-
-### Remediation
-- Restart or fix scanner service.
-- Adjust scan schedules if needed.
-- Resolve network or credential problems.
-
-### Verification
-- Confirm successful scans resume.
-- Alert clears after scans complete.
-
----
-
-## Compliance/FailedAuditChecks
-
-### Summary
-Alert triggers when compliance audit failures exceed 5 in 30 minutes.
-
-### Impact
-Audit failures indicate non-compliance risks.
-
-### Investigation Steps
-1. Review audit failure logs.
-2. Identify failed controls or policies.
-3. Check recent configuration changes.
-
-### Remediation
-- Remediate non-compliant configurations.
-- Update policies or controls.
-- Communicate with compliance team.
-
-### Verification
-- Confirm audit failures reduce.
-- Alert clears after compliance restored.
-
----
-
-## Compliance/MissingControlsDetected
-
-### Summary
-Alert triggers when required compliance controls are missing or disabled.
-
-### Impact
-Missing controls increase security and compliance risks.
-
-### Investigation Steps
-1. Identify missing or disabled controls.
-2. Review control configuration and enforcement.
-3. Check recent changes or overrides.
-
-### Remediation
-- Enable or implement missing controls.
-- Audit control configurations.
-- Train teams on compliance requirements.
-
-### Verification
-- Confirm controls are active.
-- Alert clears after remediation.
-
----
-
-## Security/UnauthorisedAccessAttempt
-
-### Summary
-Alert triggers when failed login attempts exceed 10 in 5 minutes.
-
-### Impact
-May indicate brute force or credential stuffing attacks.
-
-### Investigation Steps
-1. Review authentication logs.
-2. Identify source IPs and accounts.
-3. Check for suspicious patterns.
-
-### Remediation
-- Block malicious IPs.
-- Enforce multi-factor authentication.
-- Notify security team.
-
-### Verification
-- Confirm failed attempts decrease.
-- Alert clears after mitigation.
-
----
-
-## Security/ScanEngineFailure
-
-### Summary
-Alert triggers on scan engine errors within 1 minute.
-
-### Impact
-Reduces security scanning effectiveness.
-
-### Investigation Steps
-1. Check scan engine logs.
-2. Verify service health and connectivity.
-3. Review resource usage.
-
-### Remediation
-- Restart scan engine.
-- Fix configuration or dependencies.
-- Allocate resources as needed.
-
-### Verification
-- Confirm error-free operation.
-- Alert clears after recovery.
-
----
-
-## Security/PrivilegeEscalation
-
-### Summary
-Alert triggers are sent for detected privilege escalation events within 10 minutes.
-
-### Impact
-Indicates potential insider threat or attack.
-
-### Investigation Steps
-1. Review escalation event logs.
-2. Identify affected accounts and actions.
-3. Correlate with other security events.
-
-### Remediation
-- Contain affected accounts.
-- Conduct forensic analysis.
-- Update access controls.
-
-### Verification
-- Confirm no further escalations.
-- Alert clears after containment.
-
----
-
-## Security/VulnerabilityScanFailure
-
-### Summary
-Alert triggers when no successful vulnerability scans occur in 30 minutes.
-
-### Impact
-Vulnerabilities may remain undetected.
-
-### Investigation Steps
-1. Check vulnerability scanner status.
-2. Review scan schedules and logs.
-3. Investigate connectivity or permission issues.
-
-### Remediation
-- Restart or fix the scanner.
-- Adjust schedules.
-- Resolve network or credential problems.
-
-### Verification
-- Confirm scans resume successfully.
-- Alert clears after scans complete.

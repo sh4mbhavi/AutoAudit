@@ -23,16 +23,27 @@ class PasswordPolicyDataCollector(BaseDataCollector):
         domain_data = []
         for domain in domains:
             # Federated domains return null for password properties
-            is_managed = domain.get("authenticationType") == "Managed"
+            authentication_type = domain.get("authenticationType")
+            is_managed = (
+                authentication_type == "Managed"
+                if authentication_type in ("Managed", "Federated")
+                else None
+            )
 
-            domain_data.append({
-                "domain_name": domain.get("id"),
-                "is_default": domain.get("isDefault", False),
-                "is_managed": is_managed,
-                "authentication_type": domain.get("authenticationType"),
-                "password_validity_days": domain.get("passwordValidityPeriodInDays"),
-                "password_notification_days": domain.get("passwordNotificationWindowInDays"),
-            })
+            domain_data.append(
+                {
+                    "domain_name": domain.get("id"),
+                    "is_default": domain.get("isDefault", False),
+                    "is_managed": is_managed,
+                    "authentication_type": domain.get("authenticationType"),
+                    "password_validity_days": domain.get(
+                        "passwordValidityPeriodInDays"
+                    ),
+                    "password_notification_days": domain.get(
+                        "passwordNotificationWindowInDays"
+                    ),
+                }
+            )
 
         return {
             "domains": domain_data,

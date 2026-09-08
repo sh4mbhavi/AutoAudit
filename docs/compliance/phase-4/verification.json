@@ -1,0 +1,64 @@
+{
+  "date": "2026-09-05",
+  "status": "local engineering verified; hosted enforcement and GRC pending",
+  "engine": {
+    "passed": 1065,
+    "skipped_existing": 1,
+    "real_postgresql": true
+  },
+  "backend_and_tools": {
+    "passed": 75
+  },
+  "opa": {
+    "version": "1.20.2",
+    "passed": 550,
+    "strict_whole_policy_corpus": true
+  },
+  "frontend": {
+    "node_major": 24,
+    "passed": 232,
+    "typecheck": true,
+    "lint": true,
+    "build": true,
+    "existing_lint_warnings": 10
+  },
+  "containers": {
+    "api_migration_and_liveness": true,
+    "worker_broker_ping": true,
+    "final_sources_rebuilt": true
+  },
+  "grype": {
+    "version": "0.118.0",
+    "source_exit": 0,
+    "critical": 0,
+    "high": 51,
+    "medium": 49,
+    "low": 12,
+    "critical_canary_exit": 2
+  },
+  "actionlint": {
+    "version": "1.7.12",
+    "changed_workflows": 6,
+    "passed": true
+  },
+  "bandit": {
+    "version": "1.8.6",
+    "application_passed": true,
+    "tests_passed": true
+  },
+  "pre_commit": {
+    "hooks_passed": 8,
+    "real_index_staged": false
+  },
+  "cleanup": {
+    "remaining_test_databases": 0,
+    "disposable_postgres_stopped": true
+  },
+  "external": {
+    "main_observed": "0bd9b9db4dd973cc617dc7ef2e98a64ee4de58fe",
+    "public_protected_flag": true,
+    "detailed_protection_read_http": 401,
+    "settings_changed": false,
+    "pushed": false
+  }
+}

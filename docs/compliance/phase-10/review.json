@@ -1,0 +1,512 @@
+{
+  "phase": 10,
+  "method": "six independent reviewers over the landed Phase 10 diff, then three independent refuters per finding with distinct lenses (is it true / is it reachable / is it already handled), defaulting to refuted when uncertain",
+  "candidate_findings": 60,
+  "dimensions": [
+    "The encryption key ring and the rotation pass",
+    "Metrics correctness, cardinality and what the numbers actually mean",
+    "Backup, restore and data loss",
+    "Evidence lifecycle endpoints and the retention report",
+    "Deployment topology and the smoke tests",
+    "What the gates actually prove, and whether any claim is unsupported"
+  ],
+  "agents": {
+    "total": 186,
+    "completed": 185,
+    "errored": 1,
+    "note": "One refuter was refused by a model safeguard. Its finding still received two verdicts, which is enough for the survival rule; the scoring records verdict counts per finding so a partially verified finding is visible rather than silently treated as refuted. Phase 9 recorded that its own rule did exactly that, which is why this one reports an explicit `unverified` bucket -- empty here."
+  },
+  "outcome_counts": {
+    "survived": 15,
+    "unverified": 0,
+    "refuted": 45
+  },
+  "survived_and_fixed": [
+    {
+      "severity": "critical",
+      "title": "ENCRYPTION_KEY_DECRYPT_ONLY is never passed into any container, so the key ring is inert in every shipped deployment topology",
+      "location": "docker-compose.production.yml:68 (also :111 backend worker, :140 dispatcher) and docker-compose.yml:132, :184",
+      "dimension": "the encryption key ring and the rotation pass",
+      "verdicts": 3,
+      "refuted_count": 0,
+      "what_is_wrong": "Every compose service declares its environment as an explicit key list, and there is no `env_file:` directive anywhere in either compose file (verified: `grep -n env_file docker-compose*.yml` returns nothing). Only `ENCRYPTION_KEY` is forwarded. `ENCRYPTION_KEY_DECRYPT_ONLY` appears nowhere in docker-compose.yml, docker-compose.production.yml, or .github/workflows/pr.preview-deploy.yml -- it exists only as a commented line in env.example:39. Docker Compose reads the project `.env` for *variable substitution*, not for injection into containers, so a value set there never reaches the API, the worker or the dispatcher process. The entire Phase 10 key ring (backend-api/app/core/config.py:55, engine/worker/config.py:67, backend-api/app/services/encryption.py:71-73, engine/worker/db.py:89-91) is therefore permanently empty under the only deployment templates the repository ships, and tools/tests/test_phase10_deployment.py asserts METRICS_PORT and DRIFT_FACT_HMAC_KEY are wired but never asserts this one.",
+      "disposition": "Added ENCRYPTION_KEY_DECRYPT_ONLY to backend-api, worker and dispatcher in docker-compose.production.yml and to backend-api and worker in docker-compose.yml. tools/tests/test_phase10_deployment.py now asserts it reaches every service, the way DRIFT_FACT_HMAC_KEY and METRICS_PORT already were."
+    },
+    {
+      "severity": "medium",
+      "title": "The row-lock test never runs the rotation and cannot fail if FOR UPDATE is deleted",
+      "location": "tools/tests/test_phase10_key_rotation.py:267-300",
+      "dimension": "the encryption key ring and the rotation pass",
+      "verdicts": 3,
+      "refuted_count": 0,
+      "what_is_wrong": "`test_the_row_is_locked_while_it_is_rewritten` is the only test for what the module docstring calls the central risk (\"the whole risk lives in the row lock\"). It never calls `module.rotate_connections`. It opens its own `holder` session, issues its own `SELECT ... FOR UPDATE`, opens a `contender` session with a 250ms lock_timeout, and asserts that the contender's own `SELECT ... FOR UPDATE` times out. Every SQL statement in the test is written by the test. `module` is used only for `module.async_url`. The assertion therefore characterises PostgreSQL's row-lock semantics, not the tool's behaviour.",
+      "disposition": "Replaced with an assertion on the tool's own SELECT statement, which is what can actually regress. The contention check is kept as corroboration."
+    },
+    {
+      "severity": "high",
+      "title": "StoredCredentialUnreadable cannot fire on the first decryption failure: the counter is never initialised to zero",
+      "location": "backend-api/app/core/metrics.py:78-84, backend-api/app/api/v1/m365_connections.py:45-49, infrastructure/monitoring/alerts/application.yaml:72",
+      "dimension": "metrics correctness, cardinality and what the numbers actually mean",
+      "verdicts": 2,
+      "refuted_count": 0,
+      "what_is_wrong": "`decryption_failures_total` is a labelled Counter whose only child (`column=\"m365_connection.encrypted_client_secret\"`) is created lazily, inside the `except InvalidToken` handler at m365_connections.py:47. Nothing calls `.labels(...)` at import time, so the series does not exist until the moment of the first failure, and it appears already at the value 1 \u2014 there is no preceding 0 sample.\n\nThe alert is `increase(autoaudit_decryption_failures_total[15m]) > 0` with `for: 0m`. Prometheus computes `increase` as (last sample \u2212 first sample) in the range, with counter-reset correction and extrapolation; the \"extrapolate back to zero\" branch only applies when that difference is already > 0. A series that is flat at 1 for the whole window therefore yields increase = 0, and the alert never fires.\n\nThe promtool unit test that is supposed to pin this (infrastructure/monitoring/alerts/tests/rule_tests.yaml:74-75) feeds `values: '0 0 0 1 1 1 ...'` \u2014 it synthesises three leading zero samples the exporter can never emit, so it proves a shape the real series does not have and cannot catch the bug.\n\nThis directly contradicts the rule's own comment at application.yaml:68-70 (\"A retired key dropped from ENCRYPTION_KEY_DECRYPT_ONLY ... shows up here first, and every increment is a tenant that cannot be scanned\") and _stored_secret's docstring at m365_connections.py:41-43.",
+      "disposition": "Every column that can produce the failure is initialised to zero at import (DECRYPTABLE_COLUMNS), so increase() can see the rise from nothing."
+    },
+    {
+      "severity": "medium",
+      "title": "CSRF rejections, CORS preflights and outer-middleware 500s never reach observe_request",
+      "location": "backend-api/app/main.py:23-28, backend-api/app/core/sessions.py:189-203, backend-api/app/core/middleware.py:72-77",
+      "dimension": "metrics correctness, cardinality and what the numbers actually mean",
+      "verdicts": 3,
+      "refuted_count": 1,
+      "what_is_wrong": "`add_middleware` prepends, so the three calls at main.py:23-28 (RequestLogging, then CSRF, then CORS) build the stack ServerError \u2192 CORS \u2192 CSRF \u2192 RequestLogging \u2192 ExceptionMiddleware \u2192 router. RequestLoggingMiddleware \u2014 the only thing that calls `observe_request` \u2014 is the innermost of the three.\n\nCSRFMiddleware.dispatch (sessions.py:189-203) returns a 403 JSONResponse *without* calling `call_next` for every request whose method is not GET/HEAD/OPTIONS and whose Origin/cookie/header check fails. Those requests never reach RequestLoggingMiddleware, so they appear in none of `autoaudit_api_requests_total`, `autoaudit_api_errors_total` or `autoaudit_api_request_duration_seconds` \u2014 and get no X-Request-ID header and no access-log line either. CORSMiddleware answers preflight OPTIONS itself, so those are uncounted too, and any exception raised inside CORS or CSRF is turned into a 500 by ServerErrorMiddleware (outermost) without being observed.\n\nThe metric HELP says \"HTTP requests handled by the API\" (metrics.py:39), and middleware.py:43-46 justifies the exception path with \"Recording it only on the success path would make the one failure mode an operator most needs to see the one the metric cannot show\" \u2014 which is exactly the state the ordering leaves the two outer middlewares in. There is no test anywhere that exercises `observe_request`, `route_label` or `/metrics` (no file under backend-api/tests references them).",
+      "disposition": "CSRF rejections are now observed in CSRFMiddleware itself, under a dedicated __csrf_rejected__ route bucket. Recorded there rather than by reordering the stack, because the ordering is load-bearing for Phase 9's conditional-poll 304. CORS preflights (OPTIONS) and outer-middleware 500s remain unobserved and are recorded as a known gap."
+    },
+    {
+      "severity": "medium",
+      "title": "test_every_result_status_is_emitted_even_at_zero cannot fail \u2014 .labels() creates the child it asserts on",
+      "location": "engine/tests/test_phase10_metrics.py:290-307 (helper at :134-135)",
+      "dimension": "metrics correctness, cardinality and what the numbers actually mean",
+      "verdicts": 3,
+      "refuted_count": 0,
+      "what_is_wrong": "The helper is `_value(metric, **labels) -> metric.labels(**labels)._value.get()`. `prometheus_client`'s `MetricWrapperBase.labels()` *creates and caches* a child initialised to 0 when the label set is absent. So `_value(control_results, status=\"indeterminate\")` returns 0.0 whether or not `_apply` ever emitted that series, and the loop's `assert ... >= 0` is true for every non-negative count in any case.\n\nBoth assertions in this test therefore pass against the pre-fix implementation the docstring says they guard against (the version that only set labels returned by `GROUP BY status`). The test is the named regression for RESULT_STATES (metrics.py:67-84) and it cannot detect its removal. Worse, calling it actually creates the series it is checking for, so running it makes the exporter's output match the assertion.",
+      "disposition": "Rewritten to assert the exposition text. .labels() creates the child, so the old `>= 0` assertion was trivially true and would have passed even if _apply never emitted the status."
+    },
+    {
+      "severity": "low",
+      "title": "The delta()-extrapolation justification for RESULT_STATES overstates Prometheus's behaviour by roughly an order of magnitude",
+      "location": "engine/worker/metrics.py:67-75, repeated at engine/tests/test_phase10_metrics.py:291-297",
+      "dimension": "metrics correctness, cardinality and what the numbers actually mean",
+      "verdicts": 3,
+      "refuted_count": 0,
+      "what_is_wrong": "The comment states, and calls \"load-bearing, not tidiness\": \"`delta()` over a series that has only just appeared EXTRAPOLATES across the whole range window. Four errors three minutes into a thirty-minute window would be read as forty, and ControlErrorRateHigh would fire on a fifth of its threshold.\"\n\nPrometheus does not extrapolate across the whole window. `extrapolatedRate` clamps it: `extrapolationThreshold = averageDurationBetweenSamples * 1.1`, and when the gap from the range start to the first sample exceeds that threshold it contributes only `extrapolationThreshold / 2`. For a series appearing 3 minutes into a 30-minute window at a 1-minute scrape, the factor is about 1.04, so four errors read as ~4.2, not 40. Even the worst case \u2014 exactly two samples in the window \u2014 is capped at roughly 2.1\u00d7.\n\nEmitting every status including zero is still the right thing to do; the stated reason for it is simply wrong, and a maintainer who reasons from this model will draw wrong conclusions about every other `delta()`/`rate()` expression in the rule set.",
+      "disposition": "Comment restated: Prometheus clamps the extrapolation, so the error is bounded at roughly 2x rather than an order of magnitude. The reason to emit zero stands; the magnitude was wrong."
+    },
+    {
+      "severity": "high",
+      "title": "The documented restore puts the evidence store one directory too deep, so every restored evidence object is unreachable",
+      "location": "tools/ops/backup.py:137, tools/ops/backup.py:240-243, docs/compliance/phase-10/backup-and-recovery.md:104,116",
+      "dimension": "backup, restore and data loss",
+      "verdicts": 3,
+      "refuted_count": 0,
+      "what_is_wrong": "create() archives the evidence directory under a fixed arcname: `bundle.add(evidence_dir, arcname=\"evidence-store\")` (backup.py:137), so every member is named `evidence-store/<key>`. restore() then extracts that archive with `_safe_extract(bundle, evidence_dir)` (backup.py:243) using the *same* `--evidence-dir` root. The round trip is therefore not the identity: an object stored at `<root>/reports/r.pdf` comes back at `<root>/evidence-store/reports/r.pdf`. The documented procedure passes the identical path to both commands (`--evidence-dir /var/lib/autoaudit/evidence-store` at doc lines 104 and 116), so following the documentation exactly produces `/var/lib/autoaudit/evidence-store/evidence-store/...`. LocalFilesystemStorage.resolve() (backend-api/app/services/evidence_storage.py:225-232) joins `EVIDENCE_STORAGE_DIR` with the stored key and nothing else, so after the documented restore every lookup misses. The test does not catch this because it asserts against the nested layout rather than the round trip: `root = restored_evidence / \"evidence-store\"` (test_phase10_backup_restore.py:212-214) bakes the extra level in as expected behaviour, and it restores into a fresh empty directory rather than back over the store it dumped.",
+      "disposition": "The archive's fixed root is stripped on extraction, so the store's contents land directly in --evidence-dir. The test now asserts the objects are NOT under a nested evidence-store/."
+    },
+    {
+      "severity": "high",
+      "title": "Legal hold and delete are a TOCTOU pair with no row lock: a hold committed after the check still loses the bytes",
+      "location": "backend-api/app/api/v1/evidence.py:1075-1145 (delete_artifact) against backend-api/app/api/v1/evidence.py:1668-1704 (set_legal_hold)",
+      "dimension": "Evidence lifecycle endpoints (set_legal_hold, read_audit_events, _bounded_json) and the retention report",
+      "verdicts": 3,
+      "refuted_count": 1,
+      "what_is_wrong": "delete_artifact reads the artifact with a plain SELECT (line 1075, _owned_artifact has no with_for_update), checks artifact.legal_hold at line 1089, and only then performs the irreversible storage.delete at line 1112. set_legal_hold reads with an equally unlocked SELECT (line 1668) and writes legal_hold at line 1689/1704. Sessions are plain READ COMMITTED (backend-api/app/db/session.py:6-10), so nothing serialises the two. The status UPDATE SQLAlchemy finally emits is `SET status=..., deleted_at=... WHERE id=:id` -- it does not re-assert `legal_hold = false`, so it cannot fail even if the hold landed in between. Phase 10 is what makes this reachable: until now the only way to set the flag was a DBA statement (the module's own comment at evidence.py:1606-1609 says so), so there was no concurrent writer.",
+      "disposition": "set_legal_hold now selects .with_for_update(), matching the sessions.py rotate precedent."
+    },
+    {
+      "severity": "medium",
+      "title": "The required legal-hold reason can be whitespace or control characters, and is then silently dropped from the audit event",
+      "location": "backend-api/app/schemas/evidence_artifact.py:96 with backend-api/app/api/v1/evidence.py:1702 and backend-api/app/services/evidence_audit.py:74-75",
+      "dimension": "Evidence lifecycle endpoints (set_legal_hold, read_audit_events, _bounded_json) and the retention report",
+      "verdicts": 3,
+      "refuted_count": 0,
+      "what_is_wrong": "LegalHoldRequest.reason is `Field(min_length=3, max_length=120)` with no whitespace stripping, so \"   \" or \"\\x00\\x00\\x00\" validates. The handler passes it to the audit writer as detail={\"reason\": payload.reason, ...}, and redact_detail's _scalar (evidence_audit.py:74-75) substitutes control characters with spaces, strips, and returns None when the result is empty -- and redact_detail drops keys whose scalar is None (line 99-100). The stored detail is therefore just {\"was_held\": false}. The schema's own docstring (evidence_artifact.py:89-92) asserts the opposite: \"a hold placed or lifted without a stated reason is exactly the unaccountable action a hold exists to prevent\".",
+      "disposition": "A field validator strips the reason and rejects one with fewer than three printable characters, so the audit writer can no longer drop it silently."
+    },
+    {
+      "severity": "low",
+      "title": "POST /legal-hold requires a JSON body that its OpenAPI schema does not declare",
+      "location": "backend-api/app/api/v1/evidence.py:1648-1666",
+      "dimension": "Evidence lifecycle endpoints (set_legal_hold, read_audit_events, _bounded_json) and the retention report",
+      "verdicts": 3,
+      "refuted_count": 0,
+      "what_is_wrong": "The body is read by _bounded_json inside the handler rather than declared as a parameter, so route.body_field is None and FastAPI publishes the route with no requestBody. That is the correct mechanism for preserving the Phase 7 invariant (test_no_route_lets_fastapi_parse_the_body_before_authentication at backend-api/tests/test_phase7_evidence.py:357-369 still holds and still means what it says), but nothing compensates for the lost contract: /docs, the OpenAPI JSON, and any generated client show a POST that takes no body, while the handler 422s without one and requires a `reason` of at least three characters.",
+      "disposition": "openapi_extra declares the requestBody explicitly, so the Phase 7 no-body-field invariant and the published contract are both true."
+    },
+    {
+      "severity": "high",
+      "title": "`_expressions` silently skips several valid rule forms, contradicting its own \"never skipped\" claim",
+      "location": "tools/ci/check_alert_metrics.py:95-124",
+      "dimension": "What the gates actually prove, and whether any claim is unsupported",
+      "verdicts": 3,
+      "refuted_count": 1,
+      "what_is_wrong": "The docstring states \"Anything it cannot parse is reported, never skipped.\" The function reports nothing and skips silently in at least four cases: (1) a flow-mapping rule `- {alert: A, expr: X}` matches neither line regex; (2) `expr:` appearing before `alert:` inside the same rule mapping hits `if match and alert:` at :108 with `alert` still `None` and is dropped; (3) `expr: |+` and (4) `expr: |2` are not in the literal set `{\"|\", \">\", \"|-\", \">-\"}` at :110, so the indicator itself is yielded as the whole expression and the indented block that follows is never consumed. All four are valid YAML that `promtool check rules` accepts, so the syntax step in ci.validate-alerts.yml will not catch them either.",
+      "disposition": "A quoted scalar is unquoted before stripping, and label matchers are stripped before string literals. A double-quoted expr previously erased every metric name before the gate saw it -- a silent bypass. Parametrised over all four YAML forms."
+    },
+    {
+      "severity": "medium",
+      "title": "The scheduled cleanup run is dry-run only, but two edited doc lines say it deletes",
+      "location": "docs/DevSecOps/workflow-documentation.md:99 and :144",
+      "dimension": "What the gates actually prove, and whether any claim is unsupported",
+      "verdicts": 3,
+      "refuted_count": 0,
+      "what_is_wrong": "Line 144 (a row Phase 10 rewrote in the same edit) reads \"`ops.workflow-cleanup.yml` | **Sundays 00:00 UTC** | Deletes workflow runs older than `RETENTION_DAYS`\", and line 99 reads \"runs on a schedule to delete old workflow run history\". `.github/workflows/ops.workflow-cleanup.yml:43-46` gates the scheduled run on `if: github.event_name == 'schedule'` and invokes `node cleanup-workflows.js --dryRun=true`. The only deleting path is `workflow_dispatch` with `dry_run=false` and `confirm=DELETE` (:53-73). Nothing is ever deleted on a schedule, so CI run history is not being retained to any period \u2014 the exact claim the rewritten cleanup script's header says it exists to make citable as SOC 2 evidence.",
+      "disposition": "Both documentation lines corrected: the scheduled run reports and deletes nothing, and deletion requires a manual workflow_dispatch with confirm=DELETE. The doc now says outright that workflow-run history is not currently retained to any period by an automated process."
+    },
+    {
+      "severity": "medium",
+      "title": "README.md still carries the exact false claims its own Phase 10 section says were removed",
+      "location": "README.md:67-75 (contradicting :25-30 and :43-46)",
+      "dimension": "What the gates actually prove, and whether any claim is unsupported",
+      "verdicts": 3,
+      "refuted_count": 0,
+      "what_is_wrong": "Line 43-46 states \"There is no automated deployment, and no production environment. This section previously described a `staging` branch, Docker Hub pushes and a GCP Cloud Build trigger; none of them exists in this repository. Phase 10 corrected it.\" Two paragraphs later the file still says: \"Only merges from `staging` occur into `main`\" (:68), \"All merges are subject to passing full CI/CD and security gating\" (:70) \u2014 which line 26-30 explicitly refutes (\"Branch protection is not currently enforced\u2026 nothing prevents a merge with a failing or absent check\") \u2014 and \"Contact the DevOps lead managing GCP integration\" (:74). The correction edited only the two headed sections it replaced and left the same claims standing below.",
+      "disposition": "The Contribution Guidelines line asserting the staging flow was corrected; the section above it already said no such branch exists."
+    },
+    {
+      "severity": "medium",
+      "title": "cleanup-workflows.js deletes while paginating by offset, so it skips roughly half the eligible runs",
+      "location": "tools/workflow-cleanup/cleanup-workflows.js:57-90",
+      "dimension": "What the gates actually prove, and whether any claim is unsupported",
+      "verdicts": 3,
+      "refuted_count": 1,
+      "what_is_wrong": "`octokit.paginate.iterator(listWorkflowRunsForRepo, {per_page: 100})` follows `page=N` offset links, while the loop body deletes runs from the page it is currently reading. Each deletion shifts every later run one position earlier in the server-side ordering, so the next page request returns items that were already `k` positions further along \u2014 the `k` runs in between are never seen. The header comment at :5-13 asserts the rewrite fixed \"read only the newest 20 runs with no pagination, so it could never see the old runs it was supposed to be deleting\"; the sweep still cannot see them.",
+      "disposition": "The full eligible list is collected before any deletion, so removing a run cannot shift a later page past the boundary."
+    },
+    {
+      "severity": "low",
+      "title": "The checker's documented no-argument behaviour does not match what it does",
+      "location": "tools/ci/check_alert_metrics.py:20-21 and :205",
+      "dimension": "What the gates actually prove, and whether any claim is unsupported",
+      "verdicts": 3,
+      "refuted_count": 1,
+      "what_is_wrong": "The module docstring says \"Run with `--check` (the default) for the gate; run with no arguments to see the inventory it computed.\" Running with no arguments prints a one-line count and nothing else \u2014 the inventory requires `--show` (:206-208, :213-214). `--check` is declared with `action=\"store_true\", default=True` (:205) and is never read anywhere, so it does nothing at all.",
+      "disposition": "The unused --check flag was removed and the docstring corrected to point at --show."
+    }
+  ],
+  "refuted": [
+    {
+      "severity": "high",
+      "title": "GET /v1/scans/readiness decrypts a stored secret with no InvalidToken guard, bypassing both the 409 and the failure counter",
+      "location": "backend-api/app/api/v1/scans.py:465",
+      "refuted_count": 2,
+      "verdicts": 3
+    },
+    {
+      "severity": "high",
+      "title": "The StoredCredentialUnreadable alert's \"shows up here first\" claim is not supported: the counter is only reachable from the manual Test Connection button",
+      "location": "infrastructure/monitoring/alerts/application.yaml:67-72 (metric defined at backend-api/app/core/metrics.py:78, incremented only at backend-api/app/api/v1/m365_connections.py:47)",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "medium",
+      "title": "survey_evidence_excerpts reports rows no key can read as \"written_under_a_retired_key\", telling the operator the opposite of the truth",
+      "location": "tools/ops/rotate_encryption_key.py:170-178 (reported at :231-237)",
+      "refuted_count": 2,
+      "verdicts": 3
+    },
+    {
+      "severity": "low",
+      "title": "The worker's reset_key_ring() cannot re-read configuration; the module-level settings singleton is frozen at import",
+      "location": "engine/worker/db.py:95-98, with engine/worker/config.py:191",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "low",
+      "title": "The rotation tool defaults APP_ENV to dev, silently disabling every key-ring validation it claims to inherit from the application",
+      "location": "tools/ops/rotate_encryption_key.py:257",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "medium",
+      "title": "The request-duration histogram stops at time-to-first-byte, so a slow evidence download is invisible to APILatencyHigh",
+      "location": "backend-api/app/core/middleware.py:39-77, backend-api/app/core/metrics.py:53-62, backend-api/app/api/v1/evidence.py:1054-1058",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "medium",
+      "title": "collector_exporter_up is forced to 0 after any failed dispatch cycle, even when the metrics read succeeded and every gauge is fresh",
+      "location": "engine/worker/dispatcher.py:360-361, engine/worker/metrics.py:141-145 and :173-174, infrastructure/monitoring/alerts/scan_lifecycle.yaml:27-45",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "medium",
+      "title": "METRICS_BIND defaults to 0.0.0.0, the exact behaviour the comment above it says it prevents",
+      "location": "engine/worker/config.py:63, engine/worker/dispatcher.py:383-391",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "low",
+      "title": "control_results labels are never cleared, so an out-of-vocabulary status is stuck at its last value forever",
+      "location": "engine/worker/metrics.py:279-291",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "low",
+      "title": "scan_lifecycle.yaml claims MissingComplianceScans was \"replaced\", but no rule reads the replacement metric",
+      "location": "infrastructure/monitoring/alerts/scan_lifecycle.yaml:18-21, engine/worker/metrics.py:134-139",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "low",
+      "title": "Readiness-probe 503s are counted in the same 5xx series APIServerErrorRateHigh calls \"the API failing\"",
+      "location": "backend-api/app/main.py:65-79, backend-api/app/core/middleware.py:72-77, docker-compose.production.yml:91-95, infrastructure/monitoring/alerts/application.yaml:20",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "high",
+      "title": "restore() has no guard on the target and pg_restore runs with no transaction or exit-on-error, so a wrong --target-url leaves a half-written database",
+      "location": "tools/ops/backup.py:216-237",
+      "refuted_count": 2,
+      "verdicts": 3
+    },
+    {
+      "severity": "high",
+      "title": "The database password is passed in subprocess argv and echoed verbatim to stderr when the URL fails to parse",
+      "location": "tools/ops/backup.py:92, tools/ops/backup.py:94, tools/ops/backup.py:117, tools/ops/backup.py:231-232, tools/ops/backup.py:322",
+      "refuted_count": 2,
+      "verdicts": 3
+    },
+    {
+      "severity": "medium",
+      "title": "create() writes link members that _safe_extract then refuses, producing a backup that verifies clean and cannot be restored at all",
+      "location": "tools/ops/backup.py:134-137, tools/ops/backup.py:264-265",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "medium",
+      "title": "_safe_extract blocks traversal and links but extracts device/FIFO members and setuid modes from an archive it treats as untrusted",
+      "location": "tools/ops/backup.py:252-266",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "medium",
+      "title": "A mistyped --evidence-dir silently downgrades the backup to database-only, and the whole pipeline reports success",
+      "location": "tools/ops/backup.py:132, tools/ops/backup.py:146-151, tools/ops/backup.py:198, tools/ops/backup.py:240, tools/ops/backup.py:320",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "low",
+      "title": "create() overwrites an existing backup directory in place, destroying the previous good dump before the new one is known to succeed",
+      "location": "tools/ops/backup.py:111-122",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "low",
+      "title": "verify() proves the archive is uncorrupted, not that it is unaltered, because the manifest it checks against is unsigned and co-located",
+      "location": "tools/ops/backup.py:188-213, tools/ops/backup.py:174",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "low",
+      "title": "The manifest's alembic_revision is queried after the dump on a separate connection and is silently null on any failure",
+      "location": "tools/ops/backup.py:98-106, tools/ops/backup.py:157-158",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "low",
+      "title": "_major() is wrong for PostgreSQL releases before 10, where the major version is two components",
+      "location": "tools/ops/backup.py:248-249",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "high",
+      "title": "read_audit_events writes to the append-only trail on a GET, for any object id, with no existence check and no CSRF protection",
+      "location": "backend-api/app/api/v1/evidence.py:1709-1743",
+      "refuted_count": 2,
+      "verdicts": 3
+    },
+    {
+      "severity": "medium",
+      "title": "Reading the access log is recorded as ACTION_DOWNLOADED, so the trail cannot distinguish a log read from an evidence download",
+      "location": "backend-api/app/api/v1/evidence.py:1738",
+      "refuted_count": 2,
+      "verdicts": 3
+    },
+    {
+      "severity": "medium",
+      "title": "set_legal_hold has an unguarded read-modify-write, so the persisted flag and the last audit event can disagree",
+      "location": "backend-api/app/api/v1/evidence.py:1668-1704",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "medium",
+      "title": "The manual-evidence half of the retention report is never exercised, so its expiry arithmetic cannot fail a test",
+      "location": "tools/ops/retention_report.py:114-139 and tools/tests/test_phase10_retention_report.py:96-140",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "low",
+      "title": "under_legal_hold is counted over the whole table while every count beside it is scoped to live rows",
+      "location": "tools/ops/retention_report.py:77 and tools/tests/test_phase10_retention_report.py:188",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "low",
+      "title": "ACTION_RETENTION_EXPIRED is documented as now being emitted; nothing emits it",
+      "location": "backend-api/app/services/evidence_audit.py:45-49",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "high",
+      "title": "powershell-service healthcheck probes `localhost`, which the certificate the topology mandates cannot match \u2014 the worker then never starts",
+      "location": "docker-compose.production.yml:177 (healthcheck), docker-compose.production.yml:121 (worker depends_on)",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "high",
+      "title": "The production template claims Phase 10 added resource limits to every service; it contains none",
+      "location": "docker-compose.production.yml:4 (also docs/compliance/phase-10/deployment-platform-decision.md:50, tools/tests/test_phase10_deployment.py:5-7)",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "medium",
+      "title": "production_overlay_smoke.py is referenced by nothing \u2014 the gap it claims to close stays open in CI",
+      "location": "tools/ci/production_overlay_smoke.py:4-8, 20-22",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "medium",
+      "title": "Dispatcher metrics are declared \"on the private network only\" but the container is on the egress network and the exporter binds 0.0.0.0",
+      "location": "docker-compose.production.yml:145-147 and :134 (merging the anchor at :117); engine/worker/config.py METRICS_BIND default; engine/worker/dispatcher.py:388-392",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "medium",
+      "title": "Aligning the dev compose to postgres:16 makes an existing developer volume unstartable, with no migration path in the change set",
+      "location": "docker-compose.yml:28-34",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "low",
+      "title": "The smoke tool's headline claim about host reachability is stronger than the assertion it makes",
+      "location": "tools/ci/production_overlay_smoke.py:7-8, asserted at :130-143 and :179-188",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "low",
+      "title": "The plaintext-Redis assertion is purely negative and never confirms the probe ran",
+      "location": "tools/ci/production_overlay_smoke.py:198-206",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "low",
+      "title": "Setting DISPATCHER_METRICS_PORT=0 \u2014 the documented way to disable the exporter \u2014 leaves the dispatcher permanently unhealthy",
+      "location": "docker-compose.production.yml:147 and :156; engine/worker/dispatcher.py:382",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "high",
+      "title": "A double-quoted `expr:` erases every metric name before the gate sees it",
+      "location": "tools/ci/check_alert_metrics.py:140 (with :107-111)",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "high",
+      "title": "A register claiming every criterion is designed, with zero supporting artifacts, passes the honesty gate",
+      "location": "tools/ci/check_organizational_register.py:115-118",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "medium",
+      "title": "An empty-string owner marked `assigned` passes the owner/reviewer coherence check",
+      "location": "tools/ci/check_organizational_register.py:107-110",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "medium",
+      "title": "deployment-platform-decision.md overstates the Kubernetes-only alert count by 3x",
+      "location": "docs/compliance/phase-10/deployment-platform-decision.md:67-68",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "medium",
+      "title": "backup-and-recovery.md cites a CC9 cadence that the register does not contain",
+      "location": "docs/compliance/phase-10/backup-and-recovery.md:55",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "medium",
+      "title": "test_every_result_status_is_emitted_even_at_zero cannot fail and does not test presence",
+      "location": "engine/tests/test_phase10_metrics.py:290-307",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "low",
+      "title": "tools/ci/production_overlay_smoke.py is invoked by nothing in the repository",
+      "location": "tools/ci/production_overlay_smoke.py:1-22",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "low",
+      "title": "RETENTION_DAYS silently defaults to 90, contradicting both the comment below it and the workflow that calls it",
+      "location": "tools/workflow-cleanup/cleanup-workflows.js:24 (comment at :35-36)",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "low",
+      "title": "The digest-pinning test exempts the one base image the supply-chain workflow calls unexamined",
+      "location": "tools/tests/test_phase10_supply_chain.py:71-76",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "low",
+      "title": "assert REGISTER != CROSSWALK compares two distinct module constants and can never fail",
+      "location": "tools/tests/test_phase10_register.py:141",
+      "refuted_count": 3,
+      "verdicts": 3
+    },
+    {
+      "severity": "low",
+      "title": "scan_lifecycle.yaml says MissingComplianceScans was \"replaced rather than dropped\", but nothing replaces it",
+      "location": "infrastructure/monitoring/alerts/scan_lifecycle.yaml:18-21",
+      "refuted_count": 3,
+      "verdicts": 3
+    }
+  ],
+  "gemini_pass": {
+    "why": "Codex was unavailable for the fourth consecutive phase (rate-limited, resetting 12:38 on 2026-09-07).",
+    "scope": "the two highest-risk modules: the encryption key ring with its rotation pass, and the metrics exporter with the dispatcher loop",
+    "fixed": [
+      "tools/ops/rotate_encryption_key.py: --check could never return 0, because it gated on evidence excerpts that are deliberately never rotated. The tool's own documented step 3 was unreachable.",
+      "engine/worker/dispatcher.py: metrics refreshed only after a SUCCESSFUL tick, so a database outage left a stale collector_exporter_up=1 and ScanExporterDown could never fire.",
+      "engine/worker/metrics.py: scans_past_deadline filtered on deadline_at IS NOT NULL while the reconciler expires on COALESCE(deadline_at, last_progress_at + deadline).",
+      "engine/worker/metrics.py: a partial collection left gauges inconsistent; now read-then-apply.",
+      "engine/worker/metrics.py: a status series absent at zero makes delta() extrapolate; every status is now emitted every time.",
+      "tools/ops/rotate_encryption_key.py: the excerpt survey buffered the whole column into memory; now streamed.",
+      "tools/ops/rotate_encryption_key.py: `del plaintext` implied a memory wipe CPython does not perform; removed.",
+      "engine/worker/dispatcher.py: the exporter bound 0.0.0.0 implicitly; now explicit and configurable."
+    ],
+    "refuted": [
+      "'last_progress_at IS NULL reports age 0': the column is NOT NULL with a server default.",
+      "'absent() strips labels and breaks inhibition': an alerting rule's labels are attached to the alert regardless of the expression's output labels."
+    ]
+  },
+  "honest_limitation": "The critical finding -- a key ring that reached no container -- was found by the adversarial pass, not by the author and not by the six internal reviewers' first read. It would have made the phase's headline capability unusable while every test passed, because no test asserted the setting reached a container. That is the argument for the external review this stack has now gone four phases without."
+}

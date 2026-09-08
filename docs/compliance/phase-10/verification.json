@@ -1,0 +1,183 @@
+{
+  "phase": 10,
+  "date": "2026-09-07",
+  "timezone": "Australia/Melbourne",
+  "status": "local engineering implemented; platform selection, control ownership and all operating evidence externally blocked",
+  "base_commit": "8736fcb93565dcc1e1a60a06392a879f5a585335",
+  "prerequisite": "complete Phase 9 working source, 972 files, digests in phase-9-snapshot.json",
+  "branch": "fix/soc2-phase-10-production-operations",
+  "upstream_main": "0a074cc9255029e3c337c6fba6db5964ba89e7c9",
+  "upstream_main_at_phase_9": "bfb8edd44414683ac4adcde3ab79d4520a0a00a3",
+  "migration_head": "b9d4e17c6a52",
+  "environment": {
+    "OPA_BINARY": "<scratchpad>/opa (1.20.2, digest-verified against tools/ci/install_opa.py's reviewed release digest)",
+    "promtool": "<scratchpad>/promtool (3.7.3, digest-verified against the release's own sha256sums.txt; installer added this phase)",
+    "MIGRATION_TEST_ADMIN_URL": "postgresql://postgres@127.0.0.1:55440/postgres",
+    "AUTOAUDIT_REQUIRE_INTEGRATION": "1",
+    "postgresql": "16.14, disposable local cluster, exercised at timezone=UTC AND timezone=Australia/Melbourne",
+    "docker": "29.3.1, used for the container and production-overlay smoke tests",
+    "frontend_node": "24.20.0 (via npm exec --package=node@24; the .nvmrc version CI uses)"
+  },
+  "baseline_reproduced": {
+    "note": "Phase 9's recorded results were reproduced in this worktree before any Phase 10 change. One additional step was required: Phase 9 removed engine/collectors/_pending/compliance/ entirely, and the overlay left the now-empty directory behind, which test_phase8_compliance_collectors::test_registered_ids correctly rejected. Removing the empty directory restored the exact Phase 9 result.",
+    "engine": "1914 passed, 1 skipped, 11 xfailed",
+    "backend_and_tools": "639 passed",
+    "opa_test": "582/582",
+    "opa_check_strict": "clean",
+    "frontend": "27 files, 262 tests passed; typecheck clean"
+  },
+  "checks": [
+    {
+      "command": "uv run --frozen --project engine --extra dev python -m pytest engine/tests -q",
+      "result": "1938 passed, 1 skipped, 11 xfailed",
+      "baseline": "1914 passed, 1 skipped, 11 xfailed"
+    },
+    {
+      "command": "uv run --frozen --project backend-api --extra dev --extra evidence python -m pytest backend-api/tests tools/tests -q",
+      "result": "803 passed",
+      "baseline": "639 passed"
+    },
+    {
+      "command": "$OPA_BINARY test engine/policies engine/tests",
+      "result": "582/582",
+      "baseline": "582/582",
+      "note": "Phase 10 adds and edits no Rego."
+    },
+    {
+      "command": "$OPA_BINARY check --strict engine/policies",
+      "result": "clean, exit 0"
+    },
+    {
+      "command": "$PROMTOOL check rules infrastructure/monitoring/alerts/{application,scan_lifecycle,platform}.yaml",
+      "result": "SUCCESS: 4, 6 and 7 rules found",
+      "note": "17 rules, down from 19. Seven retired with reasons in RETIRED-ALERTS.md; six new."
+    },
+    {
+      "command": "$PROMTOOL test rules infrastructure/monitoring/alerts/tests/rule_tests.yaml",
+      "result": "SUCCESS",
+      "note": "New this phase. Replaces alert_simulation_test.py, which was never run by anything and could not have passed: it pushed a constant gauge value and asserted rate() of it exceeded 10."
+    },
+    {
+      "command": "python3 tools/ci/check_alert_metrics.py",
+      "result": "9 alert metric(s) emitted by the application, 9 declared external.",
+      "note": "New Phase 10 gate, wired into ci.validate-alerts.yml. Before this phase, eleven of the seventeen metric names referenced by alert rules appeared nowhere else in the repository."
+    },
+    {
+      "command": "python3 tools/ci/check_organizational_register.py",
+      "result": "9 organizational criteria validated; 5 partly designed, 0 operating, 9 without an owner.",
+      "note": "New Phase 10 gate, wired into ci.engine.yml."
+    },
+    {
+      "command": "python3 tools/docs/generate_control_status.py --check",
+      "result": "4 control status document(s) match metadata."
+    },
+    {
+      "command": "python3 tools/policies/promote_candidate.py --check",
+      "result": "3 candidate policy file(s) verified and unreachable by any scan.",
+      "note": "Phase 8's promotion gate is untouched; the three candidates are still blocked."
+    },
+    {
+      "command": "uv run --frozen --project backend-api --extra dev --extra evidence python tools/frontend/generate_api_types.py --check",
+      "result": "frontend/src/api/generated/scans.ts matches the backend OpenAPI schema.",
+      "note": "Phase 9's gate. Phase 10 adds endpoints outside the scan paths it covers, so the generated types are unchanged."
+    },
+    {
+      "command": "python3 tools/ci/container_smoke.py",
+      "result": "PASS: API migration/startup, worker ping, real broker outage, durable dispatcher recovery and terminal scan",
+      "note": "Re-run for the first time since Phase 7 recorded it as not-run. Also proves the rewritten engine/Dockerfile builds and starts."
+    },
+    {
+      "command": "python3 tools/ci/production_overlay_smoke.py",
+      "result": "PASS: db and redis reached healthy; neither has a host port binding; redis refuses a plaintext connection and completes a TLS handshake enforcing its ACL; postgres accepts connections on the private network",
+      "note": "New this phase, and the reason it exists: phases 7, 8 and 9 each carried forward 'the Compose overlay was not exercised against a running container'. It had only ever been rendered. Running it found a real defect in this phase's own healthcheck."
+    },
+    {
+      "command": "docker build --build-arg ENGINE_GIT_SHA=<sha> -t autoaudit-worker engine, then compare installed versions against engine/uv.lock",
+      "result": "celery 5.6.3, httpx 0.28.1, sqlalchemy 2.0.45, cryptography 48.0.0, prometheus-client 0.26.0, psycopg2-binary 2.9.11 — all identical to the lockfile",
+      "note": "Before this phase the worker image did not copy uv.lock at all and installed from floating lower bounds, so the image did not match what CI tested or Grype scanned."
+    },
+    {
+      "command": "npm exec --package=node@24 -- npm --prefix frontend run typecheck",
+      "result": "clean"
+    },
+    {
+      "command": "npm exec --package=node@24 -- npm --prefix frontend test",
+      "result": "27 files, 262 tests passed",
+      "baseline": "27 files, 262 tests passed",
+      "note": "Phase 10 changes no frontend source."
+    },
+    {
+      "command": "npm exec --package=node@24 -- npm --prefix frontend run build",
+      "result": "built successfully"
+    },
+    {
+      "command": "npm exec --package=node@24 -- npm --prefix frontend run lint",
+      "result": "9 warnings, all pre-existing and unchanged from Phase 9"
+    },
+    {
+      "command": "uv run --project backend-api alembic heads",
+      "result": "b9d4e17c6a52 (head) — exactly one",
+      "note": "Phase 10 adds no migration."
+    },
+    {
+      "command": "uvx --from bandit==1.8.6 bandit -q -r backend-api/app",
+      "result": "clean at all severities, exit 0"
+    },
+    {
+      "command": "uvx --from bandit==1.8.6 bandit -q -r backend-api/tests -s B101 -f txt",
+      "result": "clean, exit 0"
+    },
+    {
+      "command": "uvx --from bandit==1.8.6 bandit -q -r tools/ops tools/ci -s B101",
+      "result": "Low only (subprocess and urlopen use, each annotated); no Medium or High",
+      "note": "Not a Phase 9 check. Run because Phase 10 adds seven operator and CI tools. Two Medium B608 findings on tools/ops/retention_report.py were annotated: the only interpolated value is a module-level constant, kept constant so the reporting pass and any future deleting pass cannot drift on what 'expired' means."
+    },
+    {
+      "command": "git diff --check",
+      "result": "clean"
+    },
+    {
+      "command": "uvx pre-commit run --files <the 63 Phase 10 code/config files>",
+      "result": "8/8 hooks passed, no file modified",
+      "note": "detect-secrets requires .secrets.baseline to be staged; it was staged for the run and unstaged afterwards, leaving the worktree fully unstaged as in every prior phase. ruff-format reformatted 21 files on the first run; the suites were re-run afterwards and are unchanged. Four synthetic fixtures needed an inline allowlist pragma, and the three promtool release digests carry the same 'public release checksum' pragma install_opa.py uses."
+    }
+  ],
+  "non_utc_verification": {
+    "why": "Phase 8 established this as a required check after the Phase 6 non-UTC dispatcher defect. Phase 10 adds timestamp arithmetic in two new places — the dispatcher's staleness and deadline gauges, and the evidence retention report — and both read the same timezone-naive UTC columns that caused that defect. A retention pass making the same mistake would not merely mis-report: on an Australia/Melbourne cluster it would consider ten hours' more evidence expired than actually is.",
+    "method": "the disposable cluster's postgresql.conf timezone was set to Australia/Melbourne and reloaded; both suites re-run in full, with the final code, then switched back to UTC and re-run again to confirm parity",
+    "engine": "1938 passed, 1 skipped, 11 xfailed - identical to the UTC result",
+    "backend_and_tools": "803 passed - identical to the UTC result",
+    "additional": "engine/tests/test_phase10_metrics.py and tools/tests/test_phase10_retention_report.py each parametrise their arithmetic over UTC, Australia/Melbourne and America/New_York explicitly, with boundary rows two hours either side of expiry, so the check does not depend on the cluster's configuration."
+  },
+  "independent_review": {
+    "codex": "UNAVAILABLE for the FOURTH consecutive phase. Rate-limited; the limit resets at 12:38 on 2026-09-07. Phases 7, 8 and 9 recorded the same unavailability.",
+    "substitute": "Gemini, on the two highest-risk modules (the encryption key ring and rotation pass; the metrics exporter and dispatcher loop).",
+    "gemini_findings_fixed": [
+      "tools/ops/rotate_encryption_key.py: --check could never return 0, because it gated on evidence excerpts that are deliberately never rotated and so never reach zero. The tool's own documented step 3 was unreachable.",
+      "engine/worker/dispatcher.py: metrics were refreshed only after a SUCCESSFUL tick, so a database outage left a stale collector_exporter_up=1 and ScanExporterDown — the alert that exists to catch a dead dispatcher — could never fire.",
+      "engine/worker/metrics.py: scans_past_deadline filtered on deadline_at IS NOT NULL while the reconciler expires on COALESCE(deadline_at, last_progress_at + deadline), so a scan the reconciler considers overdue reported zero.",
+      "engine/worker/metrics.py: a partial collection left some gauges fresh, one cleared to nothing and the rest stale, contradicting the module's own contract. Now read-then-apply.",
+      "engine/worker/metrics.py: a status series absent at zero makes delta() extrapolate across the whole range window. Every status is now emitted every time, including zero.",
+      "tools/ops/rotate_encryption_key.py: the evidence-excerpt survey buffered the whole column into memory; now streamed.",
+      "tools/ops/rotate_encryption_key.py: `del plaintext` implied a memory wipe CPython does not perform; removed.",
+      "engine/worker/dispatcher.py: the metrics exporter bound 0.0.0.0 implicitly; now explicit and configurable."
+    ],
+    "gemini_findings_refuted": [
+      "'last_progress_at IS NULL reports age 0': the column is NOT NULL with a server default, so the case cannot arise.",
+      "'absent() strips labels and breaks Alertmanager inhibition': an alerting rule's `labels:` are attached to the alert regardless of the expression's output labels, so ScanExporterDown does carry service=dispatcher."
+    ],
+    "adversarial_pass": "six independent reviewers over the landed Phase 10 diff, then three independent refuters per finding with distinct lenses (is it true / is it reachable / is it already handled), defaulting to refuted when uncertain. Recorded in review.json.",
+    "honest_limitation": "Four consecutive phases without the standing independent review is a pattern, not an accident. Gemini is a weaker substitute and found real defects that six internal reviewers had not yet surfaced, which is itself the argument for the external pass. This stack should get an independent human or Codex review before merge."
+  },
+  "not_run": [
+    "Any live Microsoft 365 tenant operation. No tenant was contacted.",
+    "Any production deployment. No production environment exists, and no platform has been selected.",
+    "Any Prometheus, Alertmanager, Grafana or exporter. The alert rules are validated and unit-tested; nothing evaluates them, because no monitoring stack is deployed by this repository.",
+    "The backend-api, worker and powershell-service halves of the production Compose overlay. The overlay smoke test covers db and redis; the application containers need reviewed application secrets and, for PowerShell, tenant certificates. tools/ci/container_smoke.py exercises the application images separately.",
+    "A production restore. The restore is genuinely executed against a disposable cluster with real rows and evidence bytes, but there is no production data to restore.",
+    "A key rotation against production data. The rotation is executed against a disposable cluster.",
+    "ci.supply-chain.yml as a workflow. Its individual steps were run locally — the image build, the lockfile comparison, pre-commit — but the workflow has not run on GitHub.",
+    "Integration with current upstream main. Outstanding since Phase 7; upstream is now four revisions ahead.",
+    "Application of Phase 4's required status checks to branch protection. Every gate this phase adds inherits that: it fails a local or CI run, and does not prevent a merge."
+  ]
+}

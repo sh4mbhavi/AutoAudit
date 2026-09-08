@@ -4,7 +4,7 @@
 #   The Common Attachment Types Filter lets a user block known and custom malicious file types
 #   from being attached to emails. The policy provided by Microsoft covers 53 extensions
 #   and an additional custom list of extensions can be defined.
-#  
+#
 # related_resources:
 # - ref: https://www.cisecurity.org/benchmark/microsoft_365
 #   description: CIS Microsoft 365 Foundations Benchmark
@@ -22,24 +22,24 @@ package cis.microsoft_365_foundations.v6_0_0.control_2_1_11
 
 import rego.v1
 
-default result := {"compliant": false, "message": "Evaluation failed"}
+default assessed_result := {"compliant": null, "message": "Evaluation failed"}
 
 attach_exts := [
-    "7z","a3x","ace","ade","adp","ani","app","appinstaller","applescript","application",
-    "appref-ms","appx","appxbundle","arj","asd","asx","bas","bat","bgi","bz2","cab",
-    "chm","cmd","com","cpl","crt","cs","csh","daa","dbf","dcr","deb","desktopthemepackfile",
-    "dex","diagcab","dif","dir","dll","dmg","doc","docm","dot","dotm","elf","eml","exe",
-    "fxp","gadget","gz","hlp","hta","htc","htm","html","hwpx","ics","img","inf","ins","iqy",
-    "iso","isp","jar","jnlp","js","jse","kext","ksh","lha","lib","library-ms","lnk","lzh",
-    "macho","mam","mda","mdb","mde","mdt","mdw","mdz","mht","mhtml","mof","msc","msi","msix",
-    "msp","msrcincident","mst","ocx","odt","ops","oxps","pcd","pif","plg","pot","potm","ppa",
-    "ppam","ppkg","pps","ppsm","ppt","pptm","prf","prg","ps1","ps11","ps11xml","ps1xml","ps2",
-    "ps2xml","psc1","psc2","pub","py","pyc","pyo","pyw","pyz","pyzw","rar","reg","rev","rtf",
-    "scf","scpt","scr","sct","searchConnector-ms","service","settingcontent-ms","sh","shb",
-    "shs","shtm","shtml","sldm","slk","so","spl","stm","svg","swf","sys","tar","theme","themepack",
-    "timer","uif","url","uue","vb","vbe","vbs","vhd","vhdx","vxd","wbk","website","wim","wiz",
-    "ws","wsc","wsf","wsh","xla","xlam","xlc","xll","xlm","xls","xlsb","xlsm","xlt","xltm","xlw",
-    "xnk","xps","xsl","xz","z"
+	"7z", "a3x", "ace", "ade", "adp", "ani", "app", "appinstaller", "applescript", "application",
+	"appref-ms", "appx", "appxbundle", "arj", "asd", "asx", "bas", "bat", "bgi", "bz2", "cab",
+	"chm", "cmd", "com", "cpl", "crt", "cs", "csh", "daa", "dbf", "dcr", "deb", "desktopthemepackfile",
+	"dex", "diagcab", "dif", "dir", "dll", "dmg", "doc", "docm", "dot", "dotm", "elf", "eml", "exe",
+	"fxp", "gadget", "gz", "hlp", "hta", "htc", "htm", "html", "hwpx", "ics", "img", "inf", "ins", "iqy",
+	"iso", "isp", "jar", "jnlp", "js", "jse", "kext", "ksh", "lha", "lib", "library-ms", "lnk", "lzh",
+	"macho", "mam", "mda", "mdb", "mde", "mdt", "mdw", "mdz", "mht", "mhtml", "mof", "msc", "msi", "msix",
+	"msp", "msrcincident", "mst", "ocx", "odt", "ops", "oxps", "pcd", "pif", "plg", "pot", "potm", "ppa",
+	"ppam", "ppkg", "pps", "ppsm", "ppt", "pptm", "prf", "prg", "ps1", "ps11", "ps11xml", "ps1xml", "ps2",
+	"ps2xml", "psc1", "psc2", "pub", "py", "pyc", "pyo", "pyw", "pyz", "pyzw", "rar", "reg", "rev", "rtf",
+	"scf", "scpt", "scr", "sct", "searchConnector-ms", "service", "settingcontent-ms", "sh", "shb",
+	"shs", "shtm", "shtml", "sldm", "slk", "so", "spl", "stm", "svg", "swf", "sys", "tar", "theme", "themepack",
+	"timer", "uif", "url", "uue", "vb", "vbe", "vbs", "vhd", "vhdx", "vxd", "wbk", "website", "wim", "wiz",
+	"ws", "wsc", "wsf", "wsh", "xla", "xlam", "xlc", "xll", "xlm", "xls", "xlsb", "xlsm", "xlt", "xltm", "xlw",
+	"xnk", "xps", "xsl", "xz", "z",
 ]
 
 passing_value := 0.9
@@ -54,23 +54,23 @@ missing := [ext | ext := attach_exts[_]; not ext in file_types]
 fail_threshold := count(attach_exts) * (1 - passing_value)
 coverage_ok := count(missing) <= fail_threshold
 
-compliant := true if {
-    has_policy
-    enable_file_filter == true
-    coverage_ok
-} else := false if { true }
+compliant if {
+	has_policy
+	enable_file_filter == true
+	coverage_ok
+} else := false
 
-result := {
-    "compliant": compliant,
-    "message": generate_message(compliant, has_policy),
-    "affected_resources": generate_affected_resources(compliant, has_policy),
-    "details": {
-        "EnableFileFilter": enable_file_filter,
-        "missing_count": count(missing),
-        "missing_extensions": missing,
-        "passing_threshold": passing_value,
-        "known_extensions_count": count(attach_exts)
-    }
+assessed_result := {
+	"compliant": compliant,
+	"message": generate_message(compliant, has_policy),
+	"affected_resources": generate_affected_resources(compliant, has_policy),
+	"details": {
+		"EnableFileFilter": enable_file_filter,
+		"missing_count": count(missing),
+		"missing_extensions": missing,
+		"passing_threshold": passing_value,
+		"known_extensions_count": count(attach_exts),
+	},
 }
 
 generate_message(true, _) := "Comprehensive attachment filtering is applied and covers the expected set of extensions."
@@ -79,3 +79,33 @@ generate_message(false, true) := "Comprehensive attachment filtering is not appl
 
 generate_affected_resources(true, _) := []
 generate_affected_resources(false, _) := ["MalwareFilterPolicy"]
+
+# Typed, complete collector evidence is required before an assessed result is emitted.
+# Kept in this module so captured-source evaluation remains self-contained.
+default result := {
+	"compliant": null,
+	"message": "Unable to evaluate: required evidence is missing, malformed, or incomplete",
+	"affected_resources": [],
+	"details": {"evaluation_status": "indeterminate"},
+}
+
+result := assessed_result if evidence_complete
+
+evidence_complete if {
+	is_object(input)
+	not evidence_error
+	is_object(input.default_policy)
+	is_boolean(enable_file_filter)
+	is_array(input.default_policy.FileTypes)
+	is_array(file_types)
+	every value in file_types { is_string(value) }
+}
+
+# A nested collector error invalidates a partial response as well as a top-level error.
+evidence_error if {
+	some path, value
+	walk(input, [path, value])
+	count(path) > 0
+	path[count(path) - 1] in {"collector_error", "error"}
+	value != null
+}

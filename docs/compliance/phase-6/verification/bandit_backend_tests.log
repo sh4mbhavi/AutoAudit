@@ -1,0 +1,6 @@
+[tester]	WARNING	nosec encountered (B608), but no failed test on line 140
+[tester]	WARNING	nosec encountered (B608), but no failed test on line 123
+[tester]	WARNING	nosec encountered (B608), but no failed test on line 170
+[tester]	WARNING	nosec encountered (B608), but no failed test on line 212
+[tester]	WARNING	nosec encountered (B608), but no failed test on line 255
+[tester]	WARNING	nosec encountered (B608), but no failed test on line 283

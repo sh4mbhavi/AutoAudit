@@ -100,6 +100,7 @@ describe('SignupFormPanel', () => {
       organizationName: 'Acme',
       password: 'SecurePass1', // pragma: allowlist secret - synthetic form input
       confirmPassword: 'SecurePass1', // pragma: allowlist secret - synthetic form input
+      agreeTerms: true,
     });
   });
 

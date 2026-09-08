@@ -18,33 +18,59 @@ package cis.microsoft_365_foundations.v6_0_0.control_5_2_3_5
 
 import rego.v1
 
-default result := {
-  "compliant": false,
-  "message": "Unable to determine SMS/Voice authentication method status",
-  "details": {},
+default assessed_result := {
+	"compliant": null,
+	"message": "Unable to determine SMS/Voice authentication method status",
+	"details": {},
 }
 
 default compliant := false
 
 compliant if {
-  input.sms_enabled == false
-  input.voice_enabled == false
+	input.sms_enabled == false
+	input.voice_enabled == false
 }
 
-msg := "Weak authentication methods (SMS, Voice) are disabled" if { compliant }
-msg := sprintf("Weak authentication methods enabled (sms=%v, voice=%v)", [input.sms_enabled, input.voice_enabled]) if { not compliant }
+msg := "Weak authentication methods (SMS, Voice) are disabled" if compliant
+msg := sprintf("Weak authentication methods enabled (sms=%v, voice=%v)", [input.sms_enabled, input.voice_enabled]) if not compliant
 
-result := output if {
-  sms := input.sms_enabled
-  voice := input.voice_enabled
+assessed_result := output if {
+	sms := input.sms_enabled
+	voice := input.voice_enabled
 
-  output := {
-    "compliant": compliant,
-    "message": msg,
-    "details": {
-      "sms_enabled": sms,
-      "voice_enabled": voice,
-    },
-  }
+	output := {
+		"compliant": compliant,
+		"message": msg,
+		"details": {
+			"sms_enabled": sms,
+			"voice_enabled": voice,
+		},
+	}
 }
 
+# Typed, complete collector evidence is required before an assessed result is emitted.
+# Kept in this module so captured-source evaluation remains self-contained.
+default result := {
+	"compliant": null,
+	"message": "Unable to evaluate: required evidence is missing, malformed, or incomplete",
+	"affected_resources": [],
+	"details": {"evaluation_status": "indeterminate"},
+}
+
+result := assessed_result if evidence_complete
+
+evidence_complete if {
+	is_object(input)
+	not evidence_error
+	is_boolean(input.sms_enabled)
+	is_boolean(input.voice_enabled)
+}
+
+# A nested collector error invalidates a partial response as well as a top-level error.
+evidence_error if {
+	some path, value
+	walk(input, [path, value])
+	count(path) > 0
+	path[count(path) - 1] in {"collector_error", "error"}
+	value != null
+}

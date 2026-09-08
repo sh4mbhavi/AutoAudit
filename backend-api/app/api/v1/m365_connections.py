@@ -1,5 +1,7 @@
 """M365 Connection API endpoints."""
 
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,14 +15,51 @@ from app.schemas.m365_connection import (
     M365ConnectionRead,
     M365ConnectionUpdate,
     M365ConnectionTestResult,
+    validate_purview_binding,
+    validate_sharepoint_binding,
 )
-from app.services.encryption import encrypt, decrypt
+from app.core.metrics import decryption_failures_total
+from app.services.encryption import encrypt, decrypt, InvalidToken
 from app.services.m365_graph import M365ConnectionError, validate_m365_connection
+
+logger = logging.getLogger("api")
 
 router = APIRouter(prefix="/m365-connections", tags=["M365 Connections"])
 
 
-@router.post("/", response_model=M365ConnectionRead, status_code=status.HTTP_201_CREATED)
+def _stored_secret(connection) -> str:
+    """Decrypt a stored client secret, turning a key mismatch into a 409.
+
+    Before Phase 10 an ``InvalidToken`` here was unhandled: a connection whose
+    ciphertext no key in the ring can read produced a 500 whose traceback could
+    reach a log. It is not a server fault -- it means the deployment is carrying
+    the wrong key ring, which is an operator action rather than something a
+    retry fixes -- so it answers 409 with a code the frontend can render and no
+    detail that describes the ciphertext.
+
+    The counter is what makes a botched rotation visible: a spike here is the
+    signal that a retired key was dropped from ``ENCRYPTION_KEY_DECRYPT_ONLY``
+    before ``tools/ops/rotate_encryption_key.py`` finished rewriting.
+    """
+    try:
+        return decrypt(connection.encrypted_client_secret)
+    except InvalidToken:
+        decryption_failures_total.labels(
+            column="m365_connection.encrypted_client_secret"
+        ).inc()
+        # The connection id only: no key material, no ciphertext, no tenant.
+        logger.error(
+            {"event": "connection_secret_undecryptable", "connection_id": connection.id}
+        )
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail={"code": "credential_unreadable"},
+        ) from None
+
+
+@router.post(
+    "/", response_model=M365ConnectionRead, status_code=status.HTTP_201_CREATED
+)
 async def create_connection(
     connection_data: M365ConnectionCreate,
     current_user: User = Depends(get_current_user),
@@ -46,6 +85,13 @@ async def create_connection(
         tenant_id=connection_data.tenant_id,
         client_id=connection_data.client_id,
         encrypted_client_secret=encrypt(connection_data.client_secret),
+        sharepoint_admin_url=connection_data.sharepoint_admin_url,
+        sharepoint_tenant_id=connection_data.sharepoint_tenant_id,
+        sharepoint_certificate_alias=connection_data.sharepoint_certificate_alias,
+        # M365ConnectionCreate's model validator has already enforced that these
+        # two are present together; Connect-IPPSSession needs both or neither.
+        compliance_certificate_alias=connection_data.compliance_certificate_alias,
+        compliance_organization=connection_data.compliance_organization,
     )
     db.add(connection)
     await db.commit()
@@ -110,9 +156,52 @@ async def update_connection(
             detail=f"Connection {connection_id} not found",
         )
 
+    # A PUT is partial, so each binding value is the submitted one where the
+    # caller named the field and the stored one otherwise. Both bindings are
+    # validated against that merged view, because all-or-nothing is a property
+    # of the row that results, not of the request body: M365ConnectionUpdate
+    # cannot see the stored half and so cannot decide this on its own.
+    binding = {
+        key: getattr(update_data, key)
+        if key in update_data.model_fields_set
+        else getattr(connection, key)
+        for key in (
+            "sharepoint_admin_url",
+            "sharepoint_tenant_id",
+            "sharepoint_certificate_alias",
+            "compliance_certificate_alias",
+            "compliance_organization",
+        )
+    }
+    try:
+        validate_sharepoint_binding(
+            update_data.tenant_id or connection.tenant_id,
+            binding["sharepoint_admin_url"],
+            binding["sharepoint_tenant_id"],
+            binding["sharepoint_certificate_alias"],
+        )
+    except ValueError:
+        raise HTTPException(
+            status_code=422,
+            detail="SharePoint binding must be complete and match the selected tenant",
+        ) from None
+    try:
+        validate_purview_binding(
+            binding["compliance_certificate_alias"],
+            binding["compliance_organization"],
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=422, detail=str(error)) from None
+
     # If tenant_id or client_id changes, require a new secret (can't validate new app without it)
-    tenant_changed = update_data.tenant_id is not None and update_data.tenant_id != connection.tenant_id
-    client_changed = update_data.client_id is not None and update_data.client_id != connection.client_id
+    tenant_changed = (
+        update_data.tenant_id is not None
+        and update_data.tenant_id != connection.tenant_id
+    )
+    client_changed = (
+        update_data.client_id is not None
+        and update_data.client_id != connection.client_id
+    )
     secret_provided = update_data.client_secret is not None
 
     if (tenant_changed or client_changed) and not secret_provided:
@@ -129,7 +218,7 @@ async def update_connection(
         effective_secret = (
             update_data.client_secret
             if update_data.client_secret is not None
-            else decrypt(connection.encrypted_client_secret)
+            else _stored_secret(connection)
         )
         try:
             await validate_m365_connection(
@@ -144,6 +233,8 @@ async def update_connection(
             )
 
     # Update only provided fields (after validation)
+    for key, value in binding.items():
+        setattr(connection, key, value)
     if update_data.name is not None:
         connection.name = update_data.name
     if update_data.tenant_id is not None:
@@ -205,7 +296,7 @@ async def test_connection(
         )
 
     # Decrypt credentials
-    client_secret = decrypt(connection.encrypted_client_secret)
+    client_secret = _stored_secret(connection)
 
     try:
         details = await validate_m365_connection(
@@ -213,7 +304,7 @@ async def test_connection(
             client_id=connection.client_id,
             client_secret=client_secret,
         )
-        #update m365 connection modal with validation attributes (what exact error happened when we tried the api call)
+        # update m365 connection modal with validation attributes (what exact error happened when we tried the api call)
         return M365ConnectionTestResult(
             success=True,
             message="Connection successful",

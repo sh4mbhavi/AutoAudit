@@ -1,25 +1,70 @@
 name: Validate Prometheus Alerting Rules
 
+# Phase 10 changed three things here.
+#
+# 1. NO PATH FILTER. The old workflow ran only when
+#    infrastructure/monitoring/alerts/** changed, so deleting a metric emitter in
+#    backend-api or engine -- which is what actually breaks an alert -- ran no
+#    alert validation at all. The rules depend on application source, so the
+#    check has to see application changes.
+# 2. promtool is CHECKSUM-VERIFIED AND PINNED, via tools/ci/install_promtool.py,
+#    instead of `apt-get install -y prometheus`. That matches the convention
+#    tools/ci/install_opa.py established in Phase 4.
+# 3. The rules are UNIT TESTED, not merely parsed. `promtool check rules` proves
+#    syntax; `promtool test rules` proves a threshold means what its description
+#    says. The 8x unit error in NetworkBandwidthThreshold passed the syntax check
+#    for a year.
+
 on:
   push:
-    paths:
-      - 'infrastructure/monitoring/alerts/**'
+    branches: [main]
   pull_request:
-    paths:
-      - 'infrastructure/monitoring/alerts/**'
+    branches: [main]
+
+permissions:
+  contents: read
 
 jobs:
   validate_alerts:
+    name: Alert rules, unit tests and metric provenance
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
-      - name: Install Prometheus tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y prometheus
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.11'
 
-      - name: Validate Prometheus alerting rules
+      - name: Install checksum-verified promtool
+        run: sudo python tools/ci/install_promtool.py /usr/local/bin/promtool
+
+      - name: Check alert rule syntax
         run: |
-          chmod +x infrastructure/monitoring/alerts/tests/promtool_validation.sh
-          ./infrastructure/monitoring/alerts/tests/promtool_validation.sh
+          set -euo pipefail
+          for file in infrastructure/monitoring/alerts/*.yaml; do
+            case "$(basename "$file")" in
+              alertmanager.yaml) continue ;;
+            esac
+            promtool check rules "$file"
+          done
+
+      - name: Run alert rule unit tests
+        run: promtool test rules infrastructure/monitoring/alerts/tests/rule_tests.yaml
+
+      - name: Check Alertmanager configuration
+        # amtool ships in the alertmanager release, not the prometheus one, so
+        # this uses promtool's config check equivalent: the file is rendered with
+        # ${VAR} placeholders that only a deployment resolves, so a full
+        # amtool check-config would fail on unresolved variables. Assert instead
+        # that no literal credential has crept back in.
+        run: |
+          set -euo pipefail
+          if grep -Eiq 'auth_password:[[:space:]]*["'\''][^$]' infrastructure/monitoring/alerts/alertmanager.yaml; then
+            echo "alertmanager.yaml must not carry an inline password; use auth_password_file" >&2
+            exit 1
+          fi
+
+      - name: Check every alert metric is emitted or declared external
+        # The gate this phase exists to install: eleven metric names were alerted
+        # on that nothing in the repository produced.
+        run: python tools/ci/check_alert_metrics.py

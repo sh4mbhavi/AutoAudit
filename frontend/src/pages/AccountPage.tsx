@@ -11,7 +11,6 @@ import {
   X,
 } from "lucide-react";
 import {
-  logout as apiLogout,
   updateCurrentUser,
   changePassword,
 } from "../api/client";
@@ -35,8 +34,7 @@ type AuthUser = {
 
 type AuthContextValue = {
   user: AuthUser | null;
-  token: string | null;
-  logout: () => void;
+  logout: () => Promise<void>;
 };
 
 export default function AccountPage({
@@ -44,8 +42,9 @@ export default function AccountPage({
   isDarkMode = true,
 }: AccountPageProps) {
   const navigate = useNavigate();
-  const { user, token, logout: clearAuth } = useAuth() as AuthContextValue;
+  const { user, logout: clearAuth } = useAuth() as AuthContextValue;
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState("");
 
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -135,13 +134,12 @@ export default function AccountPage({
     try {
       setIsSavingProfile(true);
 
-      const updatedUser = await updateCurrentUser(token, {
+      await updateCurrentUser({
         first_name: profileData.firstName.trim(),
         last_name: profileData.lastName.trim(),
         organization_name: profileData.organization.trim(),
       });
 
-      localStorage.setItem("user", JSON.stringify(updatedUser));
 
       setProfileSuccess("Profile updated successfully.");
       setIsEditingProfile(false);
@@ -156,24 +154,25 @@ export default function AccountPage({
     }
   };
 
-  // const primaryLabel =
-  //   user?.email ||
-  //   user?.username ||
-  //   user?.name ||
-  //   (user?.id != null ? String(user.id) : null) ||
-  //   "Signed in";
+  const primaryLabel =
+    user?.email ||
+    user?.username ||
+    user?.name ||
+    (user?.id != null ? String(user.id) : null) ||
+    "Signed in";
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
     setIsLoggingOut(true);
 
+    setLogoutError("");
     try {
-      await apiLogout(token);
-    } catch (error) {
-      console.warn("Logout request failed; clearing local auth anyway:", error);
-    } finally {
-      clearAuth();
+      await clearAuth();
       navigate("/");
+    } catch {
+      setLogoutError("Could not log out. Check your connection and try again.");
+    } finally {
+      setIsLoggingOut(false);
     }
   };
 
@@ -205,7 +204,7 @@ export default function AccountPage({
     try {
       setIsChangingPassword(true);
 
-      await changePassword(token, {
+      await changePassword({
         current_password: passwordData.currentPassword,
         new_password: passwordData.newPassword,
       });
@@ -269,6 +268,7 @@ export default function AccountPage({
           </button>
         </div>
 
+        {logoutError && <p role="alert" className="mb-4 text-red-400">{logoutError}</p>}
         <div className="rounded-xl border border-slate-700 bg-slate-800 p-8 shadow-md">
           <div className="mb-6 flex items-center justify-between gap-3">
             <h3 className="text-2xl font-semibold">Profile</h3>
@@ -321,10 +321,10 @@ export default function AccountPage({
 
               <div>
                 <span className="block text-xs font-semibold uppercase tracking-widest text-slate-400">
-                  Email
+                  {user?.email ? "Email" : "Account"}
                 </span>
                 <span className="mt-2 block text-base font-semibold">
-                  {user?.email || "Not available"}
+                  {primaryLabel}
                 </span>
               </div>
 

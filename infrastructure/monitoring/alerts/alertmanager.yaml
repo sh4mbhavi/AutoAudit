@@ -1,34 +1,98 @@
-#AutoAudit Alertmanager Configuration
-#File: alertmanager.yaml
-#Location: /infrastructure/monitoring/alerts/
-#Description: Alertmanager routing, inhibition, silencing, and receiver configuration.
-#Author: Senior Lead, AutoAudit DevSecOps Team
-#Last Updated: 2025-09-21
+# AutoAudit Alertmanager configuration.
+#
+# Two things changed in Phase 10.
+#
+# 1. No credential is written here. The previous version carried an inline
+#    `auth_password` placeholder with a detect-secrets pragma suppressing it --
+#    a value a deployment would have replaced with a real password in a tracked
+#    file. Alertmanager reads `auth_password_file`, so the secret is mounted
+#    instead, exactly as docker-compose.production.yml already does for every
+#    other secret.
+#
+# 2. Every team that appears on a rule has a route. Before, only `team: infra`
+#    matched, so backend, security, compliance and devops alerts all fell through
+#    to the infrastructure mailbox -- "alert routing" that routed everything to
+#    one place. The teams here are exactly the teams the rule files label.
+#
+# STILL OUTSTANDING, and not a thing this repository can supply:
+#
+#   * The addresses below are placeholders. Real destinations need real owners,
+#     and no control in this program has a named owner yet (Phase 0 decisions
+#     D01-D10 remain unapproved).
+#   * ACKNOWLEDGEMENT does not exist. Alertmanager silences an alert; it does not
+#     record that a human accepted responsibility for it. That needs a paging
+#     tool (PagerDuty, Opsgenie) with an on-call roster, which is an
+#     organisational control, not a config file. Phase 10's plan item asks for
+#     acknowledgement; this is where the gap is.
+#   * No Alertmanager is deployed. Nothing in this repository runs one.
 
 global:
   resolve_timeout: 5m
+  smtp_from: ${ALERTMANAGER_SMTP_FROM}
+  smtp_smarthost: ${ALERTMANAGER_SMTP_SMARTHOST}
+  smtp_auth_username: ${ALERTMANAGER_SMTP_USERNAME}
+  # Mounted, never inlined. Alertmanager reads the file at startup.
+  smtp_auth_password_file: /run/secrets/alertmanager_smtp_password
 
 route:
+  # Group by alertname and team so one condition produces one notification.
+  # The duplicate-alertname defect that made this matter is described in
+  # RETIRED-ALERTS.md.
   group_by: ['alertname', 'team']
   group_wait: 30s
   group_interval: 5m
   repeat_interval: 3h
-  receiver: 'email-infra'
+  receiver: 'email-fallback'
   routes:
-    - match:
-        team: infra
+    # Critical alerts are grouped tighter and repeated more often: every one of
+    # them means the product has stopped doing something, not that it is slow.
+    - matchers:
+        - severity = "critical"
+      receiver: 'email-critical'
+      group_wait: 10s
+      repeat_interval: 1h
+      continue: true
+
+    - matchers:
+        - team = "backend"
+      receiver: 'email-backend'
+    - matchers:
+        - team = "infra"
+      receiver: 'email-infra'
+    - matchers:
+        - team = "devops"
       receiver: 'email-infra'
 
+inhibit_rules:
+  # The exporter being down makes every other scan-lifecycle alert meaningless:
+  # the gauges stop updating, so a stale value can look like a real condition.
+  # Suppress the derived alerts while the source is known to be broken.
+  - source_matchers:
+      - alertname = "ScanExporterDown"
+    target_matchers:
+      - service = "dispatcher"
+    equal: ['service']
+
+  # A firing critical alert suppresses a warning about the same thing.
+  - source_matchers:
+      - severity = "critical"
+    target_matchers:
+      - severity = "warning"
+    equal: ['alertname', 'service']
+
 receivers:
+  - name: 'email-fallback'
+    email_configs:
+      - to: ${ALERTMANAGER_FALLBACK_EMAIL}
+  - name: 'email-critical'
+    email_configs:
+      - to: ${ALERTMANAGER_CRITICAL_EMAIL}
+        send_resolved: true
+  - name: 'email-backend'
+    email_configs:
+      - to: ${ALERTMANAGER_BACKEND_EMAIL}
+        send_resolved: true
   - name: 'email-infra'
     email_configs:
-      - to: 'infra-team@example.com'
-        from: 'alertmanager@example.com'
-        smarthost: 'smtp.example.com:587'
-        auth_username: 'alertmanager@example.com'
-        auth_identity: 'alertmanager@example.com'
-        auth_password: 'REPLACE_WITH_REAL_PASSWORD'  # pragma: allowlist secret
-
-#Note: Webhook URLs and APIs have been removed as no Slack or Azure Sentinel integrations are used.
-#VERY IMPORTANT: THE EMAIL ADDRESSES AND THEIR ADJACENT DETAILS ARE PLACEHOLDERS. TO BE MODIFIED BEFORE DEPLOYING.
-#Please configure email settings appropriately before deployment.
+      - to: ${ALERTMANAGER_INFRA_EMAIL}
+        send_resolved: true

@@ -54,7 +54,6 @@ const SignInPanel = ({ onLogin, onSignUpClick }: SignInPanelProps) => {
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    remember: true,
   });
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -63,10 +62,10 @@ const SignInPanel = ({ onLogin, onSignUpClick }: SignInPanelProps) => {
   const apiBaseUrl = import.meta.env.VITE_API_URL;
 
   const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
-    const { name, value, type, checked } = event.target;
+    const { name, value } = event.target;
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: value,
     }));
     if (error) setError(null);
   };
@@ -78,9 +77,9 @@ const SignInPanel = ({ onLogin, onSignUpClick }: SignInPanelProps) => {
 
     try {
       if (onLogin) {
-        await onLogin(formData.email, formData.password, formData.remember);
+        await onLogin(formData.email, formData.password);
       } else {
-        await auth.login(formData.email, formData.password, formData.remember);
+        await auth.login(formData.email, formData.password);
       }
     } catch (err) {
       const message =
@@ -176,16 +175,6 @@ const SignInPanel = ({ onLogin, onSignUpClick }: SignInPanelProps) => {
           </div>
 
           <div className="flex justify-between items-center text-[0.9rem]">
-            <label className="flex gap-2 items-center cursor-pointer text-[rgb(var(--landing-text-soft))]">
-              <input
-                type="checkbox"
-                name="remember"
-                checked={formData.remember}
-                onChange={handleChange}
-                className="cursor-pointer h-4.5 w-4.5 accent-[rgb(var(--brand-blue))]"
-              />
-              <span>Remember me</span>
-            </label>
             <a className="no-underline text-[rgb(var(--brand-blue))]" href="#">
               Forgot password?
             </a>

@@ -21,11 +21,8 @@ class MailboxesDataCollector(BasePowerShellCollector):
     async def collect(self, client: PowerShellClient) -> dict[str, Any]:
         """Collect shared mailboxes and their associated user information."""
 
-        mailboxes_raw = await client.run_cmdlet(
-            "ExchangeOnline",
-            "Get-EXOMailbox",
-            RecipientTypeDetails="SharedMailbox",
-            ResultSize="Unlimited",
+        mailboxes_raw = await client.run_operation(
+            "exchange.mailbox.mailboxes.read", "exchange.mailbox.mailboxes"
         )
 
         mailboxes: list[dict[str, Any]]
@@ -41,18 +38,32 @@ class MailboxesDataCollector(BasePowerShellCollector):
         else:
             mailboxes = []
 
+        # Phase 9: one batched Exchange session instead of one whole pwsh
+        # process, Connect-ExchangeOnline and Disconnect per shared mailbox. A
+        # tenant with 200 shared mailboxes opened 200 extra sessions for this one
+        # control. Results come back in request order, so the emitted evidence is
+        # identical to the serial version for any given tenant response.
+        named = [mailbox for mailbox in mailboxes if mailbox.get("UserPrincipalName")]
+        accounts = await client.run_operations(
+            [
+                (
+                    "exchange.mailbox.mailboxes.user",
+                    "exchange.mailbox.mailboxes",
+                    {"Identity": mailbox["UserPrincipalName"]},
+                )
+                for mailbox in named
+            ]
+        )
+        # Aligned by POSITION, not by UPN: run_operations returns in request
+        # order, and a UPN-keyed map would silently collapse two mailboxes that
+        # report the same UserPrincipalName onto one lookup result. The serial
+        # loop needed no uniqueness assumption and neither does this.
+        by_index = {id(mailbox): account for mailbox, account in zip(named, accounts)}
+
         enriched_mailboxes = []
 
         for mailbox in mailboxes:
-            user_principal_name = mailbox.get("UserPrincipalName")
-            user_account = None
-
-            if user_principal_name:
-                user_account = await client.run_cmdlet(
-                    "ExchangeOnline",
-                    "Get-User",
-                    Identity=user_principal_name,
-                )
+            user_account = by_index.get(id(mailbox))
 
             enriched_mailboxes.append(
                 {

@@ -30,12 +30,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install reportlab
 
-      - name: Install OPA CLI
-        run: |
-          curl -fsSL -o opa https://openpolicyagent.org/downloads/latest/opa_linux_amd64_static
-          chmod +x opa && sudo mv opa /usr/local/bin/opa
-          command -v opa
-          opa version
+      - name: Install checksum-verified OPA CLI
+        run: sudo python tools/ci/install_opa.py /usr/local/bin/opa
 
       - name: Run aggregator (CLI mode)
         run: |
@@ -53,6 +49,8 @@ jobs:
           name: autoaudit-report
           path: engine/legacy/engine/autoaudit_report.pdf
           if-no-files-found: error
+          # An artifact with no stated retention has no retention policy.
+          retention-days: 30
 
       - name: Upload report artifact
         uses: actions/upload-artifact@v4
@@ -60,3 +58,4 @@ jobs:
           name: autoaudit-reports
           path: engine/legacy/engine/autoaudit_reports.json
           if-no-files-found: error
+          retention-days: 30

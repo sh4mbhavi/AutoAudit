@@ -31,7 +31,10 @@ class DkimSigningConfigDataCollector(BasePowerShellCollector):
             - domains_with_dkim_enabled: Domains with DKIM enabled
             - domains_with_dkim_disabled: Domains without DKIM enabled
         """
-        configs = await client.run_cmdlet("ExchangeOnline", "Get-DkimSigningConfig")
+        configs = await client.run_operation(
+            "exchange.authentication.dkim_signing_config.read",
+            "exchange.authentication.dkim_signing_config",
+        )
 
         # Handle None, single config, or list
         if configs is None:

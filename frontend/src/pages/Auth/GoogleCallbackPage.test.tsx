@@ -12,16 +12,15 @@ vi.mock('../../context/AuthContext', () => ({
   useAuth: vi.fn(),
 }));
 
-const loginWithAccessToken = vi.fn();
+const completeOAuthLogin = vi.fn();
 
 function setupUseAuth() {
   vi.mocked(useAuth).mockReturnValue({
     user: null,
-    token: null,
     isAuthenticated: false,
     isLoading: false,
     login: vi.fn(),
-    loginWithAccessToken,
+    completeOAuthLogin,
     logout: vi.fn(),
   });
 }
@@ -50,7 +49,7 @@ describe('GoogleCallbackPage', () => {
   beforeEach(() => {
     originalLocation = window.location;
     sessionStorage.removeItem(CALLBACK_CACHE_KEY);
-    loginWithAccessToken.mockReset();
+    completeOAuthLogin.mockReset();
     setupUseAuth();
   });
 
@@ -77,7 +76,7 @@ describe('GoogleCallbackPage', () => {
 
   test('shows loading state while processing', () => {
     installLocationMock({ hash: '#access_token=will-process' });
-    loginWithAccessToken.mockImplementation(() => new Promise(() => {}));
+    completeOAuthLogin.mockImplementation(() => new Promise(() => {}));
     renderCallback();
     expect(screen.getByText(/please wait while we sign you in/i)).toBeInTheDocument();
   });
@@ -90,32 +89,34 @@ describe('GoogleCallbackPage', () => {
 
     expect(await screen.findByRole('heading', { name: /sign-in failed/i })).toBeInTheDocument();
     expect(screen.getByText(/user cancelled/i)).toBeInTheDocument();
-    expect(loginWithAccessToken).not.toHaveBeenCalled();
+    expect(completeOAuthLogin).not.toHaveBeenCalled();
   });
 
-  test('shows error when token is missing', async () => {
-    installLocationMock({ hash: '', search: '' });
+  test('confirms cookie session when no credentials are in the URL', async () => {
+    const { replaceSpy } = installLocationMock({ hash: '', search: '' });
+    completeOAuthLogin.mockResolvedValue({id: 1});
     renderCallback();
-
-    expect(await screen.findByText(/missing access token/i)).toBeInTheDocument();
-    expect(loginWithAccessToken).not.toHaveBeenCalled();
+    await waitFor(() => expect(replaceSpy).toHaveBeenCalledWith('/dashboard'));
+    expect(completeOAuthLogin).toHaveBeenCalledWith();
+    expect(sessionStorage.getItem(CALLBACK_CACHE_KEY)).toBeNull();
   });
 
-  test('calls loginWithAccessToken and redirects to dashboard on success', async () => {
+  test('calls completeOAuthLogin and redirects to dashboard on success', async () => {
     const { replaceSpy } = installLocationMock({ hash: '#access_token=fake-jwt-token' });
-    loginWithAccessToken.mockResolvedValue({ id: 1, email: 'u@test.com' });
+    completeOAuthLogin.mockResolvedValue({ id: 1, email: 'u@test.com' });
 
     renderCallback();
 
     await waitFor(() => {
-      expect(loginWithAccessToken).toHaveBeenCalledWith('fake-jwt-token', false);
+      expect(completeOAuthLogin).toHaveBeenCalledWith();
     });
     expect(replaceSpy).toHaveBeenCalledWith('/dashboard');
+    expect(sessionStorage.getItem(CALLBACK_CACHE_KEY)).toBeNull();
   });
 
-  test('shows error when loginWithAccessToken rejects', async () => {
+  test('shows error when completeOAuthLogin rejects', async () => {
     installLocationMock({ hash: '#access_token=bad' });
-    loginWithAccessToken.mockRejectedValue(new Error('Token invalid'));
+    completeOAuthLogin.mockRejectedValue(new Error('Token invalid'));
 
     renderCallback();
 

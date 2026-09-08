@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 from fastapi_users.db import SQLAlchemyBaseOAuthAccountTable
-from sqlalchemy import ForeignKey, UniqueConstraint
+from sqlalchemy import CheckConstraint, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.db.base import Base
@@ -15,6 +15,10 @@ class OAuthAccount(SQLAlchemyBaseOAuthAccountTable[int], Base):
 
     __tablename__ = "oauth_account"
     __table_args__ = (
+        CheckConstraint(
+            "oauth_name <> 'google' OR (access_token = '' AND refresh_token IS NULL AND expires_at IS NULL)",
+            name="ck_google_identity_only",
+        ),
         UniqueConstraint(
             "oauth_name",
             "account_id",
@@ -30,6 +34,3 @@ class OAuthAccount(SQLAlchemyBaseOAuthAccountTable[int], Base):
     )
 
     user: Mapped["User"] = relationship(back_populates="oauth_accounts")
-
-
-

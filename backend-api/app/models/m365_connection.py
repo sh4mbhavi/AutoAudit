@@ -38,6 +38,23 @@ class M365Connection(Base):
     # Encrypted client secret (Fernet encryption)
     encrypted_client_secret: Mapped[str] = mapped_column(Text, nullable=False)
 
+    sharepoint_admin_url: Mapped[str | None] = mapped_column(Text, nullable=True)
+    sharepoint_tenant_id: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    sharepoint_certificate_alias: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )
+
+    # Purview / Security & Compliance Center certificate binding. The alias names
+    # a server-side certificate; the organization is the tenant primary
+    # .onmicrosoft.com domain that Connect-IPPSSession requires, which is not the
+    # same value as the tenant GUID held in tenant_id.
+    compliance_certificate_alias: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )
+    compliance_organization: Mapped[str | None] = mapped_column(
+        String(255), nullable=True
+    )
+
     # Soft active flag - allows deactivating without deleting
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
 

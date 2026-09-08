@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event';
 import ConnectionsPage from './ConnectionsPage';
 
 vi.mock('../../context/AuthContext', () => ({
-  useAuth: vi.fn().mockReturnValue({ token: 'test-token' }),
+  useAuth: vi.fn().mockReturnValue({ user: {id: 1} }),
 }));
 
 vi.mock('../../api/client', () => ({
@@ -25,6 +25,7 @@ import {
   getConnections as mockGetConnections,
   testConnection as mockTestConnection,
   updateConnection as mockUpdateConnection,
+  createConnection as mockCreateConnection,
 } from '../../api/client';
 
 const MASK = '************';
@@ -174,7 +175,7 @@ describe('handleEditSubmit', () => {
 
     await waitFor(() => expect(mockUpdateConnection).toHaveBeenCalled());
 
-    const [, , updateData] = vi.mocked(mockUpdateConnection).mock.calls[0];
+    const [, updateData] = vi.mocked(mockUpdateConnection).mock.calls[0];
     expect(updateData).not.toHaveProperty('client_secret');
   });
 
@@ -197,7 +198,65 @@ describe('handleEditSubmit', () => {
 
     await waitFor(() => expect(mockUpdateConnection).toHaveBeenCalled());
 
-    const [, , updateData] = vi.mocked(mockUpdateConnection).mock.calls[0];
+    const [, updateData] = vi.mocked(mockUpdateConnection).mock.calls[0];
     expect(updateData).toHaveProperty('client_secret', 'new-secret-value');
+  });
+});
+
+
+describe('connection-specific SharePoint configuration', () => {
+  it('creates SharePoint configuration using the connection tenant', async () => {
+    setupDefault();
+    vi.mocked(mockCreateConnection).mockResolvedValue(makeConnection());
+    renderPage();
+    await waitForLoaded();
+    await userEvent.click(screen.getByRole('button', { name: 'Add Connection' }));
+    await userEvent.type(screen.getByLabelText('Connection Name'), 'Configured tenant');
+    await userEvent.selectOptions(screen.getByLabelText('Platform'), 'p1');
+    await userEvent.type(screen.getByLabelText('Tenant ID'), 'selected-tenant');
+    await userEvent.type(screen.getByLabelText('Client ID'), 'client');
+    await userEvent.type(screen.getByLabelText('Client Secret'), 'secret');
+    await userEvent.type(screen.getByLabelText('SharePoint admin URL (optional)'), 'https://selected-admin.sharepoint.com');
+    await userEvent.type(screen.getByLabelText('SharePoint certificate alias (optional)'), 'selected-certificate');
+    await userEvent.click(screen.getByRole('button', { name: 'Create Connection' }));
+    expect(mockCreateConnection).toHaveBeenCalledWith(expect.objectContaining({
+      sharepoint_admin_url: 'https://selected-admin.sharepoint.com',
+      sharepoint_tenant_id: 'selected-tenant',
+      sharepoint_certificate_alias: 'selected-certificate',
+    }));
+  });
+
+  it('requires both SharePoint fields when either is provided', async () => {
+    setupDefault();
+    vi.mocked(mockGetConnections).mockResolvedValue([makeConnection()]);
+    renderPage();
+    await waitForLoaded();
+    await userEvent.click(screen.getByRole('button', { name: /edit/i }));
+    await userEvent.type(screen.getByLabelText('SharePoint admin URL (optional)'), 'https://selected-admin.sharepoint.com');
+    await userEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+    expect(mockUpdateConnection).not.toHaveBeenCalled();
+    expect(screen.getByText('Provide both the SharePoint admin URL and certificate alias, or leave both blank.')).toBeInTheDocument();
+  });
+
+  it('sends nulls for all SharePoint fields when clearing existing configuration', async () => {
+    setupDefault();
+    vi.mocked(mockGetConnections).mockResolvedValue([makeConnection({
+      sharepoint_admin_url: 'https://selected-admin.sharepoint.com',
+      sharepoint_tenant_id: 'tenant-abc',
+      sharepoint_certificate_alias: 'selected-certificate',
+    })]);
+    vi.mocked(mockUpdateConnection).mockResolvedValue(makeConnection());
+    renderPage();
+    await waitForLoaded();
+    await userEvent.click(screen.getByRole('button', { name: /edit/i }));
+    expect(screen.getByLabelText('SharePoint admin URL (optional)')).toHaveValue('https://selected-admin.sharepoint.com');
+    await userEvent.clear(screen.getByLabelText('SharePoint admin URL (optional)'));
+    await userEvent.clear(screen.getByLabelText('SharePoint certificate alias (optional)'));
+    await userEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+    expect(mockUpdateConnection).toHaveBeenCalledWith('conn-1', expect.objectContaining({
+      sharepoint_admin_url: null,
+      sharepoint_tenant_id: null,
+      sharepoint_certificate_alias: null,
+    }));
   });
 });
