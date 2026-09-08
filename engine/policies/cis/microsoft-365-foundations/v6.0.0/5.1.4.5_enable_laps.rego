@@ -1,14 +1,15 @@
 # METADATA
 # title: Ensure Local Administrator Password Solution is enabled
 # description: Ensure Microsoft Entra Local Administrator Password Solution (LAPS) is enabled
-# control_id: CIS-5.1.4.5
-# framework: cis
-# benchmark: microsoft-365-foundations
-# version: v6.0.0
-# severity: high
-# service: EntraID
-# requires_permissions:
-#   - Policy.Read.DeviceConfiguration
+# custom:
+#   control_id: CIS-5.1.4.5
+#   framework: cis
+#   benchmark: microsoft-365-foundations
+#   version: v6.0.0
+#   severity: high
+#   service: EntraID
+#   requires_permissions:
+#     - Policy.Read.DeviceConfiguration
 
 package cis.microsoft_365_foundations.v6_0_0.control_5_1_4_5
 

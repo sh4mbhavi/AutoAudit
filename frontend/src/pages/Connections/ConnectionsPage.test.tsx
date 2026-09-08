@@ -5,7 +5,7 @@ import userEvent from '@testing-library/user-event';
 import ConnectionsPage from './ConnectionsPage';
 
 vi.mock('../../context/AuthContext', () => ({
-  useAuth: vi.fn().mockReturnValue({ token: 'test-token' }),
+  useAuth: vi.fn().mockReturnValue({ user: {id: 1} }),
 }));
 
 vi.mock('../../api/client', () => ({
@@ -174,7 +174,7 @@ describe('handleEditSubmit', () => {
 
     await waitFor(() => expect(mockUpdateConnection).toHaveBeenCalled());
 
-    const [, , updateData] = vi.mocked(mockUpdateConnection).mock.calls[0];
+    const [, updateData] = vi.mocked(mockUpdateConnection).mock.calls[0];
     expect(updateData).not.toHaveProperty('client_secret');
   });
 
@@ -197,7 +197,7 @@ describe('handleEditSubmit', () => {
 
     await waitFor(() => expect(mockUpdateConnection).toHaveBeenCalled());
 
-    const [, , updateData] = vi.mocked(mockUpdateConnection).mock.calls[0];
+    const [, updateData] = vi.mocked(mockUpdateConnection).mock.calls[0];
     expect(updateData).toHaveProperty('client_secret', 'new-secret-value');
   });
 });

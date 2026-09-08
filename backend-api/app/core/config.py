@@ -1,3 +1,6 @@
+from urllib.parse import urlsplit, unquote, parse_qs
+from cryptography.fernet import Fernet
+from pydantic import model_validator
 from pydantic import EmailStr, SecretStr
 from pydantic_settings import BaseSettings
 
@@ -20,6 +23,7 @@ class Settings(BaseSettings):
     SECRET_KEY: str = "change-this-to-a-secure-random-string-in-production"
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    SESSION_ABSOLUTE_SECONDS: int = 8 * 60 * 60
 
     # Public URLs (used for OAuth redirects)
     # These must be the externally reachable URLs (e.g. localhost from the browser).
@@ -43,8 +47,97 @@ class Settings(BaseSettings):
     # Policies directory (for benchmark/control metadata)
     POLICIES_DIR: str = "/app/policies"
 
+    @model_validator(mode="after")
+    def validate_runtime_security(self):
+        if not 60 <= self.SESSION_ABSOLUTE_SECONDS <= 8 * 60 * 60:
+            raise ValueError(
+                "Session absolute lifetime must be between 60 seconds and 8 hours"
+            )
+        if (
+            not 1 <= self.ACCESS_TOKEN_EXPIRE_MINUTES <= 60
+            or self.ACCESS_TOKEN_EXPIRE_MINUTES * 60 > self.SESSION_ABSOLUTE_SECONDS
+        ):
+            raise ValueError(
+                "Session idle lifetime must fit within the absolute lifetime"
+            )
+        if self.APP_ENV == "dev":
+            return self
+        if self.APP_ENV not in {"production", "prod", "staging", "preview", "test"}:
+            raise ValueError("APP_ENV must be an explicit supported environment")
+
+        def strong(value):
+            return len(value) >= 32 and not any(
+                marker in value.lower()
+                for marker in (
+                    "change",
+                    "example",
+                    "password",
+                    "autoaudit_dev",
+                    "your-",
+                    "dev-secret",
+                )
+            )
+
+        database = urlsplit(self.DATABASE_URL)
+        redis = urlsplit(self.REDIS_URL)
+        if ";" in self.REDIS_URL or redis.fragment:
+            raise ValueError("Redis failover lists and fragments are prohibited")
+        if (
+            database.scheme not in {"postgresql", "postgresql+asyncpg"}
+            or not database.hostname
+            or not database.username
+            or not strong(unquote(database.password or ""))
+        ):
+            raise ValueError(
+                "DATABASE_URL requires explicit database credentials outside dev"
+            )
+        if (
+            redis.scheme != "rediss"
+            or not redis.hostname
+            or not strong(unquote(redis.password or ""))
+        ):
+            raise ValueError("REDIS_URL requires authenticated TLS outside dev")
+        # TLS verification may not be disabled through URL options.
+        options = parse_qs(redis.query)
+        if options.get("ssl_cert_reqs") != ["required"]:
+            raise ValueError("Redis TLS certificate verification is required")
+        if options.get("ssl_check_hostname") != ["true"]:
+            raise ValueError("Redis TLS hostname verification is required")
+        try:
+            Fernet(self.ENCRYPTION_KEY.encode())
+        except (ValueError, TypeError):
+            raise ValueError("A valid ENCRYPTION_KEY is required outside dev") from None
+        if (
+            self.ENCRYPTION_KEY == "Ps-HiS3ww5QzQPc_Mdu5-JyA_jCNbdFHMdiwWSlAfgM="
+        ):  # pragma: allowlist secret
+            raise ValueError("The development encryption key is prohibited")
+        if not strong(self.SECRET_KEY):
+            raise ValueError("A strong SECRET_KEY is required outside dev")
+        if self.DEV_ADMIN_SEED_ENABLED:
+            raise ValueError("Development administrator seeding is prohibited")
+        if self.ALGORITHM != "HS256" or not 1 <= self.ACCESS_TOKEN_EXPIRE_MINUTES <= 60:
+            raise ValueError("Invalid authentication lifetime or algorithm")
+        for value in (self.BACKEND_PUBLIC_URL, self.FRONTEND_URL):
+            origin = urlsplit(value)
+            if (
+                origin.scheme != "https"
+                or not origin.hostname
+                or origin.username
+                or origin.password
+                or origin.query
+                or origin.fragment
+                or origin.path not in {"", "/"}
+                or "*" in value
+                or origin.hostname in {"localhost", "127.0.0.1", "::1"}
+            ):
+                raise ValueError(
+                    "Public URLs must be explicit HTTPS origins outside dev"
+                )
+        return self
+
     class Config:
         env_file = ".env"
+        hide_input_in_errors = True
 
 
 def get_settings() -> Settings:

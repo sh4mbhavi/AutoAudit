@@ -1,0 +1,42 @@
+[
+  {
+    "number": 292,
+    "title": "Enforce RBAC on scan and M365 connection mutations (26T2-BE-PG-001).",
+    "state": "open",
+    "merged_at": null,
+    "html_url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/292",
+    "head": "ca8b387e6547f791b10d67619a9488de977456ba"
+  },
+  {
+    "number": 305,
+    "title": " Configure secure CORS",
+    "state": "closed",
+    "merged_at": "2026-09-05T12:37:48Z",
+    "html_url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/305",
+    "head": "f87f319d26d58ab9f053db287827fca266c2ba58"
+  },
+  {
+    "number": 318,
+    "title": "feat(api): add security response headers",
+    "state": "open",
+    "merged_at": null,
+    "html_url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/318",
+    "head": "5374d366a5b832c91db0a234a89dd91c44e92704"
+  },
+  {
+    "number": 330,
+    "title": "sec: externalize hardcoded secrets in docker-compose.yml",
+    "state": "open",
+    "merged_at": null,
+    "html_url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/330",
+    "head": "aeb83a4b8b449d0d7ebf109a8f935842b08d2bab"
+  },
+  {
+    "number": 350,
+    "title": "Feature/google sso auth",
+    "state": "open",
+    "merged_at": null,
+    "html_url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/350",
+    "head": "b949f0862c3eede86079bd194a04b3c3f4b5aaec"
+  }
+]

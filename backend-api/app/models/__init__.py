@@ -1,6 +1,7 @@
 """Database models for the AutoAudit backend API."""
 
 from app.models.user import User, Role
+from app.models.auth_session import AuthSession
 from app.models.oauth_account import OAuthAccount
 from app.models.m365_connection import M365Connection
 from app.models.azure_connection import AzureConnection
@@ -16,6 +17,7 @@ from app.models.user_settings import UserSettings
 
 __all__ = [
     "User",
+    "AuthSession",
     "Role",
     "OAuthAccount",
     "M365Connection",

@@ -6,7 +6,7 @@ Official documentation: https://fastapi-users.github.io/fastapi-users/
 
 Key components:
 - UserManager: Handles user lifecycle events (registration, password reset, etc.)
-- Authentication backend: JWT-based authentication with Bearer tokens
+- Authentication backend: Database-backed authentication with HttpOnly session cookies
 - Dependencies: get_user_db, get_user_manager for dependency injection
 """
 
@@ -16,13 +16,12 @@ from fastapi import Depends, Request
 from fastapi_users import BaseUserManager, FastAPIUsers, IntegerIDMixin
 from fastapi_users.authentication import (
     AuthenticationBackend,
-    BearerTransport,
-    JWTStrategy,
 )
 from fastapi_users.db import SQLAlchemyUserDatabase
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.core.sessions import get_session_strategy, session_transport
 from app.db.session import get_async_session
 from app.models.user import User
 from app.models.oauth_account import OAuthAccount
@@ -64,22 +63,12 @@ async def get_user_manager(user_db: SQLAlchemyUserDatabase = Depends(get_user_db
     yield UserManager(user_db)
 
 
-def get_jwt_strategy() -> JWTStrategy:
-    """Get JWT strategy for authentication."""
-    return JWTStrategy(
-        secret=settings.SECRET_KEY,
-        lifetime_seconds=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-    )
-
-
-# Bearer transport for JWT tokens
-bearer_transport = BearerTransport(tokenUrl="api/v1/auth/login")
-
-# Authentication backend
+# Only the HttpOnly cookie transport can authenticate a browser session.
+cookie_transport = session_transport()
 auth_backend = AuthenticationBackend(
-    name="jwt",
-    transport=bearer_transport,
-    get_strategy=get_jwt_strategy,
+    name="session",
+    transport=cookie_transport,
+    get_strategy=get_session_strategy,
 )
 
 # FastAPI Users instance

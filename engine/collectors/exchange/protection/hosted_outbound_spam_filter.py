@@ -11,7 +11,7 @@ Required Permissions: Exchange.ManageAsApp + Exchange role assignment
 
 from typing import Any
 
-from collectors.powershell_base import BasePowerShellCollector
+from collectors.powershell_base import BasePowerShellCollector, powershell_records
 from collectors.powershell_client import PowerShellClient
 
 
@@ -31,27 +31,33 @@ class HostedOutboundSpamFilterDataCollector(BasePowerShellCollector):
             - default_policy: The default policy
             - auto_forwarding_mode: Auto-forwarding configuration
         """
-        policies = await client.run_cmdlet(
-            "ExchangeOnline", "Get-HostedOutboundSpamFilterPolicy"
+        policies = await client.run_operation(
+            "exchange.protection.hosted_outbound_spam_filter.read",
+            "exchange.protection.hosted_outbound_spam_filter",
         )
 
         # Handle None, single policy, or list
-        if policies is None:
-            policies = []
-        elif isinstance(policies, dict):
-            policies = [policies]
+        policies = powershell_records(policies)
 
         # Get default policy
         default_policy = next(
             (p for p in policies if p.get("IsDefault")),
-            policies[0] if policies else None
+            policies[0] if policies else None,
         )
 
         return {
             "outbound_spam_policies": policies,
             "total_policies": len(policies),
             "default_policy": default_policy,
-            "auto_forwarding_mode": default_policy.get("AutoForwardingMode") if default_policy else None,
-            "bcc_suspicious_outbound_mail": default_policy.get("BccSuspiciousOutboundMail") if default_policy else None,
-            "notify_outbound_spam": default_policy.get("NotifyOutboundSpam") if default_policy else None,
+            "auto_forwarding_mode": default_policy.get("AutoForwardingMode")
+            if default_policy
+            else None,
+            "bcc_suspicious_outbound_mail": default_policy.get(
+                "BccSuspiciousOutboundMail"
+            )
+            if default_policy
+            else None,
+            "notify_outbound_spam": default_policy.get("NotifyOutboundSpam")
+            if default_policy
+            else None,
         }

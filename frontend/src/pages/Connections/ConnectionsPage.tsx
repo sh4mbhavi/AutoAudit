@@ -76,7 +76,7 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
   sidebarWidth = 220,
   isDarkMode = true,
 }) => {
-  const { token } = useAuth();
+  const { user } = useAuth();
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -156,7 +156,7 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
 
   useEffect(() => {
     loadData();
-  }, [token]);
+  }, [user]);
 
   async function loadData(): Promise<void> {
     setIsLoading(true);
@@ -164,8 +164,8 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
 
     try {
       const [platformsData, connectionsData] = await Promise.all([
-        getPlatforms(token),
-        getConnections(token),
+        getPlatforms(),
+        getConnections(),
       ]);
 
       setPlatforms(platformsData);
@@ -192,7 +192,7 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
     setError(null);
 
     try {
-      const newConnection = await createConnection(token, {
+      const newConnection = await createConnection({
         name: formData.name,
         tenant_id: formData.tenant_id,
         client_id: formData.client_id,
@@ -220,7 +220,7 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
     setError(null);
 
     try {
-      const result = await testConnection(token, connection.id);
+      const result = await testConnection(connection.id);
       setTestResults((prev) => ({ ...prev, [connection.id]: result }));
 
       if (!result?.success) {
@@ -288,7 +288,6 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
       }
 
       const updatedConnection = await updateConnection(
-        token,
         editingConnection.id,
         updateData,
       );
@@ -329,7 +328,7 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
     setError(null);
 
     try {
-      await deleteConnection(token, id);
+      await deleteConnection(id);
       setConnections((prev) => prev.filter((conn) => conn.id !== id));
     } catch (err) {
       setError((err as any).message || "Failed to delete connection");

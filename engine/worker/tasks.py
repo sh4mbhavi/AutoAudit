@@ -1,45 +1,39 @@
 """Celery tasks for compliance scanning."""
 
 import asyncio
-import json
+import hashlib
 from datetime import datetime
-from decimal import Decimal
-from pathlib import Path
 
 from worker.celery_app import celery_app
 from worker.config import settings
+from worker.result_contract import OPAResult
+from worker.provenance import (
+    initial_provenance,
+    capture_policy,
+    engine_identity,
+    canonical_digest,
+    utc_now,
+)
+
 from worker.db import (
     get_db_session,
     get_scan,
+    get_execution_result,
+    get_execution_credentials,
     get_pending_scan_results,
     update_scan_status,
-    increment_scan_progress,
-    increment_scan_error_count,
-    increment_scan_skipped_count,
     update_scan_result,
     finalize_scan_if_complete,
 )
 
 
-def load_metadata(framework: str, benchmark: str, version: str) -> dict:
-    """Load control metadata from the policies directory.
+class EvaluationFailure(Exception):
+    """Redacted execution failure with the provenance captured before failure."""
 
-    Args:
-        framework: Framework name (e.g., "cis")
-        benchmark: Benchmark slug (e.g., "microsoft-365-foundations")
-        version: Version (e.g., "v3.1.0")
-
-    Returns:
-        The metadata dict containing controls list.
-    """
-    metadata_path = (
-        Path(settings.POLICIES_DIR) / framework / benchmark / version / "metadata.json"
-    )
-    if not metadata_path.exists():
-        raise FileNotFoundError(f"Metadata not found: {metadata_path}")
-
-    with open(metadata_path) as f:
-        return json.load(f)
+    def __init__(self, reason_code: str, provenance: dict):
+        super().__init__(reason_code)
+        self.reason_code = reason_code
+        self.provenance = provenance
 
 
 def get_control_metadata(metadata: dict, control_id: str) -> dict | None:
@@ -75,6 +69,18 @@ def run_scan(scan_id: int) -> dict:
         if not scan:
             raise ValueError(f"Scan {scan_id} not found")
 
+        if scan["status"] in {"completed", "failed"}:
+            return {"scan_id": scan_id, "status": scan["status"]}
+        if scan["semantics_version"] != "phase3-v1":
+            update_scan_status(
+                session,
+                scan_id,
+                status="failed",
+                finished_at=datetime.utcnow(),
+                notes="Legacy pending scan: create a new scan to capture selection and provenance.",
+            )
+            return {"scan_id": scan_id, "status": "failed"}
+
         # Update status to running
         update_scan_status(session, scan_id, status="running")
         session.commit()
@@ -85,31 +91,22 @@ def run_scan(scan_id: int) -> dict:
     total_pending = len(pending_results)
 
     if total_pending == 0:
-        # No controls to evaluate - scan was created with all controls skipped
         with get_db_session() as session:
-            update_scan_status(
-                session,
-                scan_id,
-                status="completed",
-                finished_at=datetime.utcnow(),
-                compliance_score=Decimal("100.00"),
-            )
-            session.commit()
+            finalize_scan_if_complete(session, scan_id)
         return {"scan_id": scan_id, "status": "completed", "total_pending": 0}
 
-    # Load metadata to get control details
-    metadata = load_metadata(scan["framework"], scan["benchmark"], scan["version"])
-
-    # Build credentials dict for passing to tasks
-    credentials = {
-        "tenant_id": scan["tenant_id"],
-        "client_id": scan["client_id"],
-        "client_secret": scan["client_secret"],
+    # Selection and metadata are frozen by the API, never reread during a scan.
+    metadata = scan["metadata_snapshot"]
+    context = {
+        "metadata_digest": scan["metadata_digest"],
+        "correlation_id": scan["correlation_id"],
     }
+    if canonical_digest(metadata) != scan["metadata_digest"]:
+        raise ValueError("Frozen metadata digest mismatch")
 
     # Dispatch all tasks for parallel execution (fire-and-forget)
     dispatched = 0
-    skipped = 0
+    not_assessable = 0
 
     for result in pending_results:
         control = get_control_metadata(metadata, result["control_id"])
@@ -120,9 +117,17 @@ def run_scan(scan_id: int) -> dict:
                     session,
                     result_id=result["id"],
                     status="error",
-                    message=f"Control {result['control_id']} not found in metadata",
+                    message="Control missing from frozen metadata.",
+                    reason_code="metadata_control_missing",
+                    provenance=initial_provenance(
+                        scan["framework"],
+                        scan["benchmark"],
+                        scan["version"],
+                        {"control_id": result["control_id"]},
+                        context,
+                    ),
                 )
-                increment_scan_error_count(session, scan_id)
+                finalize_scan_if_complete(session, scan_id)
                 session.commit()
             continue
 
@@ -144,12 +149,20 @@ def run_scan(scan_id: int) -> dict:
                     update_scan_result(
                         session,
                         result_id=result["id"],
-                        status="skipped",
-                        message="Skipped (fast scan): PowerShell-based controls disabled (ENABLE_POWERSHELL_CONTROLS=false).",
+                        status="not_assessable",
+                        message="PowerShell assessment is disabled for this worker.",
+                        reason_code="automation_disabled",
+                        provenance=initial_provenance(
+                            scan["framework"],
+                            scan["benchmark"],
+                            scan["version"],
+                            control,
+                            context,
+                        ),
                     )
-                    increment_scan_skipped_count(session, scan_id)
+                    finalize_scan_if_complete(session, scan_id)
                     session.commit()
-                skipped += 1
+                not_assessable += 1
                 continue
 
             # Verify collector exists before dispatching
@@ -159,37 +172,49 @@ def run_scan(scan_id: int) -> dict:
                         session,
                         result_id=result["id"],
                         status="error",
-                        message="Control marked ready but has no data_collector_id",
+                        message="Control marked ready but has no collector.",
+                        reason_code="collector_not_configured",
+                        provenance=initial_provenance(
+                            scan["framework"],
+                            scan["benchmark"],
+                            scan["version"],
+                            control,
+                            context,
+                        ),
                     )
-                    increment_scan_error_count(session, scan_id)
+                    finalize_scan_if_complete(session, scan_id)
                     session.commit()
                 continue
 
             evaluate_control.delay(
                 scan_id=scan_id,
                 result_id=result["id"],
-                control=control,
-                credentials=credentials,
-                framework=scan["framework"],
-                benchmark=scan["benchmark"],
-                version=scan["version"],
+                connection_id=scan["m365_connection_id"],
             )
             dispatched += 1
         else:
-            # Skip non-ready controls (deferred, blocked, manual, not_started)
+            # Selected controls outside current automation stay in the coverage denominator.
             with get_db_session() as session:
                 update_scan_result(
                     session,
                     result_id=result["id"],
-                    status="skipped",
-                    message=f"Control {status}: {control.get('notes') or 'Not yet automatable'}",
+                    status="not_assessable",
+                    message="Selected control is outside automated assessment capability.",
+                    reason_code="not_automated",
+                    provenance=initial_provenance(
+                        scan["framework"],
+                        scan["benchmark"],
+                        scan["version"],
+                        control,
+                        context,
+                    ),
                 )
-                increment_scan_skipped_count(session, scan_id)
+                finalize_scan_if_complete(session, scan_id)
                 session.commit()
-            skipped += 1
+            not_assessable += 1
 
     # If no tasks were dispatched, finalize the scan immediately
-    # (all controls were skipped due to automation_status)
+    # (selected controls may be not assessable or in error)
     if dispatched == 0:
         with get_db_session() as session:
             finalize_scan_if_complete(session, scan_id)
@@ -198,7 +223,7 @@ def run_scan(scan_id: int) -> dict:
             "scan_id": scan_id,
             "status": "completed",
             "dispatched": dispatched,
-            "skipped": skipped,
+            "not_assessable": not_assessable,
         }
 
     # Return immediately - don't wait for results
@@ -208,7 +233,7 @@ def run_scan(scan_id: int) -> dict:
         "scan_id": scan_id,
         "status": "running",
         "dispatched": dispatched,
-        "skipped": skipped,
+        "not_assessable": not_assessable,
     }
 
 
@@ -222,38 +247,51 @@ def evaluate_control(
     self,
     scan_id: int,
     result_id: int,
-    control: dict,
-    credentials: dict,
-    framework: str,
-    benchmark: str,
-    version: str,
+    connection_id: int,
 ) -> dict:
-    """Evaluate a single control.
-
-    This task:
-    1. Collects data using the appropriate collector
-    2. Evaluates the policy using OPA
-    3. Updates the ScanResult record with the outcome
-    4. Updates scan progress counters
-    5. If this was the last pending control, finalizes the scan
-
-    Args:
-        scan_id: The scan ID
-        result_id: The scan_result.id to update
-        control: Control metadata dict from metadata.json
-        credentials: M365 credentials dict
-        framework: Framework name (e.g., "cis")
-        benchmark: Benchmark slug (e.g., "microsoft-365-foundations")
-        version: Version string (e.g., "v3.1.0")
-
-    Returns:
-        Result dict with control evaluation outcome
-    """
+    """Evaluate frozen database context; broker arguments contain only identifiers."""
+    if any(
+        type(value) is not int or value <= 0
+        for value in (scan_id, result_id, connection_id)
+    ):
+        raise ValueError("Invalid execution identifiers")
+    try:
+        with get_db_session() as session:
+            scan = get_scan(session, scan_id)
+            execution = get_execution_result(session, scan_id, result_id)
+    except Exception:
+        raise self.retry(exc=RuntimeError("Execution context unavailable")) from None
+    if not scan or not execution or scan["m365_connection_id"] != connection_id:
+        raise ValueError("Execution context unavailable")
+    if (
+        execution["status"] != "pending"
+        or not execution["selected"]
+        or scan["status"] in {"completed", "failed"}
+    ):
+        return {"scan_id": scan_id, "result_id": result_id, "status": "ignored"}
+    metadata = scan["metadata_snapshot"]
+    if (
+        scan["semantics_version"] != "phase3-v1"
+        or canonical_digest(metadata) != scan["metadata_digest"]
+    ):
+        raise ValueError("Frozen execution context invalid")
+    control = get_control_metadata(metadata, execution["control_id"])
+    if not control or control.get("automation_status", "ready") != "ready":
+        raise ValueError("Control execution unavailable")
     control_id = control["control_id"]
     collector_id = control.get("data_collector_id")
     policy_file = control.get("policy_file")
-
+    framework, benchmark, version = (
+        scan[key] for key in ("framework", "benchmark", "version")
+    )
+    scan_context = {
+        "metadata_digest": scan["metadata_digest"],
+        "correlation_id": scan["correlation_id"],
+    }
+    credentials = {}
     try:
+        with get_db_session() as session:
+            credentials = get_execution_credentials(session, scan_id, connection_id)
         # Run async collector and OPA evaluation
         result = asyncio.run(
             _evaluate_control_async(
@@ -264,40 +302,39 @@ def evaluate_control(
                 framework=framework,
                 benchmark=benchmark,
                 version=version,
+                scan_context=scan_context,
             )
         )
 
-        # Update database based on result
+        provenance = result.pop("provenance", None)
+        outcome = OPAResult.model_validate(result)
+        reason = (
+            "insufficient_evidence"
+            if outcome.compliant is None
+            else "policy_satisfied"
+            if outcome.compliant
+            else "policy_violation"
+        )
+        messages = {
+            "passed": "Evidence satisfies the control.",
+            "failed": "Evidence demonstrates a control violation.",
+            "indeterminate": "Evidence is insufficient or ambiguous; no assessment was possible.",
+        }
         with get_db_session() as session:
-            if result.get("compliant", False):
-                # Control passed
-                update_scan_result(
-                    session,
-                    result_id=result_id,
-                    status="passed",
-                    message=result.get("message", "Control is compliant"),
-                    evidence=result.get("details"),
-                )
-                increment_scan_progress(session, scan_id, passed=True)
-            else:
-                # Control failed
-                update_scan_result(
-                    session,
-                    result_id=result_id,
-                    status="failed",
-                    message=result.get("message", "Control is non-compliant"),
-                    evidence=result.get("details"),
-                )
-                increment_scan_progress(session, scan_id, passed=False)
-
-            # Check if this was the last control and finalize scan if complete
+            update_scan_result(
+                session,
+                result_id=result_id,
+                status=outcome.status,
+                message=messages[outcome.status],
+                evidence={"affected_resource_count": len(outcome.affected_resources)},
+                reason_code=reason,
+                provenance=provenance,
+            )
             finalize_scan_if_complete(session, scan_id)
-            session.commit()
-
         return {
             "control_id": control_id,
-            "compliant": result.get("compliant", False),
-            "message": result.get("message"),
+            "compliant": outcome.compliant,
+            "status": outcome.status,
         }
 
     except Exception as exc:
@@ -310,10 +347,16 @@ def evaluate_control(
                     session,
                     result_id=result_id,
                     status="error",
-                    message=f"Control evaluation failed after retries: {str(exc)}",
+                    message="Control execution failed after retries; no compliance assessment was recorded.",
+                    reason_code=exc.reason_code
+                    if isinstance(exc, EvaluationFailure)
+                    else "evaluation_error",
+                    provenance=exc.provenance
+                    if isinstance(exc, EvaluationFailure)
+                    else initial_provenance(
+                        framework, benchmark, version, control, scan_context
+                    ),
                 )
-                increment_scan_error_count(session, scan_id)
-
                 # Check if this was the last control and finalize scan if complete
                 finalize_scan_if_complete(session, scan_id)
                 session.commit()
@@ -321,10 +364,13 @@ def evaluate_control(
             return {
                 "control_id": control_id,
                 "compliant": None,
-                "error": str(exc),
+                "status": "error",
+                "error": "Control execution failed",
             }
 
-        raise self.retry(exc=exc)
+        raise self.retry(exc=RuntimeError("Control execution failed")) from None
+    finally:
+        credentials.clear()
 
 
 async def _evaluate_control_async(
@@ -335,6 +381,7 @@ async def _evaluate_control_async(
     framework: str,
     benchmark: str,
     version: str,
+    scan_context: dict | None = None,
 ) -> dict:
     """Async helper to collect data and evaluate policy.
 
@@ -356,55 +403,113 @@ async def _evaluate_control_async(
     from collectors.powershell_client import PowerShellClient
     from opa_client import opa_client
 
-    # Get collector
-    collector = get_collector(collector_id)
-
-    # Determine client type based on collector_id prefix.
-    #
-    # Most Exchange and Compliance collectors require PowerShell, but a few Exchange
-    # collectors use Graph (e.g. domain metadata).
-    if collector_id.startswith(
-        ("exchange.", "compliance.", "sharepoint.pnp.")
-    ) and not collector_id.startswith("exchange.dns."):
-        client = PowerShellClient(
-            tenant_id=credentials["tenant_id"],
-            client_id=credentials["client_id"],
-            client_secret=credentials["client_secret"],
-            service_url=settings.POWERSHELL_SERVICE_URL,
-            sharepoint_admin_url=settings.SHAREPOINT_ADMIN_URL,
-            certificate_alias=settings.SHAREPOINT_CERT_ALIAS,
+    provenance = initial_provenance(
+        framework,
+        benchmark,
+        version,
+        {
+            "control_id": control_id,
+            "data_collector_id": collector_id,
+            "policy_file": policy_file,
+        },
+        scan_context,
+    )
+    reason = "provenance_unavailable"
+    try:
+        provenance.update(engine_identity())
+        source = capture_policy(framework, benchmark, version, policy_file)
+        provenance.update(
+            policy_source=source,
+            policy_digest=hashlib.sha256(source.encode()).hexdigest(),
         )
-    else:
-        # Entra and other collectors use Graph API
-        client = GraphClient(
-            tenant_id=credentials["tenant_id"],
-            client_id=credentials["client_id"],
-            client_secret=credentials["client_secret"],
+        reason = "collection_error"
+        provenance["collection_started_at"] = utc_now()
+        # Get collector
+        collector = get_collector(collector_id)
+
+        # Determine client type based on collector_id prefix.
+        #
+        # Most Exchange and Compliance collectors require PowerShell, but a few Exchange
+        # collectors use Graph (e.g. domain metadata).
+        if collector_id.startswith(
+            ("exchange.", "compliance.", "teams.", "sharepoint.pnp.")
+        ) and not collector_id.startswith("exchange.dns."):
+            client = PowerShellClient(
+                tenant_id=credentials["tenant_id"],
+                client_id=credentials["client_id"],
+                client_secret=credentials["client_secret"],
+                service_url=settings.POWERSHELL_SERVICE_URL,
+                service_secret=settings.POWERSHELL_SERVICE_SECRET,
+                service_ca_file=settings.POWERSHELL_CA_FILE,
+                sharepoint_admin_url=settings.SHAREPOINT_ADMIN_URL,
+                certificate_alias=settings.SHAREPOINT_CERT_ALIAS,
+            )
+        else:
+            # Entra and other collectors use Graph API
+            client = GraphClient(
+                tenant_id=credentials["tenant_id"],
+                client_id=credentials["client_id"],
+                client_secret=credentials["client_secret"],
+            )
+
+        # Collect data using the appropriate client
+        collected_data = await collector.collect(client)
+        provenance["collection_completed_at"] = utc_now()
+        provenance["input_digest"] = canonical_digest(collected_data)
+        if isinstance(collected_data, dict) and (
+            collected_data.get("error") is not None
+            or collected_data.get("collection_error") is not None
+            or collected_data.get("collector_error") is not None
+            or collected_data.get("success") is False
+        ):
+            raise ValueError("Collector reported an execution failure")
+        if not isinstance(collected_data, dict):
+            provenance["provenance_status"] = "collection_only"
+            # A non-object cannot fulfill any registered collector contract.
+            return {
+                "compliant": None,
+                "message": "Unusable collector evidence",
+                "affected_resources": [],
+                "details": {},
+                "provenance": provenance,
+            }
+        provenance["input_digest"] = canonical_digest(collected_data)
+        reason = "evaluation_error"
+        provenance["evaluation_started_at"] = utc_now()
+        provenance["opa_version"] = await opa_client.runtime_version()
+
+        # Build OPA package path to match the Rego package declaration
+        # Rego package: "cis.microsoft_365_foundations.v3_1_0.control_1_1_1"
+        # OPA REST API path: "cis/microsoft_365_foundations/v3_1_0/control_1_1_1"
+        #
+        # Transform:
+        # - framework: "essential-eight" -> "essential_eight"
+        # - benchmark: "microsoft-365-foundations" -> "microsoft_365_foundations"
+        # - version: "v3.1.0" -> "v3_1_0"
+        # - control_id: "1.1.1" -> "control_1_1_1", "E8-MAC-2.1" -> "control_e8_mac_2_1"
+        framework_normalized = framework.replace("-", "_")
+        benchmark_normalized = benchmark.replace("-", "_")
+        version_normalized = version.replace(".", "_")
+
+        # Convert control_id to a valid Rego identifier (lowercase, hyphens/dots to underscores)
+        control_suffix = control_id.replace(".", "_").replace("-", "_").lower()
+        control_package = f"control_{control_suffix}"
+
+        package_path = f"{framework_normalized}/{benchmark_normalized}/{version_normalized}/{control_package}"
+
+        # Evaluate policy with OPA
+        evaluated = await opa_client.evaluate_snapshot(
+            package_path, collected_data, source
         )
+        provenance.update(
+            opa_version=evaluated.opa_version,
+            evaluated_at=utc_now(),
+            provenance_status="captured",
+        )
+        return {**evaluated.result.model_dump(), "provenance": provenance}
 
-    # Collect data using the appropriate client
-    collected_data = await collector.collect(client)
-
-    # Build OPA package path to match the Rego package declaration
-    # Rego package: "cis.microsoft_365_foundations.v3_1_0.control_1_1_1"
-    # OPA REST API path: "cis/microsoft_365_foundations/v3_1_0/control_1_1_1"
-    #
-    # Transform:
-    # - framework: "essential-eight" -> "essential_eight"
-    # - benchmark: "microsoft-365-foundations" -> "microsoft_365_foundations"
-    # - version: "v3.1.0" -> "v3_1_0"
-    # - control_id: "1.1.1" -> "control_1_1_1", "E8-MAC-2.1" -> "control_e8_mac_2_1"
-    framework_normalized = framework.replace("-", "_")
-    benchmark_normalized = benchmark.replace("-", "_")
-    version_normalized = version.replace(".", "_")
-
-    # Convert control_id to a valid Rego identifier (lowercase, hyphens/dots to underscores)
-    control_suffix = control_id.replace(".", "_").replace("-", "_").lower()
-    control_package = f"control_{control_suffix}"
-
-    package_path = f"{framework_normalized}/{benchmark_normalized}/{version_normalized}/{control_package}"
-
-    # Evaluate policy with OPA
-    result = await opa_client.evaluate_policy(package_path, collected_data)
-
-    return result
+    except Exception:
+        if provenance["evaluation_started_at"] is not None:
+            provenance["evaluated_at"] = utc_now()
+        provenance["provenance_status"] = "incomplete"
+        raise EvaluationFailure(reason, provenance) from None

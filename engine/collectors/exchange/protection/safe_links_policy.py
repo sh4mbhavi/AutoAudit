@@ -11,7 +11,7 @@ Required Permissions: Exchange.ManageAsApp + Exchange role assignment
 
 from typing import Any
 
-from collectors.powershell_base import BasePowerShellCollector
+from collectors.powershell_base import BasePowerShellCollector, powershell_records
 from collectors.powershell_client import PowerShellClient
 
 
@@ -30,13 +30,13 @@ class SafeLinksPolicyDataCollector(BasePowerShellCollector):
             - safe_links_policies: List of Safe Links policies
             - policies_with_protection: Policies with URL protection enabled
         """
-        policies = await client.run_cmdlet("ExchangeOnline", "Get-SafeLinksPolicy")
+        policies = await client.run_operation(
+            "exchange.protection.safe_links_policy.read",
+            "exchange.protection.safe_links_policy",
+        )
 
         # Handle None, single policy, or list
-        if policies is None:
-            policies = []
-        elif isinstance(policies, dict):
-            policies = [policies]
+        policies = powershell_records(policies)
 
         # Find policies with protection enabled
         policies_with_protection = [

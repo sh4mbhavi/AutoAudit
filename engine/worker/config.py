@@ -1,5 +1,9 @@
 """Configuration for the Celery worker."""
 
+from urllib.parse import urlsplit, unquote, parse_qs
+from cryptography.fernet import Fernet
+from pydantic import model_validator
+
 import os
 
 from pydantic_settings import BaseSettings
@@ -8,6 +12,8 @@ from pydantic_settings import BaseSettings
 class WorkerSettings(BaseSettings):
     """Worker configuration loaded from environment variables."""
 
+    APP_ENV: str = "dev"
+
     # Database
     DATABASE_URL: str = "postgresql://autoaudit:autoaudit_dev_password@localhost:5432/autoaudit"  # pragma: allowlist secret
 
@@ -15,6 +21,10 @@ class WorkerSettings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
 
     # OPA (Open Policy Agent)
+    OPA_BINARY: str = "opa"
+    ENGINE_GIT_SHA: str = ""
+    ENGINE_IMAGE_DIGEST: str = ""
+
     OPA_URL: str = "http://localhost:8181"
 
     # Encryption key for decrypting credentials
@@ -25,6 +35,8 @@ class WorkerSettings(BaseSettings):
 
     # PowerShell service URL (optional - if set, uses HTTP instead of Docker)
     POWERSHELL_SERVICE_URL: str | None = None
+    POWERSHELL_SERVICE_SECRET: str = ""
+    POWERSHELL_CA_FILE: str | None = None
 
     # SharePoint PnP (optional). Used only when constructing PowerShellClient.
     # Admin URL is tenant-specific and cannot be derived from tenant_id GUID.
@@ -37,8 +49,75 @@ class WorkerSettings(BaseSettings):
     # than Graph-based controls. Default is True to preserve full scan coverage.
     ENABLE_POWERSHELL_CONTROLS: bool = True
 
+    @model_validator(mode="after")
+    def validate_runtime_security(self):
+        if self.APP_ENV == "dev":
+            return self
+        if self.APP_ENV not in {"production", "prod", "staging", "preview", "test"}:
+            raise ValueError("APP_ENV must be an explicit supported environment")
+
+        def strong(value):
+            return len(value) >= 32 and not any(
+                marker in value.lower()
+                for marker in (
+                    "change",
+                    "example",
+                    "password",
+                    "autoaudit_dev",
+                    "your-",
+                    "dev-secret",
+                )
+            )
+
+        database = urlsplit(self.DATABASE_URL)
+        redis = urlsplit(self.REDIS_URL)
+        if ";" in self.REDIS_URL or redis.fragment:
+            raise ValueError("Redis failover lists and fragments are prohibited")
+        if (
+            database.scheme not in {"postgresql", "postgresql+asyncpg"}
+            or not database.hostname
+            or not database.username
+            or not strong(unquote(database.password or ""))
+        ):
+            raise ValueError(
+                "DATABASE_URL requires explicit database credentials outside dev"
+            )
+        if (
+            redis.scheme != "rediss"
+            or not redis.hostname
+            or not strong(unquote(redis.password or ""))
+        ):
+            raise ValueError("REDIS_URL requires authenticated TLS outside dev")
+        # TLS verification may not be disabled through URL options.
+        options = parse_qs(redis.query)
+        if options.get("ssl_cert_reqs") != ["required"]:
+            raise ValueError("Redis TLS certificate verification is required")
+        if options.get("ssl_check_hostname") != ["true"]:
+            raise ValueError("Redis TLS hostname verification is required")
+        try:
+            Fernet(self.ENCRYPTION_KEY.encode())
+        except (ValueError, TypeError):
+            raise ValueError("A valid ENCRYPTION_KEY is required outside dev") from None
+        if (
+            self.ENCRYPTION_KEY
+            == "Ps-HiS3ww5QzQPc_Mdu5-JyA_jCNbdFHMdiwWSlAfgM="  # pragma: allowlist secret
+        ):  # pragma: allowlist secret
+            raise ValueError("The development encryption key is prohibited")
+        if not strong(self.POWERSHELL_SERVICE_SECRET):
+            raise ValueError("POWERSHELL_SERVICE_SECRET is required outside dev")
+        service = urlsplit(self.POWERSHELL_SERVICE_URL or "")
+        if (
+            service.scheme != "https"
+            or not service.hostname
+            or service.username
+            or service.password
+        ):
+            raise ValueError("POWERSHELL_SERVICE_URL requires HTTPS outside dev")
+        return self
+
     class Config:
         env_file = ".env"
+        hide_input_in_errors = True
 
 
 def get_settings() -> WorkerSettings:

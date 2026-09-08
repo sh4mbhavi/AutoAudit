@@ -55,7 +55,7 @@ const getStatusBadgeClasses = (status: string) => {
 };
 
 const ContactAdminPage: React.FC = () => {
-  const { token, user } = useAuth();
+  const { user } = useAuth();
   const [submissions, setSubmissions] = useState<ContactSubmission[]>([]);
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [notes, setNotes] = useState<ContactNote[]>([]);
@@ -94,7 +94,7 @@ const ContactAdminPage: React.FC = () => {
     setError("");
     setIsLoading(true);
     try {
-      const data = await getContactSubmissions(token);
+      const data = await getContactSubmissions();
       setSubmissions(data);
       if (data.length && !selectedId) {
         setSelectedId(data[0].id);
@@ -111,7 +111,7 @@ const ContactAdminPage: React.FC = () => {
   useEffect(() => {
     if (!user || user.role !== "admin") return;
     loadSubmissions();
-  }, [user, token]);
+  }, [user, user]);
 
   useEffect(() => {
     if (!selectedId) return;
@@ -120,8 +120,8 @@ const ContactAdminPage: React.FC = () => {
       latestSelectionRef.current = selectedId;
       try {
         const [noteData, historyData] = await Promise.all([
-          getContactNotes(token, selectedId),
-          getContactHistory(token, selectedId),
+          getContactNotes(selectedId),
+          getContactHistory(selectedId),
         ]);
 
         if (latestSelectionRef.current !== selectedId) return;
@@ -138,7 +138,7 @@ const ContactAdminPage: React.FC = () => {
     };
 
     loadDetail();
-  }, [selectedId, token]);
+  }, [selectedId, user]);
 
   const handleUpdate = async (
     updates: Partial<
@@ -152,7 +152,6 @@ const ContactAdminPage: React.FC = () => {
 
     try {
       const updated = await updateContactSubmission(
-        token,
         selectedSubmission.id,
         updates
       );
@@ -161,7 +160,7 @@ const ContactAdminPage: React.FC = () => {
         prev.map((item) => (item.id === updated.id ? updated : item))
       );
 
-      const historyData = await getContactHistory(token, selectedSubmission.id);
+      const historyData = await getContactHistory(selectedSubmission.id);
 
       if (latestSelectionRef.current === currentId) {
         setHistory(historyData);
@@ -182,14 +181,14 @@ const ContactAdminPage: React.FC = () => {
     setActionMessage("");
 
     try {
-      const newNote = await addContactNote(token, selectedSubmission.id, {
+      const newNote = await addContactNote(selectedSubmission.id, {
         note: noteText.trim(),
         is_internal: isInternal,
       });
 
       setNotes((prev) => [newNote, ...prev]);
 
-      const historyData = await getContactHistory(token, selectedSubmission.id);
+      const historyData = await getContactHistory(selectedSubmission.id);
 
       if (latestSelectionRef.current === currentId) {
         setHistory(historyData);
@@ -210,7 +209,7 @@ const ContactAdminPage: React.FC = () => {
     setActionMessage("");
 
     try {
-      await deleteContactSubmission(token, selectedSubmission.id);
+      await deleteContactSubmission(selectedSubmission.id);
       setSubmissions((prev) =>
         prev.filter((item) => item.id !== selectedSubmission.id)
       );

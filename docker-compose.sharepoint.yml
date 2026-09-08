@@ -1,0 +1,16 @@
+# Optional overlay for all deployments assessing SharePoint PnP controls.
+# docker compose -f docker-compose.production.yml -f docker-compose.sharepoint.yml up
+services:
+  worker:
+    environment:
+      SHAREPOINT_ADMIN_URL: ${SHAREPOINT_ADMIN_URL:?tenant admin HTTPS URL required}
+      SHAREPOINT_CERT_ALIAS: default
+  powershell-service:
+    environment:
+      SHAREPOINT_CERT_ALIASES: '{"default":{"path":"/run/secrets/sharepoint_pfx","password_file":"/run/secrets/sharepoint_password"}}'
+    secrets: [sharepoint_pfx, sharepoint_password]
+secrets:
+  sharepoint_pfx:
+    file: ${SHAREPOINT_PFX_FILE:?mounted application certificate required}
+  sharepoint_password:
+    file: ${SHAREPOINT_PASSWORD_FILE:?certificate password file required}

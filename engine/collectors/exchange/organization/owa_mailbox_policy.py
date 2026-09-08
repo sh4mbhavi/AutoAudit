@@ -31,7 +31,10 @@ class OwaMailboxPolicyDataCollector(BasePowerShellCollector):
             - policies_with_external_storage: Policies allowing external storage
             - policies_with_bookings: Policies with Bookings enabled
         """
-        policies = await client.run_cmdlet("ExchangeOnline", "Get-OwaMailboxPolicy")
+        policies = await client.run_operation(
+            "exchange.organization.owa_mailbox_policy.read",
+            "exchange.organization.owa_mailbox_policy",
+        )
 
         # Handle None, single policy, or list
         if policies is None:
@@ -42,19 +45,19 @@ class OwaMailboxPolicyDataCollector(BasePowerShellCollector):
         # Find default policy
         default_policy = next(
             (p for p in policies if p.get("IsDefault")),
-            policies[0] if policies else None
+            policies[0] if policies else None,
         )
 
         # Check for policies with external storage enabled
         policies_with_external_storage = [
-            p.get("Name") for p in policies
+            p.get("Name")
+            for p in policies
             if p.get("AdditionalStorageProvidersAvailable")
         ]
 
         # Check for policies with Bookings enabled
         policies_with_bookings = [
-            p.get("Name") for p in policies
-            if p.get("BookingsMailboxCreationEnabled")
+            p.get("Name") for p in policies if p.get("BookingsMailboxCreationEnabled")
         ]
 
         return {

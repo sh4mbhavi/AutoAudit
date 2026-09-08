@@ -18,6 +18,10 @@ import {
 } from "../api/client";
 import { RelativeTime } from "../components/RelativeTime";
 
+import type { ScanAssessmentFields, ScanResult } from "../types/scan";
+import { getScanAssessment, formatScore, RESULT_LABELS } from "../utils/scanAssessment";
+import AssessmentSummary from "../components/AssessmentSummary";
+
 type ChartType = "doughnut" | "pie" | "bar";
 
 type DashboardProps = {
@@ -38,7 +42,7 @@ type ApiBenchmark = {
   name?: string | null;
 };
 
-type ApiScanSummary = {
+type ApiScanSummary = ScanAssessmentFields & {
   id: number;
   status?: string | null;
   started_at?: string | null;
@@ -55,11 +59,7 @@ type ApiScanSummary = {
   total_controls?: number | string | null;
 };
 
-type ApiScanResultItem = {
-  control_id?: string | number | null;
-  status?: string | null;
-  message?: string | null;
-};
+type ApiScanResultItem = ScanResult;
 
 type ApiScanDetail = {
   id: number;
@@ -79,7 +79,7 @@ export default function Dashboard({
   isDarkMode,
 }: DashboardProps) {
   const navigate = useNavigate();
-  const { token } = useAuth();
+  const { user } = useAuth();
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -108,15 +108,15 @@ export default function Dashboard({
 
   useEffect(() => {
     async function loadDashboard() {
-      if (!token) return;
+      if (!user) return;
       setIsLoading(true);
       setError(null);
 
       try {
         const [scansData, connectionsData, benchmarksData] = await Promise.all([
-          getScans(token),
-          getConnections(token),
-          getBenchmarks(token),
+          getScans(),
+          getConnections(),
+          getBenchmarks(),
         ]);
 
         setScans((scansData as ApiScanSummary[] | null | undefined) || []);
@@ -154,7 +154,7 @@ export default function Dashboard({
     }
 
     loadDashboard();
-  }, [token]);
+  }, [user]);
 
   const benchmarkOptions = useMemo(() => {
     const m365 = (benchmarks || []).filter(
@@ -204,51 +204,6 @@ export default function Dashboard({
     return filteredScans[0];
   }, [filteredScans]);
 
-  const chartModel = useMemo<{
-    chartType: ChartType;
-    labels: string[];
-    values: number[];
-  }>(() => {
-    const s = latestRelevantScan;
-    const passed = Number(s?.passed_count || 0);
-    const failed = Number(s?.failed_count || 0);
-    const errors = Number(s?.error_count || 0);
-    const skipped = Number(s?.skipped_count || 0);
-
-    if (selectedChartType === "bar") {
-      const completed = (filteredScans || [])
-        .filter((x) => String(x.status || "").toLowerCase() === "completed")
-        .slice(0, 8)
-        .slice()
-        .reverse();
-
-      const labels = completed.map((x) => `#${x.id}`);
-      const values = completed.map((x) => {
-        const pass = Number(x.passed_count || 0);
-        const fail = Number(x.failed_count || 0);
-        const evaluated = pass + fail;
-        return evaluated > 0 ? Math.round((pass / evaluated) * 100) : 0;
-      });
-
-      return { chartType: "bar", labels, values };
-    }
-
-    const labels = ["Pass", "Fail"];
-    const values = [passed, failed];
-
-    if (errors > 0) {
-      labels.push("Error");
-      values.push(errors);
-    }
-
-    if (skipped > 0) {
-      labels.push("Skipped");
-      values.push(skipped);
-    }
-
-    return { chartType: selectedChartType, labels, values };
-  }, [selectedChartType, latestRelevantScan, filteredScans]);
-
   const latestScanDetails = useMemo(() => {
     const id = latestRelevantScan?.id;
     if (!id) return null;
@@ -257,7 +212,7 @@ export default function Dashboard({
 
   useEffect(() => {
     async function loadScanDetails() {
-      if (!token) return;
+      if (!user) return;
       const id = latestRelevantScan?.id;
       if (!id) return;
 
@@ -266,7 +221,7 @@ export default function Dashboard({
       setScanDetailsError(null);
 
       try {
-        const detail = (await getScan(token, id)) as ApiScanDetail;
+        const detail = (await getScan(id)) as ApiScanDetail;
         setScanDetailsById((prev) => ({ ...prev, [id]: detail }));
       } catch (err: unknown) {
         setScanDetailsError(
@@ -276,18 +231,14 @@ export default function Dashboard({
     }
 
     loadScanDetails();
-  }, [token, latestRelevantScan?.id]);
+  }, [latestRelevantScan?.id]);
 
   const summary = useMemo(() => {
     const s = latestRelevantScan;
     const hasScan = Boolean(s);
-    const total = s ? Number(s.total_controls || 0) : 0;
-    const passed = s ? Number(s.passed_count || 0) : 0;
-    const failed = s ? Number(s.failed_count || 0) : 0;
-    const errors = s ? Number(s.error_count || 0) : 0;
-    const skipped = s ? Number(s.skipped_count || 0) : 0;
-    const evaluated = passed + failed;
-    const pending = Math.max(0, total - evaluated - errors - skipped);
+    const assessment = getScanAssessment(s || {});
+    const { total, assessed: evaluated, pending } = assessment;
+    const { passed, failed, error: errors, skipped, indeterminate, not_assessable } = assessment.counts;
     const hasTotal = total > 0;
 
     const formatCount = (value: unknown) => {
@@ -295,10 +246,15 @@ export default function Dashboard({
       return Number.isFinite(num) ? num.toLocaleString() : "—";
     };
 
-    const compliancePct =
-      evaluated > 0 ? Math.round((passed / evaluated) * 100) : null;
-    const complianceTone = hasScan ? "good" : "neutral";
-    const failedTone = failed > 0 ? "bad" : hasTotal ? "good" : "neutral";
+    const compliancePct = assessment.compliance;
+    const complianceTone = assessment.legacy || compliancePct === null
+      ? "neutral"
+      : compliancePct !== 100
+        ? "bad"
+        : assessment.partial || assessment.coverage !== 100
+          ? "warn"
+          : "good";
+    const failedTone = failed > 0 ? "bad" : "neutral";
 
     const connectionLabel =
       s?.connection_name ||
@@ -320,11 +276,11 @@ export default function Dashboard({
       {
         id: "compliance",
         label:
-          compliancePct === null
-            ? "Compliance —"
-            : `Compliance ${compliancePct}%`,
+          !hasScan ? "Not assessed" : assessment.legacy
+            ? `Legacy score ${compliancePct === null ? "unavailable" : formatScore(compliancePct)}`
+            : `Compliance among assessed ${formatScore(compliancePct)}`,
         tone: complianceTone,
-        icon: CheckCircle2,
+        icon: complianceTone === "good" ? CheckCircle2 : complianceTone === "neutral" ? Shield : AlertTriangle,
       },
       {
         id: "failed",
@@ -371,6 +327,8 @@ export default function Dashboard({
         title: "Quality",
         items: [
           { label: "Errors", value: hasTotal ? formatCount(errors) : "—" },
+          { label: "Indeterminate", value: hasTotal ? formatCount(indeterminate) : "—" },
+          { label: "Not assessable", value: hasTotal ? formatCount(not_assessable) : "—" },
           { label: "Skipped", value: hasTotal ? formatCount(skipped) : "—" },
           { label: "Pending", value: hasTotal ? formatCount(pending) : "—" },
         ],
@@ -476,18 +434,6 @@ export default function Dashboard({
       default:
         return `${base} border-[rgb(var(--accent-warn)/0.35)] bg-[rgb(var(--accent-warn)/0.12)] text-[rgb(var(--accent-warn))]`;
     }
-  }
-
-  function resultPillClasses(tone: "good" | "bad" | "warn") {
-    const base =
-      "inline-flex items-center rounded-full border px-[8px] py-[3px] text-[12px]";
-    if (tone === "good") {
-      return `${base} border-[rgb(var(--accent-good)/0.35)] bg-[rgb(var(--accent-good)/0.1)] text-[rgb(var(--accent-good))]`;
-    }
-    if (tone === "bad") {
-      return `${base} border-[rgb(var(--accent-bad)/0.35)] bg-[rgb(var(--accent-bad)/0.1)] text-[rgb(var(--accent-bad))]`;
-    }
-    return `${base} border-[rgb(var(--accent-warn)/0.35)] bg-[rgb(var(--accent-warn)/0.1)] text-[rgb(var(--accent-warn))]`;
   }
 
   const pageBg = isDarkMode ? "text-white" : "bg-[rgb(var(--surface-1))] text-[rgb(30_41_59)]";
@@ -777,23 +723,14 @@ export default function Dashboard({
                 />
               </div>
 
+              {latestRelevantScan && <AssessmentSummary scan={latestRelevantScan} className={textSecondary} />}
               <div className="relative z-[1] h-[clamp(300px,34vh,380px)] min-h-[300px] w-full overflow-hidden">
-                {chartModel.values.every((v) => v === 0) ? (
-                  <div className="flex h-full flex-col items-center justify-center px-6 text-center">
-                    <div className="mb-3 text-3xl">📊</div>
-                    <p className="mb-2 text-base font-semibold text-gray-900 dark:text-white">
-                      No compliance data available
-                    </p>
-                    <p className="max-w-sm text-sm text-gray-500 dark:text-gray-400">
-                      Run a scan or change the selected filters to view results.
-                    </p>
-                  </div>
-                ) : (
-                  <ComplianceChart
-                    isDarkMode={isDarkMode}
-                    sidebarWidth={sidebarWidth}
-                  />
-                )}
+                <ComplianceChart
+                  isDarkMode={isDarkMode}
+                  chartType={selectedChartType}
+                  scan={latestRelevantScan}
+                  scans={filteredScans}
+                />
               </div>
             </div>
 
@@ -884,9 +821,6 @@ export default function Dashboard({
 
                       <tbody>
                         {recentScans.map((s) => {
-                          const passed = Number(s.passed_count || 0);
-                          const failed = Number(s.failed_count || 0);
-                          const errors = Number(s.error_count || 0);
 
                           return (
                             <tr key={s.id} className={hoverRow}>
@@ -922,19 +856,7 @@ export default function Dashboard({
                                     : "border-border-subtle text-[rgb(30_41_59)]"
                                 }`}
                               >
-                                <div className="flex flex-wrap gap-2">
-                                  <span className={resultPillClasses("good")}>
-                                    {passed} pass
-                                  </span>
-                                  <span className={resultPillClasses("bad")}>
-                                    {failed} fail
-                                  </span>
-                                  {errors > 0 && (
-                                    <span className={resultPillClasses("warn")}>
-                                      {errors} err
-                                    </span>
-                                  )}
-                                </div>
+                                <AssessmentSummary scan={s} />
                               </td>
 
                               <td
@@ -1008,7 +930,7 @@ export default function Dashboard({
               </div>
 
               <p className={`m-0 text-[12px] leading-[1.4] ${textSecondary}`}>
-                Top failing controls from the latest scan
+                Failed controls and collection errors from the latest scan
               </p>
 
               {scanDetailsError ? (
@@ -1071,6 +993,7 @@ export default function Dashboard({
                           WebkitBoxOrient: "vertical",
                         }}
                       >
+                        <strong>{r.status ? RESULT_LABELS[r.status] : "Unknown"}: </strong>
                         {r.message || "No message provided"}
                       </span>
                     </button>

@@ -11,24 +11,19 @@ import {
 	Shield,
 	AlertTriangle,
 } from "lucide-react";
-import { useAuth } from "../../context/AuthContext";
 import { getScan } from "../../api/client";
 import { RelativeTime, relativeTimePresetClass } from "../../components/RelativeTime";
+
+import type { ScanAssessmentFields, ScanResult, ScanResultStatus } from "../../types/scan";
+import { getScanAssessment, RESULT_LABELS } from "../../utils/scanAssessment";
+import AssessmentSummary from "../../components/AssessmentSummary";
 
 type ScanDetailPageProps = {
 	sidebarWidth?: number;
 	isDarkMode?: boolean;
 };
 
-type ScanResult = {
-	control_id?: string | number;
-	status?: string;
-	title?: string;
-	description?: string;
-	message?: string;
-};
-
-type ScanDetail = {
+type ScanDetail = ScanAssessmentFields & {
 	id?: number | string;
 	status?: string;
 	benchmark?: string;
@@ -105,6 +100,8 @@ const resultStatusColors: Record<
 		badge: "text-orange-500",
 		badgeBg: "bg-orange-500/15",
 	},
+	indeterminate: { border: "border-l-amber-500", icon: "text-amber-500", badge: "text-amber-500", badgeBg: "bg-amber-500/15" },
+	not_assessable: { border: "border-l-slate-400", icon: "text-slate-400", badge: "text-slate-400", badgeBg: "bg-slate-500/15" },
 	skipped: {
 		border: "border-l-slate-400",
 		icon: "text-slate-400",
@@ -132,7 +129,7 @@ const ScanDetailPage: React.FC<ScanDetailPageProps> = ({
 }) => {
 	const { scanId } = useParams<{ scanId: string }>();
 	const navigate = useNavigate();
-	const { token } = useAuth();
+
 
 	const [scan, setScan] = useState<ScanDetail | null>(null);
 	const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -145,7 +142,7 @@ const ScanDetailPage: React.FC<ScanDetailPageProps> = ({
 		}
 
 		try {
-			const scanData = await getScan(token, scanId);
+			const scanData = await getScan(scanId);
 			setScan(scanData as ScanDetail);
 			setError(null);
 			return scanData as ScanDetail;
@@ -153,7 +150,7 @@ const ScanDetailPage: React.FC<ScanDetailPageProps> = ({
 			setError(getErrorMessage(err, "Failed to load scan"));
 			return null;
 		}
-	}, [token, scanId]);
+	}, [scanId]);
 
 	useEffect(() => {
 		async function initialLoad(): Promise<void> {
@@ -231,21 +228,8 @@ const ScanDetailPage: React.FC<ScanDetailPageProps> = ({
 		}
 	}
 
-	function getResultBadgeText(status?: string): string {
-		switch (status) {
-			case "passed":
-				return "Pass";
-			case "failed":
-				return "Fail";
-			case "error":
-				return "Error";
-			case "pending":
-				return "Pending";
-			case "skipped":
-				return "Skipped";
-			default:
-				return "Unknown";
-		}
+	function getResultBadgeText(status?: ScanResultStatus): string {
+		return status ? RESULT_LABELS[status] : "Unknown";
 	}
 
 	const pageClasses = `min-h-screen p-6 transition-colors duration-300 ${
@@ -327,24 +311,9 @@ const ScanDetailPage: React.FC<ScanDetailPageProps> = ({
 		);
 	}
 
-	const summary = {
-		total: scan.total_controls || 0,
-		passed: scan.passed_count || 0,
-		failed: scan.failed_count || 0,
-		errors: scan.error_count || 0,
-		pending:
-			(scan.total_controls || 0) -
-			(scan.passed_count || 0) -
-			(scan.failed_count || 0) -
-			(scan.error_count || 0) -
-			(scan.skipped_count || 0),
-	};
-
-	const done =
-		summary.passed +
-		summary.failed +
-		summary.errors +
-		(scan.skipped_count || 0);
+	const assessment = getScanAssessment(scan);
+	const summary = { total: assessment.total, passed: assessment.counts.passed, failed: assessment.counts.failed, errors: assessment.counts.error, pending: assessment.pending };
+	const done = assessment.done;
 
 	const progressPercent =
 		summary.total > 0
@@ -540,6 +509,10 @@ const ScanDetailPage: React.FC<ScanDetailPageProps> = ({
 						</div>
 					</div>
 				)}
+
+				<div className={`rounded-xl border p-6 mb-6 ${cardBg}`}>
+					<AssessmentSummary scan={scan} />
+				</div>
 
 				{/* Stats grid */}
 				<div className="grid grid-cols-4 gap-4 mb-6 max-md:grid-cols-2 max-[480px]:grid-cols-1">
