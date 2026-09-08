@@ -56,6 +56,10 @@ class CloudOnlyAdminsDataCollector(BaseDataCollector):
             members = await client.get_role_members(role["id"])
 
             for member in members:
+                if not isinstance(member.get("@odata.type"), str) or not member.get(
+                    "id"
+                ):
+                    raise ValueError("Incomplete role member identity evidence")
                 # Only process user objects
                 if member.get("@odata.type") != "#microsoft.graph.user":
                     continue
@@ -80,10 +84,13 @@ class CloudOnlyAdminsDataCollector(BaseDataCollector):
                         "id": user_id,
                         "userPrincipalName": user_details.get("userPrincipalName"),
                         "displayName": user_details.get("displayName"),
-                        "on_premises_sync_enabled": user_details.get(
-                            "onPremisesSyncEnabled", False
-                        )
-                        or False,
+                        "on_premises_sync_enabled": (
+                            user_details.get("onPremisesSyncEnabled")
+                            if isinstance(
+                                user_details.get("onPremisesSyncEnabled"), bool
+                            )
+                            else None
+                        ),
                         "admin_roles": [role_name],
                     }
 
@@ -93,9 +100,9 @@ class CloudOnlyAdminsDataCollector(BaseDataCollector):
             "admin_accounts": admin_accounts,
             "total_admin_accounts": len(admin_accounts),
             "synced_admin_count": sum(
-                1 for a in admin_accounts if a["on_premises_sync_enabled"]
+                1 for a in admin_accounts if a["on_premises_sync_enabled"] is True
             ),
             "cloud_only_admin_count": sum(
-                1 for a in admin_accounts if not a["on_premises_sync_enabled"]
+                1 for a in admin_accounts if a["on_premises_sync_enabled"] is False
             ),
         }

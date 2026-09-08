@@ -1,11 +1,16 @@
 """Pydantic schemas for PowerShell service API."""
 
 import re
-from typing import Any, Dict, Literal, Optional
+from typing import Any, Dict, Optional
 
-from pydantic import BaseModel, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
-from executor import validate_tenant_id
+if __package__:
+    from .executor import validate_tenant_id
+    from .operations import validate_operation
+else:
+    from executor import validate_tenant_id
+    from operations import validate_operation
 
 _GUID_RE = re.compile(
     r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
@@ -21,12 +26,10 @@ _SHAREPOINT_ADMIN_URL_RE = re.compile(
 class ExecuteRequest(BaseModel):
     """Request to execute a PowerShell cmdlet."""
 
-    module: Literal["ExchangeOnline", "Compliance", "Teams", "SharePointOnline"] = (
-        Field(description="PowerShell module to use")
-    )
-    cmdlet: str = Field(
-        description="PowerShell cmdlet to execute (e.g., Get-OrganizationConfig)"
-    )
+    model_config = ConfigDict(extra="forbid", strict=True)
+
+    operation_id: str
+    collector_id: str
     params: Dict[str, Any] = Field(
         default_factory=dict,
         description="Parameters to pass to the cmdlet",
@@ -97,8 +100,15 @@ class ExecuteRequest(BaseModel):
             )
         return stripped
 
+    @property
+    def module(self) -> str:
+        return validate_operation(
+            self.operation_id, self.collector_id, self.params
+        ).module
+
     @model_validator(mode="after")
     def check_module_auth_fields(self) -> "ExecuteRequest":
+        validate_operation(self.operation_id, self.collector_id, self.params)
         if self.module == "SharePointOnline":
             missing = [
                 name
@@ -119,6 +129,19 @@ class ExecuteRequest(BaseModel):
                 raise ValueError("SharePointOnline must not include graph_token.")
             return self
 
+        if any(
+            value is not None
+            for value in (
+                self.client_id,
+                self.sharepoint_admin_url,
+                self.certificate_alias,
+            )
+        ):
+            raise ValueError(
+                "Certificate authentication fields are only permitted for SharePointOnline"
+            )
+        if self.module != "Teams" and self.graph_token is not None:
+            raise ValueError("graph_token is only permitted for Teams")
         if not self.token:
             raise ValueError("token is required")
         if self.module == "Teams" and not self.graph_token:

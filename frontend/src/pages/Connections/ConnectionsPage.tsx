@@ -13,6 +13,7 @@ import {
 import { useAuth } from "../../context/AuthContext";
 import {
   APIError,
+  type UpdateConnectionPayload,
   getPlatforms,
   getConnections,
   createConnection,
@@ -23,7 +24,12 @@ import {
 
 const CLIENT_SECRET_MASK = "************";
 
-type FormData = {
+type SharePointFormData = {
+  sharepoint_admin_url: string;
+  sharepoint_certificate_alias: string;
+};
+
+type FormData = SharePointFormData & {
   name: string;
   platform_id: string;
   tenant_id: string;
@@ -31,7 +37,7 @@ type FormData = {
   client_secret: string;
 };
 
-type EditFormData = {
+type EditFormData = SharePointFormData & {
   name: string;
   tenant_id: string;
   client_id: string;
@@ -39,6 +45,8 @@ type EditFormData = {
 };
 
 type Connection = {
+  sharepoint_admin_url?: string | null;
+  sharepoint_certificate_alias?: string | null;
   id: string;
   name: string;
   tenant_id: string;
@@ -76,7 +84,7 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
   sidebarWidth = 220,
   isDarkMode = true,
 }) => {
-  const { token } = useAuth();
+  const { user } = useAuth();
   const [platforms, setPlatforms] = useState<Platform[]>([]);
   const [connections, setConnections] = useState<Connection[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -88,6 +96,8 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
     tenant_id: "",
     client_id: "",
     client_secret: "",
+    sharepoint_admin_url: "",
+    sharepoint_certificate_alias: "",
   });
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [editingConnection, setEditingConnection] =
@@ -97,6 +107,8 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
     tenant_id: "",
     client_id: "",
     client_secret: "",
+    sharepoint_admin_url: "",
+    sharepoint_certificate_alias: "",
   });
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -156,7 +168,7 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
 
   useEffect(() => {
     loadData();
-  }, [token]);
+  }, [user]);
 
   async function loadData(): Promise<void> {
     setIsLoading(true);
@@ -164,8 +176,8 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
 
     try {
       const [platformsData, connectionsData] = await Promise.all([
-        getPlatforms(token),
-        getConnections(token),
+        getPlatforms(),
+        getConnections(),
       ]);
 
       setPlatforms(platformsData);
@@ -184,6 +196,19 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
     setFormData((prev) => ({ ...prev, [name]: value }));
   }
 
+  function sharePointPayload(data: SharePointFormData & { tenant_id: string }) {
+    const adminUrl = data.sharepoint_admin_url.trim();
+    const certificateAlias = data.sharepoint_certificate_alias.trim();
+    if (Boolean(adminUrl) !== Boolean(certificateAlias)) {
+      throw new Error("Provide both the SharePoint admin URL and certificate alias, or leave both blank.");
+    }
+    return {
+      sharepoint_admin_url: adminUrl || null,
+      sharepoint_tenant_id: adminUrl ? data.tenant_id : null,
+      sharepoint_certificate_alias: certificateAlias || null,
+    };
+  }
+
   async function handleSubmit(
     e: React.FormEvent<HTMLFormElement>,
   ): Promise<void> {
@@ -192,11 +217,12 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
     setError(null);
 
     try {
-      const newConnection = await createConnection(token, {
+      const newConnection = await createConnection({
         name: formData.name,
         tenant_id: formData.tenant_id,
         client_id: formData.client_id,
         client_secret: formData.client_secret,
+        ...sharePointPayload(formData),
       });
 
       setConnections((prev) => [...prev, newConnection]);
@@ -206,6 +232,8 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
         tenant_id: "",
         client_id: "",
         client_secret: "",
+        sharepoint_admin_url: "",
+        sharepoint_certificate_alias: "",
       });
       setShowForm(false);
     } catch (err) {
@@ -220,7 +248,7 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
     setError(null);
 
     try {
-      const result = await testConnection(token, connection.id);
+      const result = await testConnection(connection.id);
       setTestResults((prev) => ({ ...prev, [connection.id]: result }));
 
       if (!result?.success) {
@@ -245,6 +273,8 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
       tenant_id: connection.tenant_id,
       client_id: connection.client_id,
       client_secret: CLIENT_SECRET_MASK,
+      sharepoint_admin_url: connection.sharepoint_admin_url || "",
+      sharepoint_certificate_alias: connection.sharepoint_certificate_alias || "",
     });
   }
 
@@ -274,7 +304,8 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
     setError(null);
 
     try {
-      const updateData: Partial<EditFormData> = {
+      const updateData: UpdateConnectionPayload = {
+        ...sharePointPayload(editFormData),
         name: editFormData.name,
         tenant_id: editFormData.tenant_id,
         client_id: editFormData.client_id,
@@ -288,7 +319,6 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
       }
 
       const updatedConnection = await updateConnection(
-        token,
         editingConnection.id,
         updateData,
       );
@@ -313,6 +343,8 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
       tenant_id: "",
       client_id: "",
       client_secret: "",
+      sharepoint_admin_url: "",
+      sharepoint_certificate_alias: "",
     });
   }
 
@@ -329,7 +361,7 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
     setError(null);
 
     try {
-      await deleteConnection(token, id);
+      await deleteConnection(id);
       setConnections((prev) => prev.filter((conn) => conn.id !== id));
     } catch (err) {
       setError((err as any).message || "Failed to delete connection");
@@ -530,6 +562,17 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
                 </div>
               </div>
 
+              <div className="grid gap-4 md:grid-cols-2 mb-4">
+                <div className="min-w-0">
+                  <label htmlFor="sharepoint_admin_url" className={`mb-2 block text-sm font-medium ${pageTheme.muted}`}>SharePoint admin URL (optional)</label>
+                  <input id="sharepoint_admin_url" name="sharepoint_admin_url" type="url" value={formData.sharepoint_admin_url} onChange={handleChange} disabled={isSubmitting} placeholder="https://your-tenant-admin.sharepoint.com" className={`${inputBaseClass} ${pageTheme.input}`} />
+                </div>
+                <div className="min-w-0">
+                  <label htmlFor="sharepoint_certificate_alias" className={`mb-2 block text-sm font-medium ${pageTheme.muted}`}>SharePoint certificate alias (optional)</label>
+                  <input id="sharepoint_certificate_alias" name="sharepoint_certificate_alias" type="text" value={formData.sharepoint_certificate_alias} onChange={handleChange} disabled={isSubmitting} placeholder="Certificate alias for this connection" className={`${inputBaseClass} ${pageTheme.input}`} />
+                </div>
+              </div>
+              <p className={`mb-4 text-sm ${pageTheme.muted}`}>Provide both SharePoint fields to enable SharePoint checks for this connection’s tenant.</p>
               <div className={formActionClass}>
                 <button
                   type="button"
@@ -650,6 +693,17 @@ const ConnectionsPage: React.FC<ConnectionsPageProps> = ({
                 />
               </div>
 
+              <div className="grid gap-4 md:grid-cols-2 mb-4">
+                <div className="min-w-0">
+                  <label htmlFor="edit_sharepoint_admin_url" className={`mb-2 block text-sm font-medium ${pageTheme.muted}`}>SharePoint admin URL (optional)</label>
+                  <input id="edit_sharepoint_admin_url" name="sharepoint_admin_url" type="url" value={editFormData.sharepoint_admin_url} onChange={handleEditChange} disabled={isEditing} placeholder="https://your-tenant-admin.sharepoint.com" className={`${inputBaseClass} ${pageTheme.input}`} />
+                </div>
+                <div className="min-w-0">
+                  <label htmlFor="edit_sharepoint_certificate_alias" className={`mb-2 block text-sm font-medium ${pageTheme.muted}`}>SharePoint certificate alias (optional)</label>
+                  <input id="edit_sharepoint_certificate_alias" name="sharepoint_certificate_alias" type="text" value={editFormData.sharepoint_certificate_alias} onChange={handleEditChange} disabled={isEditing} placeholder="Certificate alias for this connection" className={`${inputBaseClass} ${pageTheme.input}`} />
+                </div>
+              </div>
+              <p className={`mb-4 text-sm ${pageTheme.muted}`}>Provide both SharePoint fields to enable SharePoint checks for this connection’s tenant.</p>
               <div className={formActionClass}>
                 <button
                   type="button"

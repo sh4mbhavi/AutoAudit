@@ -43,23 +43,36 @@ class EnrollmentRestrictionsDataCollector(BaseDataCollector):
 
         for config in configs:
             config_type = config.get("@odata.type", "")
-            if "platformRestrictions" in config_type.lower():
+            if "platformrestrictions" in config_type.lower():
                 platform_restrictions.append(config)
             elif "limit" in config_type.lower():
                 limit_restrictions.append(config)
             else:
                 other_configs.append(config)
 
-        # Check if personal device enrollment is blocked
-        personal_devices_blocked = False
-        for restriction in platform_restrictions:
-            # Check platform restriction settings
-            platforms = ["androidRestriction", "iosRestriction", "windowsRestriction", "macOSRestriction"]
-            for platform in platforms:
-                platform_config = restriction.get(platform, {})
-                if platform_config.get("personalDeviceEnrollmentBlocked"):
-                    personal_devices_blocked = True
-                    break
+        # Only an explicitly identified default policy establishes default scope.
+        # A blocked setting on a custom policy or one platform is insufficient.
+        defaults = [
+            restriction
+            for restriction in platform_restrictions
+            if restriction.get("deviceEnrollmentConfigurationType")
+            == "defaultPlatformRestrictions"
+        ]
+        personal_devices_blocked = None
+        if len(defaults) == 1:
+            platforms = (
+                "androidRestriction",
+                "iosRestriction",
+                "windowsRestriction",
+                "macOSRestriction",
+                "windowsMobileRestriction",
+            )
+            flags = [
+                defaults[0].get(platform, {}).get("personalDeviceEnrollmentBlocked")
+                for platform in platforms
+            ]
+            if all(isinstance(flag, bool) for flag in flags):
+                personal_devices_blocked = all(flags)
 
         return {
             "enrollment_configurations": configs,

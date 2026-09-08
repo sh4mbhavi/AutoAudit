@@ -28,6 +28,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+dev = ["pytest==8.4.2"]
 # Heavy OCR/reporting stack lives in the "evidence" extra so backend devs
 # aren't forced to install it unless they touch evidence scanning.
 evidence = [

@@ -1,2 +1,10 @@
 # .github/CODEOWNERS — every PR needs an AutoAudit-Reviewers approval
 *       @Hardhat-Enterprises/autoaudit-reviewers
+
+# Explicit review boundaries; existing repository review team owns each area.
+/engine/policies/ @Hardhat-Enterprises/autoaudit-reviewers
+/engine/collectors/ @Hardhat-Enterprises/autoaudit-reviewers
+/security/ @Hardhat-Enterprises/autoaudit-reviewers
+/backend-api/alembic/ @Hardhat-Enterprises/autoaudit-reviewers
+/.github/ @Hardhat-Enterprises/autoaudit-reviewers
+/tools/ci/ @Hardhat-Enterprises/autoaudit-reviewers

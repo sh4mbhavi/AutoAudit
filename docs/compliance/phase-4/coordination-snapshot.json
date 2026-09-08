@@ -1,0 +1,47 @@
+{
+  "checked_at": "2026-09-05",
+  "main_sha": "0bd9b9db4dd973cc617dc7ef2e98a64ee4de58fe",
+  "protected": true,
+  "pull_requests": [
+    {
+      "number": 331,
+      "title": "sec: add gitleaks CI job scanning full commit history",
+      "state": "open",
+      "merged": false,
+      "html_url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/331",
+      "head_sha": "ce33d52496ae02e653ea9474b69bcfb99f824698"
+    },
+    {
+      "number": 326,
+      "title": "Grype Severity-based CI enforcement",
+      "state": "closed",
+      "merged": true,
+      "html_url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/326",
+      "head_sha": "743df2be32a7e53c06b5782149184a587b1e0ef2"
+    },
+    {
+      "number": 345,
+      "title": "test: add CIS 1.1.3 global admin count tests",
+      "state": "open",
+      "merged": false,
+      "html_url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/345",
+      "head_sha": "f4f951e5aba5bc4f271dfd997360c31b234eeb4f"
+    },
+    {
+      "number": 355,
+      "title": "Improve backend-api test coverage and CI coverage check",
+      "state": "open",
+      "merged": false,
+      "html_url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/355",
+      "head_sha": "9e2a5786b8275126b734c6834ea890d1ecae7b0d"
+    },
+    {
+      "number": 356,
+      "title": "test: add CIS 5.1.2.3 policy tests",
+      "state": "closed",
+      "merged": false,
+      "html_url": "https://github.com/Hardhat-Enterprises/AutoAudit/pull/356",
+      "head_sha": "232f7570980902661e5a2bf5e6d7be7a6fa8243c"
+    }
+  ]
+}

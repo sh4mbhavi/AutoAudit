@@ -43,10 +43,10 @@ class MFARegistrationReportDataCollector(BaseDataCollector):
 
         for user in registration_details:
             # isMfaRegistered indicates user has registered for MFA
-            if user.get("isMfaRegistered"):
+            if user.get("isMfaRegistered") is True:
                 mfa_registered_count += 1
             # isMfaCapable indicates user can use MFA
-            if user.get("isMfaCapable"):
+            if user.get("isMfaCapable") is True:
                 mfa_capable_count += 1
 
         total_users = len(registration_details)

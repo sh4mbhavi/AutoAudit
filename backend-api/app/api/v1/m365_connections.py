@@ -13,6 +13,7 @@ from app.schemas.m365_connection import (
     M365ConnectionRead,
     M365ConnectionUpdate,
     M365ConnectionTestResult,
+    validate_sharepoint_binding,
 )
 from app.services.encryption import encrypt, decrypt
 from app.services.m365_graph import M365ConnectionError, validate_m365_connection
@@ -20,7 +21,9 @@ from app.services.m365_graph import M365ConnectionError, validate_m365_connectio
 router = APIRouter(prefix="/m365-connections", tags=["M365 Connections"])
 
 
-@router.post("/", response_model=M365ConnectionRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/", response_model=M365ConnectionRead, status_code=status.HTTP_201_CREATED
+)
 async def create_connection(
     connection_data: M365ConnectionCreate,
     current_user: User = Depends(get_current_user),
@@ -46,6 +49,9 @@ async def create_connection(
         tenant_id=connection_data.tenant_id,
         client_id=connection_data.client_id,
         encrypted_client_secret=encrypt(connection_data.client_secret),
+        sharepoint_admin_url=connection_data.sharepoint_admin_url,
+        sharepoint_tenant_id=connection_data.sharepoint_tenant_id,
+        sharepoint_certificate_alias=connection_data.sharepoint_certificate_alias,
     )
     db.add(connection)
     await db.commit()
@@ -110,9 +116,38 @@ async def update_connection(
             detail=f"Connection {connection_id} not found",
         )
 
+    binding = {
+        key: getattr(update_data, key)
+        if key in update_data.model_fields_set
+        else getattr(connection, key)
+        for key in (
+            "sharepoint_admin_url",
+            "sharepoint_tenant_id",
+            "sharepoint_certificate_alias",
+        )
+    }
+    try:
+        validate_sharepoint_binding(
+            update_data.tenant_id or connection.tenant_id,
+            binding["sharepoint_admin_url"],
+            binding["sharepoint_tenant_id"],
+            binding["sharepoint_certificate_alias"],
+        )
+    except ValueError:
+        raise HTTPException(
+            status_code=422,
+            detail="SharePoint binding must be complete and match the selected tenant",
+        ) from None
+
     # If tenant_id or client_id changes, require a new secret (can't validate new app without it)
-    tenant_changed = update_data.tenant_id is not None and update_data.tenant_id != connection.tenant_id
-    client_changed = update_data.client_id is not None and update_data.client_id != connection.client_id
+    tenant_changed = (
+        update_data.tenant_id is not None
+        and update_data.tenant_id != connection.tenant_id
+    )
+    client_changed = (
+        update_data.client_id is not None
+        and update_data.client_id != connection.client_id
+    )
     secret_provided = update_data.client_secret is not None
 
     if (tenant_changed or client_changed) and not secret_provided:
@@ -144,6 +179,8 @@ async def update_connection(
             )
 
     # Update only provided fields (after validation)
+    for key, value in binding.items():
+        setattr(connection, key, value)
     if update_data.name is not None:
         connection.name = update_data.name
     if update_data.tenant_id is not None:
@@ -213,7 +250,7 @@ async def test_connection(
             client_id=connection.client_id,
             client_secret=client_secret,
         )
-        #update m365 connection modal with validation attributes (what exact error happened when we tried the api call)
+        # update m365 connection modal with validation attributes (what exact error happened when we tried the api call)
         return M365ConnectionTestResult(
             success=True,
             message="Connection successful",

@@ -37,11 +37,28 @@ class LegacyAuthBlockDataCollector(BaseDataCollector):
 
             # Check if policy targets all users
             include_users = users.get("includeUsers", [])
-            targets_all_users = "All" in include_users
+            user_exclusions = [
+                users.get(key)
+                for key in ("excludeUsers", "excludeGroups", "excludeRoles")
+            ]
+            targets_all_users = (
+                False
+                if any(user_exclusions)
+                else "All" in include_users
+                if all(isinstance(value, list) for value in user_exclusions)
+                else None
+            )
 
             # Check if policy targets all apps
             include_apps = apps.get("includeApplications", [])
-            targets_all_apps = "All" in include_apps
+            app_exclusions = apps.get("excludeApplications")
+            targets_all_apps = (
+                False
+                if app_exclusions
+                else "All" in include_apps
+                if isinstance(app_exclusions, list)
+                else None
+            )
 
             # Check if policy blocks legacy auth client types
             blocks_legacy = self.LEGACY_CLIENT_TYPES.issubset(client_app_types)
@@ -50,16 +67,18 @@ class LegacyAuthBlockDataCollector(BaseDataCollector):
             built_in_controls = grant_controls.get("builtInControls", [])
             grant_control = "block" if "block" in built_in_controls else "allow"
 
-            policy_data.append({
-                "id": policy.get("id"),
-                "display_name": policy.get("displayName"),
-                "state": policy.get("state"),
-                "targets_all_users": targets_all_users,
-                "targets_all_apps": targets_all_apps,
-                "blocks_legacy_auth": blocks_legacy,
-                "client_app_types": list(client_app_types),
-                "grant_control": grant_control,
-            })
+            policy_data.append(
+                {
+                    "id": policy.get("id"),
+                    "display_name": policy.get("displayName"),
+                    "state": policy.get("state"),
+                    "targets_all_users": targets_all_users,
+                    "targets_all_apps": targets_all_apps,
+                    "blocks_legacy_auth": blocks_legacy,
+                    "client_app_types": list(client_app_types),
+                    "grant_control": grant_control,
+                }
+            )
 
         return {
             "conditional_access_policies": policy_data,

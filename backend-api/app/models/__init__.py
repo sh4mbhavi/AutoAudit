@@ -1,6 +1,7 @@
 """Database models for the AutoAudit backend API."""
 
 from app.models.user import User, Role
+from app.models.auth_session import AuthSession
 from app.models.oauth_account import OAuthAccount
 from app.models.m365_connection import M365Connection
 from app.models.azure_connection import AzureConnection
@@ -8,6 +9,7 @@ from app.models.gcp_connection import GCPConnection
 from app.models.aws_connection import AWSConnection
 from app.models.platform import Platform
 from app.models.scan_result import ScanResult
+from app.models.scan_dispatch import ScanDispatch
 from app.models.manual_scan_result_detail import ManualScanResultDetail
 from app.models.compliance import Scan
 from app.models.evidence_validation import EvidenceValidation
@@ -16,6 +18,7 @@ from app.models.user_settings import UserSettings
 
 __all__ = [
     "User",
+    "AuthSession",
     "Role",
     "OAuthAccount",
     "M365Connection",
@@ -24,6 +27,7 @@ __all__ = [
     "AWSConnection",
     "Platform",
     "ScanResult",
+    "ScanDispatch",
     "ManualScanResultDetail",
     "Scan",
     "EvidenceValidation",

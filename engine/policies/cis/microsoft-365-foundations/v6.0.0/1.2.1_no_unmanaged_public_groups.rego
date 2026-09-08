@@ -18,29 +18,63 @@ package cis.microsoft_365_foundations.v6_0_0.control_1_2_1
 
 import rego.v1
 
-default result := {
-  "compliant": false,
-  "message": "Unable to determine public group configuration",
-  "details": {},
+default assessed_result := {
+	"compliant": null,
+	"message": "Unable to determine public group configuration",
+	"details": {},
 }
 
-publics := object.get(input, "public_groups", []) if { true }
+publics := object.get(input, "public_groups", [])
 
-compliant_value := true if { count(publics) == 0 } else := false if { true }
+compliant_value if count(publics) == 0
 
-msg := "No public groups exist" if { compliant_value } else := sprintf("%d public group(s) exist and require organizational approval", [count(publics)]) if { true }
+else := false
+
+msg := "No public groups exist" if compliant_value
+
+else := sprintf("%d public group(s) exist and require organizational approval", [count(publics)])
 
 # This is a best-effort automated check.
 # We treat any Public groups as requiring review and fail the control so it remains actionable.
-result := output if {
-  output := {
-    "compliant": compliant_value,
-    "message": msg,
-    "details": {
-      "total_groups": input.total_groups,
-      "public_groups_count": count(publics),
-      "public_groups": [{"id": g.id, "displayName": g.displayName} | some g in publics],
-    },
-  }
+assessed_result := output if {
+	output := {
+		"compliant": compliant_value,
+		"message": msg,
+		"details": {
+			"total_groups": input.total_groups,
+			"public_groups_count": count(publics),
+			"public_groups": [{"id": g.id, "displayName": g.displayName} | some g in publics],
+		},
+	}
 }
 
+# Typed, complete collector evidence is required before an assessed result is emitted.
+# Kept in this module so captured-source evaluation remains self-contained.
+default result := {
+	"compliant": null,
+	"message": "Unable to evaluate: required evidence is missing, malformed, or incomplete",
+	"affected_resources": [],
+	"details": {"evaluation_status": "indeterminate"},
+}
+
+result := assessed_result if evidence_complete
+
+evidence_complete if {
+	is_object(input)
+	not evidence_error
+	is_number(input.total_groups)
+	input.total_groups >= 0
+	input.total_groups == floor(input.total_groups)
+	is_array(input.public_groups)
+	count(input.public_groups) <= input.total_groups
+	every group in input.public_groups { is_object(group); is_string(group.id); is_string(group.displayName)}
+}
+
+# A nested collector error invalidates a partial response as well as a top-level error.
+evidence_error if {
+	some path, value
+	walk(input, [path, value])
+	count(path) > 0
+	path[count(path) - 1] in {"collector_error", "error"}
+	value != null
+}

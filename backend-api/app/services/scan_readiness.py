@@ -23,6 +23,7 @@ CRITICAL_BASELINE_PERMISSIONS = {
 # Simple Graph endpoints used to test each permission.
 # If a permission has no probe yet, readiness reports it as "unverified".
 PERMISSION_PROBES: dict[str, str] = {
+    "Sites.Read.All": "/v1.0/sites/root?$select=webUrl,sharepointIds",
     "Organization.Read.All": "/v1.0/organization?$top=1&$select=id",
     "User.Read.All": "/v1.0/users?$top=1&$select=id",
     "RoleManagement.Read.Directory": "/v1.0/directoryRoles?$select=id",
@@ -33,6 +34,7 @@ PERMISSION_PROBES: dict[str, str] = {
     "OrgSettings-AppsAndServices.Read.All": "/beta/admin/appsAndServices",
 }
 
+
 @dataclass
 # One item shown in the readiness UI.
 class ReadinessCheck:
@@ -41,6 +43,7 @@ class ReadinessCheck:
     status: str
     severity: str
     message: str
+
 
 @dataclass
 # Final readiness payload returned to the API layer.
@@ -51,6 +54,7 @@ class ReadinessResult:
     missing_permissions: list[str]
     unverified_permissions: list[str]
     checks: list[ReadinessCheck]
+
 
 # Return a short Graph error message when a probe fails.
 def extract_graph_error_detail(response: httpx.Response) -> str | None:
@@ -75,6 +79,7 @@ def extract_graph_error_detail(response: httpx.Response) -> str | None:
 
     return None
 
+
 # Return the permissions declared for controls marked as ready.
 # The scan engine only runs controls whose 'automation_status' is 'ready', so readiness follows the same rule and ignores manual or blocked controls.
 def extract_required_permissions(controls: list[dict]) -> list[str]:
@@ -83,12 +88,16 @@ def extract_required_permissions(controls: list[dict]) -> list[str]:
     for control in controls:
         if control.get("automation_status") != "ready":
             continue
+        if str(control.get("data_collector_id", "")).startswith("sharepoint.pnp."):
+            # Runtime identity proof is required in addition to the control's permissions.
+            permissions.add("Sites.Read.All")
         required = control.get("requires_permissions") or []
         for permission in required:
             if isinstance(permission, str) and permission.strip():
                 permissions.add(permission.strip())
 
     return sorted(permissions)
+
 
 # Check whether a tenant looks ready before starting a scan.
 # Flow:
@@ -200,7 +209,11 @@ async def evaluate_scan_readiness(
                     headers={"Authorization": f"Bearer {access_token}"},
                 )
             except Exception:
-                logger.warning("Readiness probe request failed for permission %s; marking unverified", permission, exc_info=True)
+                logger.warning(
+                    "Readiness probe request failed for permission %s; marking unverified",
+                    permission,
+                    exc_info=True,
+                )
                 unverified_permissions.add(permission)
                 checks.append(
                     ReadinessCheck(
