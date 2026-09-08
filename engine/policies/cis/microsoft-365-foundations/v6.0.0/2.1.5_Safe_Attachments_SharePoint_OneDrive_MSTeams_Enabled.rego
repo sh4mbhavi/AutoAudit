@@ -18,43 +18,63 @@
 
 package cis.microsoft_365_foundations.v6_0_0.control_2_1_5
 
-default result := {"compliant": false, "message": "Evaluation failed"}
+import rego.v1
 
-policies := [p |
-    p := object.get(input, "atp_policy", null)
-    p != null
+default result := {
+	"compliant": null,
+	"message": "Unable to evaluate: Safe Attachments settings are unavailable or incomplete",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"reason": "Expected an ATP policy with boolean EnableATPForSPOTeamsODB, EnableSafeDocs and AllowSafeDocsOpen values; collector errors invalidate the evidence.",
+	},
+}
+
+required_settings := {
+	"EnableATPForSPOTeamsODB": true,
+	"EnableSafeDocs": true,
+	"AllowSafeDocsOpen": false,
+}
+
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	is_object(input.atp_policy)
+	not has_collector_error(input.atp_policy)
+	every field, _ in required_settings {
+		is_boolean(input.atp_policy[field])
+	}
+}
+
+# Each insecure property independently violates this control.
+insecure_settings := [field |
+	some field, expected in required_settings
+	input.atp_policy[field] != expected
 ]
-
-non_compliant_policies = [policy.Name |
-    policy := policies[_]
-    policy.EnableATPForSPOTeamsODB == false
-    policy.EnableSafeDocs == false
-    policy.AllowSafeDocsOpen == true
-]
-
-compliant := count(non_compliant_policies) == 0
-
-message_text := "Safe Attachments for SharePoint, OneDrive, and Teams is configured securely" if {
-    compliant == true
-}
-
-message_text := "Safe Attachments for SharePoint, OneDrive, or Teams is not configured securely" if {
-    compliant == false
-}
-
-affected_list := [] if {
-    compliant == true
-}
-
-affected_list := non_compliant_policies if {
-    compliant == false
-}
 
 result := {
-    "compliant": compliant,
-    "message": message_text,
-    "affected_resources": affected_list,
-    "details": {
-        "policies_evaluated": policies
-    }
+	"compliant": compliant,
+	"message": message_text,
+	"affected_resources": affected,
+	"details": {
+		"policies_evaluated": [input.atp_policy],
+		"insecure_settings": insecure_settings,
+	},
+} if {
+	valid_evidence
+	compliant := count(insecure_settings) == 0
+	message_text := generate_message(compliant)
+	affected := [object.get(input.atp_policy, "Name", "AtpPolicyForO365") | count(insecure_settings) > 0]
+}
+
+generate_message(true) := "Safe Attachments for SharePoint, OneDrive, and Teams is configured securely"
+generate_message(false) := "Safe Attachments for SharePoint, OneDrive, or Teams is not configured securely"
+
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
+}
+
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
 }

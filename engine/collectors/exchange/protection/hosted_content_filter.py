@@ -31,8 +31,9 @@ class HostedContentFilterDataCollector(BasePowerShellCollector):
             - allowed_sender_domains: Domains allowed to bypass filtering
             - allowed_senders: Senders allowed to bypass filtering
         """
-        policies = await client.run_cmdlet(
-            "ExchangeOnline", "Get-HostedContentFilterPolicy"
+        policies = await client.run_operation(
+            "exchange.protection.hosted_content_filter.read",
+            "exchange.protection.hosted_content_filter",
         )
 
         # Handle None, single policy, or list
@@ -44,13 +45,17 @@ class HostedContentFilterDataCollector(BasePowerShellCollector):
         # Get default policy settings
         default_policy = next(
             (p for p in policies if p.get("IsDefault")),
-            policies[0] if policies else None
+            policies[0] if policies else None,
         )
 
         return {
             "content_filter_policies": policies,
             "total_policies": len(policies),
             "default_policy": default_policy,
-            "allowed_sender_domains": default_policy.get("AllowedSenderDomains", []) if default_policy else [],
-            "allowed_senders": default_policy.get("AllowedSenders", []) if default_policy else [],
+            "allowed_sender_domains": default_policy.get("AllowedSenderDomains", [])
+            if default_policy
+            else [],
+            "allowed_senders": default_policy.get("AllowedSenders", [])
+            if default_policy
+            else [],
         }

@@ -218,11 +218,6 @@ function App(): JSX.Element {
     navigate("/dashboard");
   };
 
-  const handleUserLogout = (): void => {
-    auth.logout();
-    navigate("/");
-  };
-
   const handleSignUp = async (signUpData: SignUpData): Promise<void> => {
     const { firstName, lastName, email, organizationName, password } =
       signUpData;

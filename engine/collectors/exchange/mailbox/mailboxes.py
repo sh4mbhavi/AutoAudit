@@ -21,11 +21,8 @@ class MailboxesDataCollector(BasePowerShellCollector):
     async def collect(self, client: PowerShellClient) -> dict[str, Any]:
         """Collect shared mailboxes and their associated user information."""
 
-        mailboxes_raw = await client.run_cmdlet(
-            "ExchangeOnline",
-            "Get-EXOMailbox",
-            RecipientTypeDetails="SharedMailbox",
-            ResultSize="Unlimited",
+        mailboxes_raw = await client.run_operation(
+            "exchange.mailbox.mailboxes.read", "exchange.mailbox.mailboxes"
         )
 
         mailboxes: list[dict[str, Any]]
@@ -48,9 +45,9 @@ class MailboxesDataCollector(BasePowerShellCollector):
             user_account = None
 
             if user_principal_name:
-                user_account = await client.run_cmdlet(
-                    "ExchangeOnline",
-                    "Get-User",
+                user_account = await client.run_operation(
+                    "exchange.mailbox.mailboxes.user",
+                    "exchange.mailbox.mailboxes",
                     Identity=user_principal_name,
                 )
 

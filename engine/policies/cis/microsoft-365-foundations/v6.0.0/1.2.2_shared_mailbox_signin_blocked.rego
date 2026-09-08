@@ -82,7 +82,7 @@ result := output if {
   }
 }
 
-generate_message(total, non_compliant_count) := msg if {
+generate_message(total, _) := msg if {
   total == 0
   msg := "No shared mailboxes found."
 }

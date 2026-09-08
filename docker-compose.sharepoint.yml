@@ -1,0 +1,12 @@
+# Certificate provisioning overlay. Save tenant URL and alias on each M365 connection.
+# docker compose -f docker-compose.production.yml -f docker-compose.sharepoint.yml up
+services:
+  powershell-service:
+    environment:
+      SHAREPOINT_CERT_ALIASES: '{"default":{"path":"/run/secrets/sharepoint_pfx","password_file":"/run/secrets/sharepoint_password"}}'
+    secrets: [sharepoint_pfx, sharepoint_password]
+secrets:
+  sharepoint_pfx:
+    file: ${SHAREPOINT_PFX_FILE:?mounted application certificate required}
+  sharepoint_password:
+    file: ${SHAREPOINT_PASSWORD_FILE:?certificate password file required}

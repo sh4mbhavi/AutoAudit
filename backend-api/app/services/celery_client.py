@@ -1,5 +1,7 @@
 """Celery client for queueing tasks from the backend API."""
 
+import ssl
+
 from celery import Celery
 from celery.result import AsyncResult
 
@@ -11,6 +13,9 @@ settings = get_settings()
 celery_app = Celery(
     "autoaudit",
     broker=settings.REDIS_URL,
+    broker_use_ssl={"ssl_cert_reqs": ssl.CERT_REQUIRED, "ssl_check_hostname": True}
+    if settings.REDIS_URL.startswith("rediss://")
+    else None,
 )
 
 # Task routing

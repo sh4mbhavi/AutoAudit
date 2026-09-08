@@ -1,4 +1,5 @@
 import logging
+import re
 import time
 from uuid import uuid4
 
@@ -23,7 +24,9 @@ class RequestLoggingMiddleware(BaseHTTPMiddleware):
 
         supplied_request_id = request.headers.get(REQUEST_ID_HEADER)
 
-        if supplied_request_id and len(supplied_request_id) <= MAX_REQUEST_ID_LENGTH:
+        if supplied_request_id and re.fullmatch(
+            r"[A-Za-z0-9._:-]{1,128}", supplied_request_id
+        ):
             request_id = supplied_request_id
         else:
             request_id = str(uuid4())

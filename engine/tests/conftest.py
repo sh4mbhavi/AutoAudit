@@ -6,11 +6,23 @@ so PR reviewers can see exactly what failed without reading logs.
 
 from __future__ import annotations
 
+import importlib.util
 import os
 import re
 from collections import defaultdict
+from pathlib import Path
 
 import pytest
+
+_path = (
+    Path(__file__).resolve().parents[2] / "tools" / "ci" / "integration_requirements.py"
+)
+_spec = importlib.util.spec_from_file_location(
+    "autoaudit_integration_requirements", _path
+)
+_requirements = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_requirements)
+pytest_sessionstart = _requirements.pytest_sessionstart
 
 # Friendly names for each test function
 _TEST_LABELS = {

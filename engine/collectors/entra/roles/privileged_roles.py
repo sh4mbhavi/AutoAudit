@@ -45,6 +45,12 @@ class PrivilegedRolesDataCollector(BaseDataCollector):
         # Get members of the Global Administrator role
         members = await client.get_role_members(global_admin_role["id"])
 
+        if any(
+            not isinstance(member.get("@odata.type"), str) or not member.get("id")
+            for member in members
+        ):
+            raise ValueError("Incomplete role member identity evidence")
+
         global_admins = [
             {
                 "id": m.get("id"),

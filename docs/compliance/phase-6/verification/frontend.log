@@ -1,0 +1,15 @@
+
+> autoaudit-dashboard@0.1.0 test
+> vitest run
+
+
+ RUN  v4.1.6 /Users/clupa/Documents/projects/autoaudit/AutoAudit-phase-6/frontend
+
+Not implemented: Window's scrollTo() method
+Not implemented: Window's scrollTo() method
+
+ Test Files  26 passed (26)
+      Tests  243 passed (243)
+   Start at  11:55:06
+   Duration  3.85s (transform 4.03s, setup 3.16s, import 8.91s, tests 9.05s, environment 22.76s)
+

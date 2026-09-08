@@ -28,3 +28,27 @@ class BasePowerShellCollector(ABC):
             Dictionary of collected data to be passed to OPA for evaluation.
         """
         pass
+
+
+def powershell_records(value: Any) -> list[dict[str, Any]]:
+    """Normalize the documented PowerShell zero/single/multiple result shapes."""
+    if value is None:
+        return []
+    if isinstance(value, dict):
+        return [powershell_object(value)]
+    if not isinstance(value, list) or not all(isinstance(item, dict) for item in value):
+        raise ValueError("PowerShell response must be an object or list of objects")
+    return [powershell_object(item) for item in value]
+
+
+def powershell_object(value: Any) -> dict[str, Any]:
+    """Preserve missing singleton evidence without inventing property values."""
+    if value is None:
+        return {}
+    if not isinstance(value, dict):
+        raise ValueError("PowerShell singleton response must be an object")
+    if any(
+        value.get(key) is not None for key in ("error", "collector_error")
+    ) or value.get("errors"):
+        raise ValueError("PowerShell response contains a collection error")
+    return value

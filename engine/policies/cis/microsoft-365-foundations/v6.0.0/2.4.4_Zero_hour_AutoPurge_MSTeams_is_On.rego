@@ -21,47 +21,53 @@
 
 package cis.microsoft_365_foundations.v6_0_0.control_2_4_4
 
-default result := {"compliant": false, "message": "Evaluation failed"}
+import rego.v1
 
-required_fields := {
-    "ZeroHourAutoPurgeEnabled": true
+default result := {
+	"compliant": null,
+	"message": "Unable to evaluate: Zero-hour auto purge settings for Microsoft Teams are unavailable or incomplete",
+	"affected_resources": [],
+	"details": {
+		"evaluation_status": "indeterminate",
+		"ZeroHourAutoPurgeEnabled": null,
+		"reason": "Expected a boolean zap_enabled or teams_protection_policy.ZapEnabled value; collector errors invalidate the evidence.",
+	},
 }
 
-zap_enabled := object.get(
-    input,
-    "zap_enabled",
-    object.get(object.get(input, "teams_protection_policy", {}), "ZapEnabled", null)
-)
+# Prefer the collector's normalized value when present, including explicit null.
+zap_enabled := input.zap_enabled if {
+	"zap_enabled" in object.keys(input)
+} else := input.teams_protection_policy.ZapEnabled
 
-zero_hour_auto_purge_enabled := true if {
-    zap_enabled == true
+valid_evidence if {
+	is_object(input)
+	not has_collector_error(input)
+	not has_collector_error(object.get(input, "teams_protection_policy", {}))
+	is_boolean(zap_enabled)
 }
 
-zero_hour_auto_purge_enabled := false if {
-    zap_enabled != true
-}
-
-zero_hour_auto_purge_enabled := null if {
-    not zap_enabled
-}
-
-result := output if {
-    compliant := zero_hour_auto_purge_enabled == true
-
-    output := {
-        "compliant": compliant,
-        "message": generate_message(zero_hour_auto_purge_enabled),
-        "affected_resources": generate_affected_resources(zero_hour_auto_purge_enabled),
-        "details": {
-            "ZeroHourAutoPurgeEnabled": zap_enabled
-        }
-    }
+result := {
+	"compliant": zap_enabled,
+	"message": generate_message(zap_enabled),
+	"affected_resources": generate_affected_resources(zap_enabled),
+	"details": {
+		"ZeroHourAutoPurgeEnabled": zap_enabled,
+	},
+} if {
+	valid_evidence
 }
 
 generate_message(true) := "Zero-hour auto purge is enabled for Microsoft Teams"
 generate_message(false) := "Zero-hour auto purge is not enabled for Microsoft Teams"
-generate_message(null) := "Unable to determine if Zero-hour auto purge is enabled for Microsoft Teams"
 
 generate_affected_resources(true) := []
 generate_affected_resources(false) := ["TeamsProtectionPolicy"]
-generate_affected_resources(null) := ["TeamsProtectionPolicy status unknown"]
+
+# A collector error invalidates even otherwise complete evidence.
+has_collector_error(obj) if {
+	object.get(obj, "collector_error", null) != null
+}
+
+has_collector_error(obj) if {
+	object.get(obj, "error", null) != null
+}

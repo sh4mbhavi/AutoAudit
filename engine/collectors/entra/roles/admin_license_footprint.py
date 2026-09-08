@@ -76,6 +76,10 @@ class AdminLicenseFootprintDataCollector(BaseDataCollector):
             members = await client.get_role_members(role["id"])
 
             for member in members:
+                if not isinstance(member.get("@odata.type"), str) or not member.get(
+                    "id"
+                ):
+                    raise ValueError("Incomplete role member identity evidence")
                 if member.get("@odata.type") != "#microsoft.graph.user":
                     continue
 
@@ -141,12 +145,23 @@ class AdminLicenseFootprintDataCollector(BaseDataCollector):
     ) -> list[str]:
         found: set[str] = set()
         for lic in license_details:
-            for sp in lic.get("servicePlans") or []:
+            plans = lic.get("servicePlans")
+            if not isinstance(plans, list):
+                raise ValueError("Incomplete license service plan evidence")
+            for sp in plans:
+                if not isinstance(sp, dict) or not all(
+                    isinstance(sp.get(field), str) and sp[field]
+                    for field in ("servicePlanName", "provisioningStatus", "appliesTo")
+                ):
+                    raise ValueError("Incomplete license service plan evidence")
                 if sp.get("provisioningStatus") != "Success":
                     continue
                 if sp.get("appliesTo") != "User":
                     continue
                 name = sp.get("servicePlanName") or ""
-                if name in AdminLicenseFootprintDataCollector.HIGH_FOOTPRINT_SERVICE_PLANS:
+                if (
+                    name
+                    in AdminLicenseFootprintDataCollector.HIGH_FOOTPRINT_SERVICE_PLANS
+                ):
                     found.add(name)
         return sorted(found)

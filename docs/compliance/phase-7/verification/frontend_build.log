@@ -1,0 +1,36 @@
+
+> autoaudit-dashboard@0.1.0 build
+> vite build
+
+vite v7.3.2 building client environment for production...
+transforming...
+✓ 1731 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                                    0.92 kB │ gzip:   0.51 kB
+dist/assets/league-spartan-vietnamese-400-normal-qh09PVbx.woff2    4.87 kB
+dist/assets/league-spartan-vietnamese-700-normal-BhNxTXKp.woff2    4.88 kB
+dist/assets/league-spartan-vietnamese-600-normal-Cot-T8d4.woff2    4.93 kB
+dist/assets/league-spartan-vietnamese-700-normal-Dn0E2a1W.woff     6.80 kB
+dist/assets/league-spartan-vietnamese-400-normal-DmsCAdAp.woff     6.86 kB
+dist/assets/league-spartan-vietnamese-600-normal-DkVdIeVx.woff     6.89 kB
+dist/assets/league-spartan-latin-ext-700-normal-BwN75zDi.woff2    11.41 kB
+dist/assets/league-spartan-latin-ext-400-normal-CUEsI60l.woff2    11.51 kB
+dist/assets/league-spartan-latin-ext-600-normal-nMNwaRqy.woff2    11.54 kB
+dist/assets/league-spartan-latin-400-normal-DnxLqxAY.woff2        12.80 kB
+dist/assets/league-spartan-latin-700-normal-CtwlLP3z.woff2        12.89 kB
+dist/assets/league-spartan-latin-600-normal-DHjw6l_K.woff2        12.95 kB
+dist/assets/league-spartan-latin-ext-700-normal-DQ9i1Vnk.woff     15.70 kB
+dist/assets/league-spartan-latin-ext-400-normal-BZqq8HMJ.woff     15.83 kB
+dist/assets/league-spartan-latin-ext-600-normal-BYU5cLYt.woff     15.83 kB
+dist/assets/league-spartan-latin-700-normal-D-5a3uka.woff         16.90 kB
+dist/assets/league-spartan-latin-400-normal-BoJqwX88.woff         16.97 kB
+dist/assets/league-spartan-latin-600-normal-DXHl7Rg9.woff         16.99 kB
+dist/assets/index-BX_0Lttc.css                                   109.43 kB │ gzip:  16.93 kB
+dist/assets/index-B8C7G5p4.js                                    985.84 kB │ gzip: 272.99 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 1.19s
