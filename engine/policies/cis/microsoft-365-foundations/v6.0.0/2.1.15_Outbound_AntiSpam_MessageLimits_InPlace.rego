@@ -65,7 +65,7 @@ generate_message(null) := unknown_message
 
 generate_affected_resources(true, _) := []
 
-generate_affected_resources(false, data_input) := [
+generate_affected_resources(false, _) := [
   "Outbound Spam Filter Policy"
 ]
 

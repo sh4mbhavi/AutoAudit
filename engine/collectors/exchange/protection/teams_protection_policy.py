@@ -11,7 +11,7 @@ Required Permissions: Exchange.ManageAsApp + Exchange role assignment
 
 from typing import Any
 
-from collectors.powershell_base import BasePowerShellCollector
+from collectors.powershell_base import BasePowerShellCollector, powershell_object
 from collectors.powershell_client import PowerShellClient
 
 
@@ -31,9 +31,12 @@ class TeamsProtectionPolicyDataCollector(BasePowerShellCollector):
             - zap_enabled: Zero-hour auto purge status for Teams
         """
         policy = await client.run_cmdlet("ExchangeOnline", "Get-TeamsProtectionPolicy")
+        policy = powershell_object(policy)
 
         return {
             "teams_protection_policy": policy,
             "zap_enabled": policy.get("ZapEnabled") if policy else None,
-            "malware_scan_enabled": policy.get("MalwareScanEnabled") if policy else None,
+            "malware_scan_enabled": policy.get("MalwareScanEnabled")
+            if policy
+            else None,
         }

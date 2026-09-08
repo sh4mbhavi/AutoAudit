@@ -29,7 +29,11 @@ type ScansPageProps = {
 	isDarkMode?: boolean;
 };
 
-type Scan = {
+import type { ScanAssessmentFields } from "../../types/scan";
+import { getScanAssessment } from "../../utils/scanAssessment";
+import AssessmentSummary from "../../components/AssessmentSummary";
+
+type Scan = ScanAssessmentFields & {
 	id: number | string;
 	status?: string;
 	benchmark?: string;
@@ -830,43 +834,11 @@ const ScansPage: React.FC<ScansPageProps> = ({
 											</td>
 
 											<td className={tableBodyCellClass}>
-												{scan.status ===
-													"completed" ||
-												scan.status === "running" ? (
-													<div className="flex flex-wrap gap-3 text-[13px]">
-														<span className="text-emerald-500">
-															{scan.passed_count ||
-																0}{" "}
-															passed
-														</span>
-
-														<span className="text-red-500">
-															{scan.failed_count ||
-																0}{" "}
-															failed
-														</span>
-
-														{scan.status ===
-															"running" &&
-															(scan.total_controls ||
-																0) > 0 && (
-																<span>
-																	(
-																	{(scan.passed_count ||
-																		0) +
-																		(scan.failed_count ||
-																			0) +
-																		(scan.error_count ||
-																			0)}
-																	/
-																	{scan.total_controls ||
-																		0}
-																	)
-																</span>
-															)}
-													</div>
-												) : (
-													"-"
+												<AssessmentSummary scan={scan} />
+												{scan.status === "running" && (
+													<span className="text-xs">
+														{getScanAssessment(scan).done}/{scan.total_controls || 0} complete
+													</span>
 												)}
 											</td>
 

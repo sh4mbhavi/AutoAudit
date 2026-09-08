@@ -3,6 +3,8 @@ set -e
 
 echo "AutoAudit Worker Container"
 echo "=========================="
+python -c "from worker.provenance import engine_identity; engine_identity()"
+opa version >/dev/null
 echo "Starting Celery worker with prefork pool..."
 echo ""
 

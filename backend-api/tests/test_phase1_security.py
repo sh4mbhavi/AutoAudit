@@ -86,7 +86,7 @@ def test_existing_account_is_not_reset_or_promoted(monkeypatch, session):
     configure(monkeypatch)
     existing = SimpleNamespace(
         email="developer@example.invalid",
-        hashed_password="existing-hash",  # pragma: allowlist secret - synthetic stored value
+        hashed_password="existing-hash",  # nosec B106 # pragma: allowlist secret - synthetic stored value
         role="user",
         is_active=False,
         is_superuser=False,
@@ -137,7 +137,7 @@ def test_short_seed_password_fails_before_database(monkeypatch, session):
 @pytest.mark.parametrize("environment", ["dev", "preview", "production"])
 def test_container_entrypoint_only_migrates_and_starts(environment, tmp_path):
     import os
-    import subprocess
+    import subprocess  # nosec B404 # exercises the fixed repository entrypoint with a local uv stub
     from pathlib import Path
 
     calls = tmp_path / "calls"
@@ -145,7 +145,7 @@ def test_container_entrypoint_only_migrates_and_starts(environment, tmp_path):
     uv.write_text('#!/bin/sh\nprintf "%s\\n" "$*" >> "$CALLS"\n')
     uv.chmod(0o755)
     entrypoint = Path(__file__).resolve().parents[1] / "entrypoint.sh"
-    subprocess.run(
+    subprocess.run(  # nosec B603, B607 # fixed bash entrypoint; PATH deliberately uses the temporary test stub
         ["bash", str(entrypoint)],
         check=True,
         capture_output=True,

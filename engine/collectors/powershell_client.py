@@ -226,11 +226,22 @@ class PowerShellClient:
             )
             response.raise_for_status()
 
-        result = response.json()
-        if not result.get("success"):
-            raise PowerShellExecutionError(result.get("error", "Unknown error"))
+        try:
+            result = response.json()
+        except ValueError as exc:
+            raise PowerShellExecutionError(
+                "Malformed PowerShell service response"
+            ) from exc
+        if not isinstance(result, dict) or result.get("success") is not True:
+            raise PowerShellExecutionError(
+                "PowerShell service did not report explicit success"
+            )
+        if "data" not in result or result.get("error") or result.get("errors"):
+            raise PowerShellExecutionError(
+                "PowerShell service returned incomplete evidence"
+            )
 
-        return result.get("data")
+        return result["data"]
 
     async def _run_via_docker(
         self, module: str, cmdlet: str, params: dict[str, Any]

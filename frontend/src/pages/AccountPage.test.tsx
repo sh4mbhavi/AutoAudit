@@ -70,6 +70,14 @@ describe('primaryLabel', () => {
     expect(screen.getByText('Signed in')).toBeInTheDocument();
   });
 
+  it('preserves a zero-valued account id and labels it as an account', () => {
+    setupAuth({ id: 0 });
+    renderPage();
+    expect(screen.getByText('0')).toBeInTheDocument();
+    expect(screen.getAllByText('Account')).toHaveLength(2);
+    expect(screen.queryByText('Email')).not.toBeInTheDocument();
+  });
+
   it('shows "Signed in" when all user fields are null or undefined', () => {
     setupAuth({ email: null, username: null, name: null, id: null });
     renderPage();

@@ -19,7 +19,7 @@ Required Permissions: Exchange.ManageAsApp + Exchange role assignment
 
 from typing import Any
 
-from collectors.powershell_base import BasePowerShellCollector
+from collectors.powershell_base import BasePowerShellCollector, powershell_object
 from collectors.powershell_client import PowerShellClient
 
 
@@ -42,6 +42,7 @@ class OrganizationConfigDataCollector(BasePowerShellCollector):
             - reject_direct_send: Whether direct send is rejected (CIS 6.5.5)
         """
         config = await client.run_cmdlet("ExchangeOnline", "Get-OrganizationConfig")
+        config = powershell_object(config)
 
         return {
             "organization_config": config,

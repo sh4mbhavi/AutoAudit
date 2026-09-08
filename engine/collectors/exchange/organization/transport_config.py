@@ -11,7 +11,7 @@ Required Permissions: Exchange.ManageAsApp + Exchange role assignment
 
 from typing import Any
 
-from collectors.powershell_base import BasePowerShellCollector
+from collectors.powershell_base import BasePowerShellCollector, powershell_object
 from collectors.powershell_client import PowerShellClient
 
 
@@ -31,8 +31,11 @@ class TransportConfigDataCollector(BasePowerShellCollector):
             - smtp_client_authentication_disabled: SMTP client auth status (CIS 6.5.4)
         """
         config = await client.run_cmdlet("ExchangeOnline", "Get-TransportConfig")
+        config = powershell_object(config)
 
         return {
             "transport_config": config,
-            "smtp_client_authentication_disabled": config.get("SmtpClientAuthenticationDisabled"),
+            "smtp_client_authentication_disabled": config.get(
+                "SmtpClientAuthenticationDisabled"
+            ),
         }

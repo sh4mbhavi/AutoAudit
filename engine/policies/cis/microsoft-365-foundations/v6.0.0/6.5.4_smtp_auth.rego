@@ -19,38 +19,66 @@
 
 package cis.microsoft_365_foundations.v6_0_0.control_6_5_4
 
-default result := {"compliant": false, "message": "Evaluation failed"}
+import rego.v1
 
-result := output if {
-    smtp_auth_disabled := input.smtp_client_authentication_disabled
+default assessed_result := {"compliant": null, "message": "Evaluation failed"}
 
-    # Compliant when SMTP client authentication is disabled
-    compliant := smtp_auth_disabled == true
+assessed_result := output if {
+	smtp_auth_disabled := input.smtp_client_authentication_disabled
 
-    output := {
-        "compliant": compliant,
-        "message": generate_message(smtp_auth_disabled),
-        "affected_resources": generate_affected_resources(compliant),
-        "details": {
-            "smtp_client_authentication_disabled": smtp_auth_disabled
-        }
-    }
+	# Compliant when SMTP client authentication is disabled
+	compliant := smtp_auth_disabled == true
+
+	output := {
+		"compliant": compliant,
+		"message": generate_message(smtp_auth_disabled),
+		"affected_resources": generate_affected_resources(compliant),
+		"details": {
+			"smtp_client_authentication_disabled": smtp_auth_disabled,
+		},
+	}
 }
 
 generate_message(smtp_auth_disabled) := msg if {
-    smtp_auth_disabled == true
-    msg := "SMTP AUTH is disabled at the organization level"
+	smtp_auth_disabled == true
+	msg := "SMTP AUTH is disabled at the organization level"
 }
 
 generate_message(smtp_auth_disabled) := msg if {
-    smtp_auth_disabled == false
-    msg := "SMTP AUTH is enabled at the organization level"
+	smtp_auth_disabled == false
+	msg := "SMTP AUTH is enabled at the organization level"
 }
 
 generate_message(smtp_auth_disabled) := msg if {
-    smtp_auth_disabled == null
-    msg := "Unable to determine SMTP AUTH status"
+	smtp_auth_disabled == null
+	msg := "Unable to determine SMTP AUTH status"
 }
 
 generate_affected_resources(true) := []
 generate_affected_resources(false) := ["SMTP AUTH is enabled"]
+
+# Typed, complete collector evidence is required before an assessed result is emitted.
+# Kept in this module so captured-source evaluation remains self-contained.
+default result := {
+	"compliant": null,
+	"message": "Unable to evaluate: required evidence is missing, malformed, or incomplete",
+	"affected_resources": [],
+	"details": {"evaluation_status": "indeterminate"},
+}
+
+result := assessed_result if evidence_complete
+
+evidence_complete if {
+	is_object(input)
+	not evidence_error
+	is_boolean(input.smtp_client_authentication_disabled)
+}
+
+# A nested collector error invalidates a partial response as well as a top-level error.
+evidence_error if {
+	some path, value
+	walk(input, [path, value])
+	count(path) > 0
+	path[count(path) - 1] in {"collector_error", "error"}
+	value != null
+}

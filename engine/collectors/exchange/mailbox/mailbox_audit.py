@@ -14,7 +14,7 @@ Required Permissions: Exchange.ManageAsApp + Exchange role assignment
 
 from typing import Any
 
-from collectors.powershell_base import BasePowerShellCollector
+from collectors.powershell_base import BasePowerShellCollector, powershell_records
 from collectors.powershell_client import PowerShellClient
 
 
@@ -43,10 +43,7 @@ class MailboxAuditDataCollector(BasePowerShellCollector):
         bypassed = await client.run_cmdlet("ExchangeOnline", cmdlet)
 
         # Handle None, single result, or list
-        if bypassed is None:
-            bypassed = []
-        elif isinstance(bypassed, dict):
-            bypassed = [bypassed]
+        bypassed = powershell_records(bypassed)
 
         return {
             "accounts_with_bypass_enabled": bypassed,

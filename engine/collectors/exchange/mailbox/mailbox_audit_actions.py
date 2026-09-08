@@ -14,7 +14,7 @@ Required Permissions: Exchange.ManageAsApp + Exchange role assignment
 
 from typing import Any
 
-from collectors.powershell_base import BasePowerShellCollector
+from collectors.powershell_base import BasePowerShellCollector, powershell_records
 from collectors.powershell_client import PowerShellClient
 
 
@@ -44,10 +44,7 @@ class MailboxAuditActionsDataCollector(BasePowerShellCollector):
         mailboxes = await client.run_cmdlet("ExchangeOnline", cmdlet)
 
         # Handle None, single result, or list
-        if mailboxes is None:
-            mailboxes = []
-        elif isinstance(mailboxes, dict):
-            mailboxes = [mailboxes]
+        mailboxes = powershell_records(mailboxes)
 
         return {
             "mailboxes": mailboxes,

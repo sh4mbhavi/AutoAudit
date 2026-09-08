@@ -5,13 +5,13 @@ CIS Microsoft 365 Foundations Benchmark Controls:
 
 Connection Method: Exchange Online PowerShell (via Docker container)
 Authentication: Client secret via MSAL -> access token passed to -AccessToken parameter
-Required Cmdlets: Get-AntiPhishPolicy
+Required Cmdlets: Get-AntiPhishPolicy, Get-AntiPhishRule
 Required Permissions: Exchange.ManageAsApp + Exchange role assignment
 """
 
 from typing import Any
 
-from collectors.powershell_base import BasePowerShellCollector
+from collectors.powershell_base import BasePowerShellCollector, powershell_records
 from collectors.powershell_client import PowerShellClient
 
 
@@ -33,19 +33,18 @@ class AntiPhishPolicyDataCollector(BasePowerShellCollector):
         policies = await client.run_cmdlet("ExchangeOnline", "Get-AntiPhishPolicy")
 
         # Handle None, single policy, or list
-        if policies is None:
-            policies = []
-        elif isinstance(policies, dict):
-            policies = [policies]
+        policies = powershell_records(policies)
+
+        rules = powershell_records(
+            await client.run_cmdlet("ExchangeOnline", "Get-AntiPhishRule")
+        )
 
         # Find default policy
-        default_policy = next(
-            (p for p in policies if p.get("IsDefault")),
-            None
-        )
+        default_policy = next((p for p in policies if p.get("IsDefault")), None)
 
         return {
             "anti_phish_policies": policies,
+            "anti_phish_rules": rules,
             "total_policies": len(policies),
             "default_policy": default_policy,
         }

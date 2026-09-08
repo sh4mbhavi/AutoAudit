@@ -214,3 +214,19 @@ describe('compareControlIdAscending', () => {
     expect(renderedIds).toEqual(['1.9', '1.10']);
   });
 });
+
+describe('Phase 3 scan detail', () => {
+  it('distinguishes inconclusive results and counts them as finished', async () => {
+    vi.mocked(getScan).mockResolvedValue(makeScan({ status: 'running', semantics_version: 'phase3-v1', total_controls: 6, selected_count: 5, passed_count: 1, failed_count: 0, error_count: 1, indeterminate_count: 1, not_assessable_count: 1, skipped_count: 1, pending_count: 1, compliance_score: '100', coverage_score: '20', results: [
+      { control_id: '1.1', status: 'indeterminate', title: 'Missing evidence' },
+      { control_id: '1.2', status: 'not_assessable', title: 'Manual check' },
+    ] }));
+    renderPage();
+    await waitForLoaded();
+    expect(screen.getByText('Indeterminate')).toBeInTheDocument();
+    expect(screen.getByText('Not assessable')).toBeInTheDocument();
+    expect(screen.getByText('Evaluating controls... 5 of 6 complete')).toBeInTheDocument();
+    expect(screen.getByText('Partial assessment')).toBeInTheDocument();
+    expect(screen.getByText('Automated coverage: 20% (1/5 selected)')).toBeInTheDocument();
+  });
+});

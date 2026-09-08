@@ -11,7 +11,7 @@ Required Permissions: Exchange.ManageAsApp + Exchange role assignment
 
 from typing import Any
 
-from collectors.powershell_base import BasePowerShellCollector
+from collectors.powershell_base import BasePowerShellCollector, powershell_records
 from collectors.powershell_client import PowerShellClient
 
 
@@ -37,10 +37,32 @@ class TransportRulesDataCollector(BasePowerShellCollector):
         rules = await client.run_cmdlet("ExchangeOnline", "Get-TransportRule")
 
         # Handle None, single rule, or list
-        if rules is None:
-            rules = []
-        elif isinstance(rules, dict):
-            rules = [rules]
+        rules = powershell_records(rules)
+
+        # Validate classification fields before filtering the population.
+        for rule in rules:
+            if not isinstance(rule.get("Name"), str) or rule.get("State") not in (
+                "Enabled",
+                "Disabled",
+            ):
+                raise ValueError("Incomplete transport rule identity or state evidence")
+            for field in ("RedirectMessageTo", "BlindCopyTo", "SenderDomainIs"):
+                if field not in rule or (
+                    rule[field] is not None and not isinstance(rule[field], list)
+                ):
+                    raise ValueError("Incomplete transport rule action evidence")
+            if "SetSCL" not in rule:
+                raise ValueError("Incomplete transport rule SCL evidence")
+            if rule["SetSCL"] is not None:
+                if isinstance(rule["SetSCL"], bool) or (
+                    isinstance(rule["SetSCL"], float)
+                    and not rule["SetSCL"].is_integer()
+                ):
+                    raise ValueError("Malformed transport rule SCL evidence")
+                try:
+                    int(rule["SetSCL"])
+                except (ValueError, TypeError) as exc:
+                    raise ValueError("Malformed transport rule SCL evidence") from exc
 
         # Find rules that forward mail
         forwarding_rules = [
@@ -69,12 +91,14 @@ class TransportRulesDataCollector(BasePowerShellCollector):
 
             # Rule is a whitelist rule if it has BOTH SetSCL = -1 AND SenderDomainIs
             if set_scl == -1 and sender_domain:
-                whitelist_rules.append({
-                    "name": r.get("Name"),
-                    "state": r.get("State"),
-                    "sender_domain": sender_domain,
-                    "set_scl": set_scl,
-                })
+                whitelist_rules.append(
+                    {
+                        "name": r.get("Name"),
+                        "state": r.get("State"),
+                        "sender_domain": sender_domain,
+                        "set_scl": set_scl,
+                    }
+                )
 
         # Get outbound spam filter policies for auto-forwarding check (CIS 6.2.1)
         spam_policies = await client.run_cmdlet(
@@ -82,10 +106,7 @@ class TransportRulesDataCollector(BasePowerShellCollector):
         )
 
         # Handle None, single policy, or list
-        if spam_policies is None:
-            spam_policies = []
-        elif isinstance(spam_policies, dict):
-            spam_policies = [spam_policies]
+        spam_policies = powershell_records(spam_policies)
 
         # Extract auto-forwarding mode from each policy
         outbound_policies = [
@@ -97,9 +118,11 @@ class TransportRulesDataCollector(BasePowerShellCollector):
         ]
 
         # Check if all policies have AutoForwardingMode set to "Off"
-        auto_forwarding_blocked = all(
-            p.get("AutoForwardingMode") == "Off" for p in spam_policies
-        ) if spam_policies else False
+        auto_forwarding_blocked = (
+            all(p.get("AutoForwardingMode") == "Off" for p in spam_policies)
+            if spam_policies
+            else False
+        )
 
         return {
             "transport_rules": rules,

@@ -3,7 +3,7 @@
 import asyncio
 import json
 import os
-import subprocess
+import subprocess  # nosec B404 # controlled Alembic subprocess in disposable database tests
 import sys
 from pathlib import Path
 from urllib.parse import urlsplit, urlunsplit
@@ -70,7 +70,7 @@ def _alembic(url, *arguments):
         "SECRET_KEY": uuid4().hex + uuid4().hex,
         "ENCRYPTION_KEY": Fernet.generate_key().decode(),
     }
-    result = subprocess.run(
+    result = subprocess.run(  # nosec B603 # fixed interpreter and Alembic arguments from these tests
         [sys.executable, "-m", "alembic", *arguments],
         cwd=BACKEND,
         env=environment,
@@ -137,7 +137,7 @@ async def _snapshot(url):
             name = table["tablename"]
             quoted = '"' + name.replace('"', '""') + '"'
             rows = await connection.fetch(
-                f"SELECT row_to_json(t)::text AS row FROM {quoted} t ORDER BY id"
+                f"SELECT row_to_json(t)::text AS row FROM {quoted} t ORDER BY id"  # nosec B608 # catalog identifier escaped above
             )
             data[name] = [json.loads(row["row"]) for row in rows]
         return data
@@ -154,7 +154,7 @@ def _assert_preserved(before, after):
 
 
 @pytest.mark.parametrize("starting_point", ["base", *PRIOR_HEADS, "both"])
-def test_upgrade_to_head_preserves_existing_data(database_url, starting_point):
+def test_upgrade_to_phase1_merge_preserves_existing_data(database_url, starting_point):
     initial_heads = PRIOR_HEADS if starting_point == "both" else (starting_point,)
     before = {}
     if starting_point != "base":
@@ -164,7 +164,7 @@ def test_upgrade_to_head_preserves_existing_data(database_url, starting_point):
         _seed(database_url, initial_heads)
         before = asyncio.run(_snapshot(database_url))
 
-    _alembic(database_url, "upgrade", "head")
+    _alembic(database_url, "upgrade", MERGED_HEAD)
     assert _versions(database_url) == {MERGED_HEAD}
     after = asyncio.run(_snapshot(database_url))
     assert "manual_scan_result_detail" in after
@@ -182,7 +182,7 @@ def test_upgrade_to_head_preserves_existing_data(database_url, starting_point):
         assert before == after
 
     # Re-running normal startup migrations is idempotent.
-    _alembic(database_url, "upgrade", "head")
+    _alembic(database_url, "upgrade", MERGED_HEAD)
     assert _versions(database_url) == {MERGED_HEAD}
     assert asyncio.run(_snapshot(database_url)) == after
 
@@ -191,6 +191,6 @@ def test_upgrade_to_head_preserves_existing_data(database_url, starting_point):
         _alembic(database_url, "downgrade", PRIOR_HEADS[0])
         assert _versions(database_url) == set(PRIOR_HEADS)
         assert asyncio.run(_snapshot(database_url)) == before
-        _alembic(database_url, "upgrade", "head")
+        _alembic(database_url, "upgrade", MERGED_HEAD)
         assert _versions(database_url) == {MERGED_HEAD}
         assert asyncio.run(_snapshot(database_url)) == before

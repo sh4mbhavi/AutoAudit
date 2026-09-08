@@ -15,6 +15,10 @@ class WorkerSettings(BaseSettings):
     REDIS_URL: str = "redis://localhost:6379/0"
 
     # OPA (Open Policy Agent)
+    OPA_BINARY: str = "opa"
+    ENGINE_GIT_SHA: str = ""
+    ENGINE_IMAGE_DIGEST: str = ""
+
     OPA_URL: str = "http://localhost:8181"
 
     # Encryption key for decrypting credentials

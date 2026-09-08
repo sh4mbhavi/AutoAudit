@@ -15,7 +15,7 @@
 #   severity: high
 #   service: Exchange
 #   requires_permissions:
-#   - Exchange.Manage
+#   - Domain.Read.All
 
 package cis.microsoft_365_foundations.v6_0_0.control_2_1_8
 
