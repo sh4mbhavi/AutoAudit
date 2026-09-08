@@ -11,7 +11,6 @@
 // - GET  /v1/evidence/reports/:id -> download a generated report
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { downloadEvidenceReport, getEvidenceReportUrl, getEvidenceStrategies, scanEvidence } from '../api/client';
-import { useAuth } from '../context/AuthContext';
 
 // If the validator finds fewer than this number of expected terms for the selected strategy,
 // treat the scan as "not readable / not relevant" and suppress findings in the UI.
@@ -138,9 +137,6 @@ const Evidence = ({ sidebarWidth = 220, isDarkMode = true }: EvidencePageProps) 
   // This prevents the UI from showing a filename while `selectedFile` is null (which disables the scan button).
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Auth token from AuthContext (frontend).
-  // Used as Bearer token when calling POST /v1/evidence/scan.
-  const { token } = useAuth();
 
   // If the backend returned a validator payload, use it to decide whether the scan output
   // is meaningful for the chosen strategy.
@@ -289,7 +285,7 @@ const Evidence = ({ sidebarWidth = 220, isDarkMode = true }: EvidencePageProps) 
 
     try {
       // Frontend -> Backend call lives in api/client.js (scanEvidence()).
-      const data = await scanEvidence(token, {
+      const data = await scanEvidence({
         strategyName: selectedStrategy,
         file: selectedFile,
       });
@@ -443,7 +439,7 @@ const Evidence = ({ sidebarWidth = 220, isDarkMode = true }: EvidencePageProps) 
                 {reportFiles.length > 0 && (
                   <button
                     className="report-link"
-                    onClick={() => downloadEvidenceReport(token, reportFiles[0])}
+                    onClick={() => downloadEvidenceReport(reportFiles[0])}
                   >
                     Download PDF
                   </button>

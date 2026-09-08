@@ -15,11 +15,11 @@ const mockLogin = vi.fn();
 function setupAuth() {
   vi.mocked(useAuth).mockReturnValue({
     user: null,
-    token: null,
+
     isAuthenticated: false,
     isLoading: false,
     login: mockLogin,
-    loginWithAccessToken: vi.fn(),
+    completeOAuthLogin: vi.fn(),
     logout: vi.fn(),
   });
 }
@@ -51,7 +51,7 @@ describe('SignInPanel', () => {
     await userEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
 
     await waitFor(() => {
-      expect(onLogin).toHaveBeenCalledWith('user@example.com', 'secretpass', true);
+      expect(onLogin).toHaveBeenCalledWith('user@example.com', 'secretpass');
     });
     expect(mockLogin).not.toHaveBeenCalled();
   });
@@ -65,7 +65,7 @@ describe('SignInPanel', () => {
     await userEvent.click(screen.getByRole('button', { name: /^sign in$/i }));
 
     await waitFor(() => {
-      expect(mockLogin).toHaveBeenCalledWith('solo@example.com', 'pw123456', true);
+      expect(mockLogin).toHaveBeenCalledWith('solo@example.com', 'pw123456');
     });
   });
 

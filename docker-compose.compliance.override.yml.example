@@ -1,0 +1,9 @@
+# Copy to docker-compose.compliance.override.yml and change only the two host paths.
+
+services:
+  powershell-service:
+    environment:
+      - COMPLIANCE_CERT_ALIASES={"t8sjf":{"path":"/certs/aliases/t8sjf-ipps.pfx","password_file":"/certs/aliases/t8sjf-ipps.password"}}
+    volumes:
+      - /home/<USER>/autoaudit-purview-cert/t8sjf-ipps.pfx:/certs/aliases/t8sjf-ipps.pfx:ro
+      - /home/<USER>/autoaudit-purview-cert/t8sjf-ipps.password:/certs/aliases/t8sjf-ipps.password:ro

@@ -31,8 +31,9 @@ class HostedConnectionFilterDataCollector(BasePowerShellCollector):
             - ip_allow_list: IP addresses in allow list
             - enable_safe_list: Safe list status
         """
-        policies = await client.run_cmdlet(
-            "ExchangeOnline", "Get-HostedConnectionFilterPolicy"
+        policies = await client.run_operation(
+            "exchange.protection.hosted_connection_filter.read",
+            "exchange.protection.hosted_connection_filter",
         )
 
         # Handle None, single policy, or list
@@ -44,13 +45,17 @@ class HostedConnectionFilterDataCollector(BasePowerShellCollector):
         # Get default policy settings
         default_policy = next(
             (p for p in policies if p.get("IsDefault")),
-            policies[0] if policies else None
+            policies[0] if policies else None,
         )
 
         return {
             "connection_filter_policies": policies,
             "total_policies": len(policies),
             "default_policy": default_policy,
-            "ip_allow_list": default_policy.get("IPAllowList", []) if default_policy else [],
-            "enable_safe_list": default_policy.get("EnableSafeList") if default_policy else None,
+            "ip_allow_list": default_policy.get("IPAllowList", [])
+            if default_policy
+            else [],
+            "enable_safe_list": default_policy.get("EnableSafeList")
+            if default_policy
+            else None,
         }

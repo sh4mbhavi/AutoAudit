@@ -1,0 +1,108 @@
+# Standalone production template: docker compose -f docker-compose.production.yml up
+# Supply reviewed TLS material, Redis ACL and secrets; see Phase 5 handoff.
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: autoaudit
+      POSTGRES_DB: autoaudit
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?required}
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    networks: [private]
+    restart: unless-stopped
+  redis:
+    image: redis:7-alpine
+    command: [redis-server, /usr/local/etc/redis/redis.conf]
+    volumes: [./infrastructure/runtime/redis.conf:/usr/local/etc/redis/redis.conf:ro]
+    secrets: [redis_cert, redis_key, runtime_ca, redis_acl]
+    tmpfs: [/data]
+    networks: [private]
+    restart: unless-stopped
+  backend-api:
+    build:
+      context: .
+      dockerfile: backend-api/Dockerfile
+    environment:
+      APP_ENV: production
+      DATABASE_URL: ${API_DATABASE_URL:?required}
+      REDIS_URL: ${REDIS_URL:?authenticated rediss URL required}
+      SECRET_KEY: ${SECRET_KEY:?required}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?required}
+      BACKEND_PUBLIC_URL: ${BACKEND_PUBLIC_URL:?HTTPS origin required}
+      FRONTEND_URL: ${FRONTEND_URL:?HTTPS origin required}
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
+      POLICIES_DIR: /app/policies
+      MAPPINGS_DIR: /app/mappings
+      EVIDENCE_STORAGE_DIR: /app/evidence-store
+    secrets: [runtime_ca]
+    # Evidence is a durable named volume, never the container writable layer, so
+    # uploaded evidence and generated reports survive a restart and stay subject
+    # to the recorded retention policy version.
+    volumes:
+      - ./engine/policies:/app/policies:ro
+      - ./engine/mappings:/app/mappings:ro
+      - evidence_store:/app/evidence-store
+    # Local TLS ingress proxy connects here; database/broker/PowerShell have no host ports.
+    ports: [127.0.0.1:8000:8000]
+    networks: [private, egress]
+    depends_on: [db, redis]
+    restart: unless-stopped
+  worker: &worker-runtime
+    build:
+      context: ./engine
+      args:
+        ENGINE_GIT_SHA: ${ENGINE_GIT_SHA:?reviewed revision required}
+    environment:
+      APP_ENV: production
+      DATABASE_URL: ${WORKER_DATABASE_URL:?required}
+      REDIS_URL: ${REDIS_URL:?authenticated rediss URL required}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:?required}
+      POWERSHELL_SERVICE_URL: https://powershell-service:8001
+      POWERSHELL_SERVICE_SECRET: ${POWERSHELL_SERVICE_SECRET:?required}
+      POWERSHELL_CA_FILE: /run/secrets/runtime_ca
+      OPA_BINARY: /usr/local/bin/opa
+    secrets: [runtime_ca]
+    networks: [private, egress]
+    depends_on: [db, redis, powershell-service]
+    restart: unless-stopped
+  dispatcher:
+    <<: *worker-runtime
+    command: [python, -m, worker.dispatcher]
+    depends_on: [db]
+  powershell-service:
+    platform: linux/amd64
+    build:
+      context: ./engine/powershell
+    command: [uvicorn, main:app, --host, 0.0.0.0, --port, "8001", --ssl-keyfile, /run/secrets/powershell_key, --ssl-certfile, /run/secrets/powershell_cert, --no-access-log]
+    environment:
+      APP_ENV: production
+      POWERSHELL_SERVICE_SECRET: ${POWERSHELL_SERVICE_SECRET:?required}
+      # Phase 9: how many pwsh children this replica may run at once. Each loads
+      # ExchangeOnlineManagement and may live for a 300-second batch, so this is
+      # a memory decision as much as a throughput one. Raise it together with
+      # the replica's memory allocation, never on its own.
+      POWERSHELL_MAX_CONCURRENCY: ${POWERSHELL_MAX_CONCURRENCY:-4}
+    secrets: [powershell_cert, powershell_key]
+    networks: [private, egress]
+    restart: unless-stopped
+networks:
+  private:
+    internal: true
+  egress: {}
+volumes:
+  postgres_data:
+  evidence_store:
+secrets:
+  runtime_ca:
+    file: ${RUNTIME_CA_FILE:?required}
+  redis_cert:
+    file: ${REDIS_CERT_FILE:?required}
+  redis_key:
+    file: ${REDIS_KEY_FILE:?required}
+  redis_acl:
+    file: ${REDIS_ACL_FILE:?required}
+  powershell_cert:
+    file: ${POWERSHELL_CERT_FILE:?required}
+  powershell_key:
+    file: ${POWERSHELL_KEY_FILE:?required}

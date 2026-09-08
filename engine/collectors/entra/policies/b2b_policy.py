@@ -32,15 +32,18 @@ class B2BPolicyDataCollector(BaseDataCollector):
             - restriction_mode: The domain restriction mode
         """
         # Get cross-tenant access policy default settings
-        policy = await client.get("/policies/crossTenantAccessPolicy/default", beta=True)
+        policy = await client.get(
+            "/policies/crossTenantAccessPolicy/default", beta=True
+        )
 
         # Extract B2B collaboration settings
         b2b_collaboration = policy.get("b2bCollaborationInbound", {})
         b2b_direct_connect = policy.get("b2bDirectConnectInbound", {})
 
         # Get cross-tenant access policy partners for domain restrictions
-        partners_response = await client.get("/policies/crossTenantAccessPolicy/partners", beta=True)
-        partners = partners_response.get("value", [])
+        partners = await client.get_all_pages(
+            "/policies/crossTenantAccessPolicy/partners", beta=True
+        )
 
         return {
             "cross_tenant_access_policy": policy,

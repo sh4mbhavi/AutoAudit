@@ -1,4 +1,12 @@
+FROM openpolicyagent/opa:1.20.2@sha256:7b15f9d96345dfa639322ad97f65a0b38260f95efcdd7f5c24e284228708f06c AS opa
+
 FROM python:3.11-slim
+
+COPY --from=opa /opa /usr/local/bin/opa
+
+ARG ENGINE_GIT_SHA
+ENV ENGINE_GIT_SHA=${ENGINE_GIT_SHA}
+RUN python -c 'import os,re; assert re.fullmatch("[0-9a-f]{40}", os.environ.get("ENGINE_GIT_SHA", "")), "Build requires --build-arg ENGINE_GIT_SHA=<full source commit>"'
 
 WORKDIR /app
 
@@ -19,7 +27,12 @@ RUN pip install --no-cache-dir .
 # Copy application code
 COPY --chown=appuser:appuser worker/ ./worker/
 COPY --chown=appuser:appuser collectors/ ./collectors/
+COPY --chown=appuser:appuser powershell/service/ ./powershell/service/
+COPY --chown=appuser:appuser powershell/__init__.py ./powershell/__init__.py
 COPY --chown=appuser:appuser policies/ ./policies/
+# Versioned SOC 2 crosswalk mappings. Shipped so the worker computes the same
+# mapping digest the API pinned, rather than trusting a value passed to it.
+COPY --chown=appuser:appuser mappings/ ./mappings/
 COPY --chown=appuser:appuser opa_client.py ./
 
 # Set Python path to include /app

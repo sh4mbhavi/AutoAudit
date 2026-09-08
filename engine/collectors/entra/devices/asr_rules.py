@@ -13,6 +13,7 @@ Graph Endpoints:
 from typing import Any
 
 from collectors.base import BaseDataCollector
+from collectors.concurrency import gather_bounded
 from collectors.graph_client import GraphClient
 
 
@@ -50,18 +51,34 @@ class ASRRulesDataCollector(BaseDataCollector):
     async def collect(self, client: GraphClient) -> dict[str, Any]:
         """Collect ASR rule configuration data."""
         configs = await client.get_all_pages("/deviceManagement/deviceConfigurations")
+        # Phase 9: select first, then fetch the selected profiles with bounded
+        # concurrency. gather_bounded preserves input order, so `findings` is
+        # built in exactly the order the serial loop built it and the weakest-
+        # state tie-break below still resolves the same way.
+        selected = [
+            config
+            for config in configs
+            if "endpointprotection" in config.get("@odata.type", "").lower()
+            and config.get("id")
+        ]
+
+        def _profile(config_id: str):
+            async def fetch():
+                return await client.get(
+                    f"/deviceManagement/deviceConfigurations/{config_id}",
+                    beta=True,
+                )
+
+            return fetch
+
+        full_configs = await gather_bounded(
+            [_profile(config["id"]) for config in selected]
+        )
         findings: list[tuple[str, str | None]] = []
-        for config in configs:
-            if "endpointprotection" not in config.get("@odata.type", "").lower():
-                continue
-            config_id = config.get("id")
-            if not config_id:
-                continue
-            full_config = await client.get(
-                f"/deviceManagement/deviceConfigurations/{config_id}",
-                beta=True,
+        for config, full_config in zip(selected, full_configs):
+            win32_value = full_config.get(
+                "defenderOfficeMacroCodeAllowWin32ImportsType"
             )
-            win32_value = full_config.get("defenderOfficeMacroCodeAllowWin32ImportsType")
             if win32_value:
                 findings.append(
                     (_normalize_state(win32_value), config.get("displayName"))

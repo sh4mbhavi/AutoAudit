@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "framework": "cis",
+  "benchmark": "microsoft-365-foundations",
+  "version": "v6.0.0",
+  "candidate_dir": "engine/policies/candidate/cis/microsoft-365-foundations/v6.0.0",
+  "target_dir": "engine/policies/cis/microsoft-365-foundations/v6.0.0",
+  "gate_vocabulary": [
+    "live_tenant_validation",
+    "licensed_v6_procedure",
+    "grc_rationale_review",
+    "worker_client_wiring",
+    "readiness_call_site_wiring",
+    "policy_review_reason_code"
+  ],
+  "candidates": [
+    {
+      "control_id": "3.2.1",
+      "candidate_file": "3.2.1_dlp_policies_enabled.rego",
+      "target_policy_file": "3.2.1_dlp_policies_enabled.rego",
+      "data_collector_id": "compliance.dlp_compliance_policy",
+      "requires_permissions": [
+        "Exchange.ManageAsApp"
+      ],
+      "target_automation_status": "ready",
+      "can_return_true": false,
+      "procedure_source": {
+        "path": "docs/engine/Framework/CIS_M365_Benchmarks.json",
+        "number": "3.2.1",
+        "edition_declared": "v6.0.1 – 2-26-2026",
+        "licensed_v6_0_0_confirmed": false
+      },
+      "blocking_gates": [
+        {
+          "gate": "live_tenant_validation",
+          "resolved": false,
+          "note": "Certificate-based Connect-IPPSSession has not been executed against any tenant by this build."
+        },
+        {
+          "gate": "licensed_v6_procedure",
+          "resolved": false,
+          "note": "Only the v6.0.1-declaring extract is available; the licensed v6.0.0 procedure has not been obtained."
+        },
+        {
+          "gate": "grc_rationale_review",
+          "resolved": false,
+          "note": "CC6.1-P06 and CC6.7-P20 rationale review has not been returned by a named GRC approver."
+        },
+        {
+          "gate": "worker_client_wiring",
+          "resolved": false,
+          "note": "engine/worker/tasks.py must pass compliance_certificate_alias and compliance_organization into PowerShellClient."
+        },
+        {
+          "gate": "readiness_call_site_wiring",
+          "resolved": false,
+          "note": "backend-api/app/api/v1/scans.py must pass purview_scope into evaluate_scan_readiness."
+        },
+        {
+          "gate": "policy_review_reason_code",
+          "resolved": false,
+          "note": "engine/worker/tasks.py must promote details.evaluation_status == 'requires_human_review' into provenance reason_code through a closed allowlist."
+        }
+      ]
+    },
+    {
+      "control_id": "3.2.2",
+      "candidate_file": "3.2.2_dlp_policies_teams.rego",
+      "target_policy_file": "3.2.2_dlp_policies_teams.rego",
+      "data_collector_id": "compliance.dlp_compliance_policy",
+      "requires_permissions": [
+        "Exchange.ManageAsApp"
+      ],
+      "target_automation_status": "ready",
+      "can_return_true": true,
+      "procedure_source": {
+        "path": "docs/engine/Framework/CIS_M365_Benchmarks.json",
+        "number": "3.2.2",
+        "edition_declared": "v6.0.1 – 2-26-2026",
+        "licensed_v6_0_0_confirmed": false
+      },
+      "blocking_gates": [
+        {
+          "gate": "live_tenant_validation",
+          "resolved": false,
+          "note": "Certificate-based Connect-IPPSSession has not been executed against any tenant by this build."
+        },
+        {
+          "gate": "licensed_v6_procedure",
+          "resolved": false,
+          "note": "Only the v6.0.1-declaring extract is available; the licensed v6.0.0 procedure has not been obtained."
+        },
+        {
+          "gate": "grc_rationale_review",
+          "resolved": false,
+          "note": "CC6.1-P06 and CC6.7-P20 rationale review has not been returned by a named GRC approver."
+        },
+        {
+          "gate": "worker_client_wiring",
+          "resolved": false,
+          "note": "engine/worker/tasks.py must pass compliance_certificate_alias and compliance_organization into PowerShellClient."
+        },
+        {
+          "gate": "readiness_call_site_wiring",
+          "resolved": false,
+          "note": "backend-api/app/api/v1/scans.py must pass purview_scope into evaluate_scan_readiness."
+        },
+        {
+          "gate": "policy_review_reason_code",
+          "resolved": false,
+          "note": "engine/worker/tasks.py must promote details.evaluation_status == 'requires_human_review' into provenance reason_code through a closed allowlist."
+        }
+      ]
+    },
+    {
+      "control_id": "3.3.1",
+      "candidate_file": "3.3.1_sensitivity_label_policies_published.rego",
+      "target_policy_file": "3.3.1_sensitivity_label_policies_published.rego",
+      "data_collector_id": "compliance.label_policy",
+      "requires_permissions": [
+        "Exchange.ManageAsApp"
+      ],
+      "target_automation_status": "ready",
+      "can_return_true": false,
+      "procedure_source": {
+        "path": "docs/engine/Framework/CIS_M365_Benchmarks.json",
+        "number": "3.3.1",
+        "edition_declared": "v6.0.1 – 2-26-2026",
+        "licensed_v6_0_0_confirmed": false
+      },
+      "blocking_gates": [
+        {
+          "gate": "live_tenant_validation",
+          "resolved": false,
+          "note": "Certificate-based Connect-IPPSSession has not been executed against any tenant by this build."
+        },
+        {
+          "gate": "licensed_v6_procedure",
+          "resolved": false,
+          "note": "Only the v6.0.1-declaring extract is available; the licensed v6.0.0 procedure has not been obtained."
+        },
+        {
+          "gate": "grc_rationale_review",
+          "resolved": false,
+          "note": "CC6.1-P06 and CC6.7-P20 rationale review has not been returned by a named GRC approver."
+        },
+        {
+          "gate": "worker_client_wiring",
+          "resolved": false,
+          "note": "engine/worker/tasks.py must pass compliance_certificate_alias and compliance_organization into PowerShellClient."
+        },
+        {
+          "gate": "readiness_call_site_wiring",
+          "resolved": false,
+          "note": "backend-api/app/api/v1/scans.py must pass purview_scope into evaluate_scan_readiness."
+        },
+        {
+          "gate": "policy_review_reason_code",
+          "resolved": false,
+          "note": "engine/worker/tasks.py must promote details.evaluation_status == 'requires_human_review' into provenance reason_code through a closed allowlist."
+        }
+      ]
+    }
+  ],
+  "promotion_delta": {
+    "automation_status": {
+      "ready": {
+        "before": 69,
+        "after": 72
+      },
+      "blocked": {
+        "before": 31,
+        "after": 28
+      }
+    },
+    "target_dir_rego_files": {
+      "before": 69,
+      "after": 72
+    }
+  }
+}

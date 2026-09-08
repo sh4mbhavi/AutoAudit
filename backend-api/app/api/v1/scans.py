@@ -1,22 +1,42 @@
 """Scan API endpoints."""
 
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import delete, select
+from collections import defaultdict
+from copy import deepcopy
+from datetime import datetime, timezone, timedelta
+import hashlib
+import json
+from uuid import uuid4
+
+from fastapi import (
+    APIRouter,
+    Depends,
+    Header,
+    HTTPException,
+    Query,
+    Request,
+    Response,
+    status,
+)
+from sqlalchemy import delete, select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
-from collections import defaultdict
 
 from app.core.auth import get_current_user
 from app.db.session import get_async_session
 from app.models.compliance import Scan
 from app.models.m365_connection import M365Connection
 from app.models.scan_result import ScanResult
+from app.models.scan_dispatch import ScanDispatch
+from app.core.config import get_settings
 from app.models.user import User
+from app.schemas.provenance import publishable_provenance
 from app.schemas.scan import (
+    ResultStatus,
     ScanCreate,
     ScanCreatedResponse,
     ControlCategoryBreakdown,
     ScanListItem,
+    ScanProvenanceRead,
     ScanReadinessCheck,
     ScanReadinessResponse,
     ScanRead,
@@ -24,7 +44,11 @@ from app.schemas.scan import (
     ScanSummary,
 )
 from app.services.benchmark_reader import get_file_reader
-from app.services.celery_client import queue_scan
+from app.services.crosswalk_reader import (
+    CrosswalkError,
+    CrosswalkNotFoundError,
+    get_crosswalk_reader,
+)
 from app.services.encryption import decrypt
 from app.services.scan_readiness import (
     evaluate_scan_readiness,
@@ -33,16 +57,176 @@ from app.services.scan_readiness import (
 
 router = APIRouter(prefix="/scans", tags=["Scans"])
 
+# Evidence semantics this build writes. Bumped when the shape of what a scan
+# freezes changes, so a reader never has to guess which contract a row follows.
+EVIDENCE_VERSION = "phase7-v1"
 
-@router.post("/", response_model=ScanCreatedResponse, status_code=status.HTTP_201_CREATED)
+# The largest result page a caller may request. Omitting `limit` still returns
+# every result, so no existing caller is silently truncated; a caller that asks
+# for a page gets a bounded one and X-Total-Count to page with.
+MAX_RESULT_PAGE = 500
+
+
+def _projected_results(results) -> list[ScanResultRead]:
+    """Serialise result rows with provenance reduced to the published allowlist.
+
+    Phase 9: the same rule the SOC 2 projection has always applied. It is also
+    the single largest saving on the polled path -- policy_source alone is about
+    180 KB across a 69-control scan and was re-sent on every poll.
+    """
+    projected = []
+    for result in results:
+        row = ScanResultRead.model_validate(result)
+        projected.append(
+            row.model_copy(
+                update={"provenance": publishable_provenance(row.provenance)}
+            )
+        )
+    return projected
+
+
+def _summary_etag(scan: Scan) -> str:
+    """A cheap, correct validator for a scan summary.
+
+    Every field the summary reports is derived from the scan row, and the worker
+    bumps last_progress_at inside the same transaction as every accepted result
+    write (engine/worker/db.py update_scan_result), so this pair changes exactly
+    when the summary would. It reads nothing extra: the scan row is already
+    loaded, so a conditional poll costs one query instead of two.
+    """
+    # Derived from the response model rather than a hand-maintained list, so a
+    # field added to ScanSummary is covered by the validator without anyone
+    # having to remember. A hand-written list had already fallen behind: it
+    # omitted dispatch_count and deadline_at, both of which the summary reports
+    # and the dispatcher moves independently of any result write, so the
+    # endpoint answered 304 while the body it would have sent had changed.
+    #
+    # `categories` is excluded because it is not a scan-row field: it is derived
+    # from result statuses, and every result write bumps last_progress_at, which
+    # IS in the digest.
+    parts = tuple(
+        (name, getattr(scan, name, None))
+        for name in ScanSummary.model_fields
+        if name != "categories"
+    )
+    digest = hashlib.sha256(
+        "|".join(
+            f"{name}={'' if value is None else value}" for name, value in parts
+        ).encode()
+    ).hexdigest()
+    return f'W/"{digest}"'
+
+
+def _matches(if_none_match: str | None, etag: str) -> bool:
+    """RFC 9110 If-None-Match: a comma-separated list, or `*`, weak comparison."""
+    if not if_none_match:
+        return False
+    candidates = [value.strip() for value in if_none_match.split(",")]
+    if "*" in candidates:
+        return True
+    return any(
+        candidate.removeprefix("W/") == etag.removeprefix("W/")
+        for candidate in candidates
+        if candidate
+    )
+
+
+def _resolve_mapping_pin(
+    framework: str, benchmark: str, version: str
+) -> dict[str, object]:
+    """Freeze the SOC 2 crosswalk and policy corpus identity for a new scan.
+
+    Returns the six Phase 7 scan columns. They are written in the creating
+    INSERT and never updated: the Phase 3 scan-input trigger now covers them, so
+    an UPDATE raises rather than quietly rewriting an audit input.
+
+    Three outcomes, all deliberate:
+
+    * No mapping corpus is mounted - SOC 2 projection is not deployed here. The
+      mapping columns stay null and the scan proceeds. This is a configuration
+      state, not corruption.
+    * A mapping is mounted but does not cover this benchmark - the columns stay
+      null. A scan of another benchmark is still a valid scan; it simply has no
+      SOC 2 projection, and stretching this mapping over it would be inventing
+      an authority nobody granted.
+    * A mapping is mounted, covers this benchmark, but is unreadable or invalid
+      - refuse the scan. Creating a scan that silently loses its pin would
+      produce evidence nobody can reproduce later.
+
+    ``policy_corpus_digest`` is recorded regardless of the mapping, because it
+    describes what the scan evaluates rather than how it is projected.
+    """
+    reader = get_crosswalk_reader()
+    # ``mapping_snapshot`` is deliberately absent rather than None: a JSONB column
+    # assigned Python None stores the JSON literal ``null``, which is not SQL NULL
+    # and would make an unpinned scan look pinned to any query that tests the
+    # column for NULL. Leaving the key out lets the column default to SQL NULL.
+    pin: dict[str, object] = {
+        "mapping_id": None,
+        "mapping_version": None,
+        "mapping_digest": None,
+        "policy_corpus_digest": None,
+        "evidence_version": EVIDENCE_VERSION,
+    }
+    try:
+        pin["policy_corpus_digest"] = reader.policy_corpus_digest(
+            framework, benchmark, version
+        )
+    except CrosswalkNotFoundError:
+        # Policies are not on this filesystem (a mocked or metadata-only
+        # deployment). Recording null is honest; guessing a digest is not.
+        pin["policy_corpus_digest"] = None
+    except CrosswalkError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "code": "policy_corpus_unreadable",
+                "message": "Benchmark policies could not be digested for this scan.",
+            },
+        ) from error
+
+    if not reader.mappings_available():
+        return pin
+    try:
+        mapping = reader.load_configured_mapping()
+    except CrosswalkNotFoundError:
+        # The configured mapping is absent from a mounted corpus. Other mappings
+        # may exist; this scan simply has no projection under this configuration.
+        return pin
+    except CrosswalkError as error:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail={
+                "code": "soc2_mapping_unavailable",
+                "message": "The SOC 2 crosswalk mapping could not be read.",
+            },
+        ) from error
+
+    if not mapping.applies_to(framework, benchmark, version):
+        return pin
+    pin.update(
+        mapping_id=mapping.mapping_id,
+        mapping_version=mapping.mapping_version,
+        mapping_digest=mapping.digest,
+        # Copied so the pin can never be mutated through the ORM, and so it is
+        # independent of the file on disk from here on.
+        mapping_snapshot=deepcopy(mapping.document),
+    )
+    return pin
+
+
+@router.post(
+    "/", response_model=ScanCreatedResponse, status_code=status.HTTP_201_CREATED
+)
 async def create_scan(
     scan_data: ScanCreate,
+    request: Request,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_session),
 ) -> ScanCreatedResponse:
     """Create a new compliance scan.
 
-    Creates a scan record with all ScanResult records and queues a Celery task.
+    Commits the scan, all results, and a durable dispatch intent atomically.
     The scan runs asynchronously - poll GET /scans/{id} for status.
     """
     # Verify the connection exists and belongs to the user
@@ -50,7 +234,7 @@ async def create_scan(
         select(M365Connection).where(
             M365Connection.id == scan_data.m365_connection_id,
             M365Connection.user_id == current_user.id,
-            M365Connection.is_active == True,
+            M365Connection.is_active.is_(True),
         )
     )
     connection = result.scalar_one_or_none()
@@ -63,9 +247,12 @@ async def create_scan(
     # Load benchmark metadata to get all controls
     file_reader = get_file_reader()
     try:
-        all_controls = file_reader.list_controls(
-            scan_data.framework, scan_data.benchmark, scan_data.version
+        metadata = deepcopy(
+            file_reader.get_benchmark_metadata(
+                scan_data.framework, scan_data.benchmark, scan_data.version
+            )
         )
+        all_controls = metadata.get("controls", [])
     except FileNotFoundError:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -73,16 +260,46 @@ async def create_scan(
         )
 
     # Validate platform matches (benchmark must be for m365)
-    metadata = file_reader.get_benchmark_metadata(
-        scan_data.framework, scan_data.benchmark, scan_data.version
-    )
     if metadata.get("platform", "").lower() != "m365":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=f"Benchmark platform '{metadata.get('platform')}' does not match M365 connection",
         )
 
-    # Create scan record
+    available_ids = {control["control_id"] for control in all_controls}
+    if not available_ids or scan_data.control_ids == []:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "empty_selection",
+                "message": "Select at least one control from a non-empty benchmark.",
+            },
+        )
+    selected_ids = (
+        available_ids if scan_data.control_ids is None else set(scan_data.control_ids)
+    )
+    unknown_ids = sorted(selected_ids - available_ids)
+    if unknown_ids:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "code": "unknown_control_ids",
+                "unknown_control_ids": unknown_ids,
+                "message": "Some selected controls do not exist in this benchmark.",
+            },
+        )
+    metadata_digest = hashlib.sha256(
+        json.dumps(
+            metadata, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+        ).encode("utf-8")
+    ).hexdigest()
+    # Frozen in the same INSERT as the metadata snapshot below. These columns are
+    # immutable afterwards, so there is no later opportunity to fill them in.
+    mapping_pin = _resolve_mapping_pin(
+        scan_data.framework, scan_data.benchmark, scan_data.version
+    )
+
+    # Create scan record only after validating the complete selection.
     scan = Scan(
         user_id=current_user.id,
         m365_connection_id=scan_data.m365_connection_id,
@@ -91,15 +308,38 @@ async def create_scan(
         version=scan_data.version,
         status="pending",
         total_controls=len(all_controls),
+        selected_count=len(selected_ids),
+        semantics_version="phase3-v1",
+        metadata_snapshot=metadata,
+        metadata_digest=metadata_digest,
+        correlation_id=getattr(request.state, "request_id", str(uuid4())),
+        dispatch_id=str(uuid4()),
+        dispatch_count=0,
+        last_progress_at=datetime.now(timezone.utc).replace(tzinfo=None),
+        deadline_at=datetime.now(timezone.utc).replace(tzinfo=None)
+        + timedelta(seconds=get_settings().SCAN_DEADLINE_SECONDS),
+        lifecycle_version="phase6-v1",
+        connection_snapshot={
+            key: getattr(connection, key, None)
+            for key in (
+                "tenant_id",
+                "client_id",
+                "sharepoint_admin_url",
+                "sharepoint_tenant_id",
+                "sharepoint_certificate_alias",
+                "compliance_certificate_alias",
+                "compliance_organization",
+            )
+        },
+        **mapping_pin,
     )
     db.add(scan)
     await db.flush()  # Get scan.id
 
     # Create ScanResult records for ALL controls
-    selected_ids = set(scan_data.control_ids) if scan_data.control_ids else None
     skipped = 0
     for control in all_controls:
-        is_selected = selected_ids is None or control["control_id"] in selected_ids
+        is_selected = control["control_id"] in selected_ids
         result_status = "pending" if is_selected else "skipped"
         if result_status == "skipped":
             skipped += 1
@@ -107,20 +347,52 @@ async def create_scan(
             scan_id=scan.id,
             control_id=control["control_id"],
             status=result_status,
+            selected=is_selected,
+            reason_code=None if is_selected else "unselected",
+            provenance=(
+                None
+                if is_selected
+                else {
+                    "schema_version": 1,
+                    "framework": scan.framework,
+                    "benchmark": scan.benchmark,
+                    "benchmark_version": scan.version,
+                    "metadata_digest": metadata_digest,
+                    "correlation_id": scan.correlation_id,
+                    "control_id": control["control_id"],
+                    "collector_id": control.get("data_collector_id"),
+                    "policy_file": control.get("policy_file"),
+                    "policy_digest": None,
+                    "policy_source": None,
+                    "engine_git_sha": None,
+                    "engine_image_digest": None,
+                    "input_digest": None,
+                    "evaluation_started_at": None,
+                    "opa_version": None,
+                    "collection_started_at": None,
+                    "collection_completed_at": None,
+                    "evaluated_at": None,
+                    "recorded_at": datetime.now(timezone.utc).isoformat(),
+                    "provenance_status": "not_executed",
+                    "reason_code": "unselected",
+                }
+            ),
         )
         db.add(scan_result)
 
     scan.skipped_count = skipped
+    db.add(
+        ScanDispatch(
+            id=scan.dispatch_id, scan_id=scan.id, task_name="worker.tasks.run_scan"
+        )
+    )
     await db.commit()
     await db.refresh(scan)
-
-    # Queue Celery task
-    task = queue_scan(scan.id)
 
     return ScanCreatedResponse(
         id=scan.id,
         status="pending",
-        message=f"Scan queued successfully. Task ID: {task.id}",
+        message="Scan accepted for durable dispatch.",
     )
 
 
@@ -142,6 +414,7 @@ async def list_scans(
     )
     return list(result.scalars().all())
 
+
 # Get scan readiness status for a given M365 connection and benchmark. This is used by the frontend before starting a scan to validate the connection and provide feedback on any issues that might cause the scan to fail or have incomplete results.
 @router.get("/readiness", response_model=ScanReadinessResponse)
 async def get_scan_readiness(
@@ -158,7 +431,7 @@ async def get_scan_readiness(
         select(M365Connection).where(
             M365Connection.id == m365_connection_id,
             M365Connection.user_id == current_user.id,
-            M365Connection.is_active == True,
+            M365Connection.is_active.is_(True),
         )
     )
     connection = result.scalar_one_or_none()
@@ -218,8 +491,14 @@ async def get_scan(
     scan_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_session),
-) -> Scan:
-    """Get scan details by ID including results."""
+) -> ScanRead:
+    """Get scan details by ID including results.
+
+    Each embedded result's provenance is reduced to the published allowlist, the
+    same rule the SOC 2 projection applies. This response is no longer the
+    progress-poll target -- GET /{scan_id}/summary is -- but it is still the
+    largest scan response and had no reason to carry the Rego source text.
+    """
     result = await db.execute(
         select(Scan)
         .options(selectinload(Scan.results), selectinload(Scan.m365_connection))
@@ -231,15 +510,112 @@ async def get_scan(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Scan {scan_id} not found",
         )
-    return scan
+    detail = ScanRead.model_validate(scan)
+    return detail.model_copy(update={"results": _projected_results(scan.results or [])})
 
-@router.get("/{scan_id}/summary", response_model=ScanSummary)
-async def get_scan_summary(
+
+@router.get("/{scan_id}/provenance", response_model=ScanProvenanceRead)
+async def get_scan_provenance(
     scan_id: int,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_session),
+) -> ScanProvenanceRead:
+    """Everything frozen at creation, without the two large snapshots.
+
+    The snapshots themselves are megabyte-scale and are deliberately not part of
+    any list or detail response; this endpoint reports their digests, their
+    presence and their shape instead. The SOC 2 report renders the pinned
+    mapping; the pinned metadata is already reflected in the result rows.
+    """
+    result = await db.execute(
+        select(Scan).where(Scan.id == scan_id, Scan.user_id == current_user.id)
+    )
+    scan = result.scalar_one_or_none()
+    if not scan:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Scan {scan_id} not found",
+        )
+
+    # Snapshots are JSONB columns frozen at creation. Shape is checked rather
+    # than assumed so a malformed or legacy row degrades instead of raising.
+    def _mapping_of(value):
+        return value if isinstance(value, dict) else {}
+
+    snapshot = _mapping_of(scan.metadata_snapshot)
+    mapping = _mapping_of(scan.mapping_snapshot)
+    approval = _mapping_of(mapping.get("approval"))
+    connection = _mapping_of(scan.connection_snapshot)
+    controls = snapshot.get("controls")
+    points = mapping.get("points_of_focus")
+    return ScanProvenanceRead(
+        scan_id=scan.id,
+        status=scan.status,
+        framework=scan.framework,
+        benchmark=scan.benchmark,
+        version=scan.version,
+        started_at=scan.started_at,
+        finished_at=scan.finished_at,
+        semantics_version=scan.semantics_version,
+        lifecycle_version=scan.lifecycle_version,
+        evidence_version=scan.evidence_version,
+        correlation_id=scan.correlation_id,
+        dispatch_id=scan.dispatch_id,
+        selected_count=scan.selected_count,
+        total_controls=scan.total_controls,
+        metadata_digest=scan.metadata_digest,
+        metadata_snapshot_present=scan.metadata_snapshot is not None,
+        metadata_control_count=len(controls) if isinstance(controls, list) else 0,
+        policy_corpus_digest=scan.policy_corpus_digest,
+        connection_snapshot_present=scan.connection_snapshot is not None,
+        # Field names only. No tenant, client or SharePoint value is returned.
+        connection_snapshot_fields=sorted(
+            key for key, value in connection.items() if value is not None
+        ),
+        mapping_id=scan.mapping_id,
+        mapping_version=scan.mapping_version,
+        mapping_digest=scan.mapping_digest,
+        mapping_snapshot_present=scan.mapping_snapshot is not None,
+        mapping_status=(
+            mapping.get("status") if isinstance(mapping.get("status"), str) else None
+        ),
+        # Identity, not truthiness: a truthy string never reads as approved.
+        mapping_approved=approval.get("approved") is True,
+        mapping_points_of_focus_count=len(points) if isinstance(points, list) else 0,
+        soc2_projection_available=bool(isinstance(points, list) and points),
+    )
+
+
+@router.get(
+    "/{scan_id}/summary",
+    response_model=ScanSummary,
+    responses={
+        200: {
+            "description": "The scan summary, with a weak ETag validator.",
+            "headers": {
+                "ETag": {
+                    "description": "Weak validator to echo back as If-None-Match.",
+                    "schema": {"type": "string"},
+                }
+            },
+        },
+        304: {"description": "Unchanged since the supplied If-None-Match."},
+    },
+)
+async def get_scan_summary(
+    scan_id: int,
+    response: Response,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_session),
+    if_none_match: str | None = Header(default=None),
 ) -> ScanSummary:
-    """Get a lightweight  summary for a scan."""
+    """Get a lightweight summary for a scan.
+
+    Conditional: the response carries a weak ETag derived from the scan row, and
+    a matching If-None-Match answers 304 without running the per-control query or
+    serialising a body. This is the endpoint a running scan is polled on, so the
+    quiet case between two result writes costs one query and no body at all.
+    """
     result = await db.execute(
         select(Scan).where(
             Scan.id == scan_id,
@@ -253,6 +629,17 @@ async def get_scan_summary(
             detail=f"Scan {scan_id} not found",
         )
 
+    etag = _summary_etag(scan)
+    response.headers["ETag"] = etag
+    response.headers["Cache-Control"] = "no-cache, private"
+    if _matches(if_none_match, etag):
+        # Deliberately raised rather than returned: the declared response_model
+        # would otherwise try to validate a body this response must not have.
+        raise HTTPException(
+            status_code=status.HTTP_304_NOT_MODIFIED,
+            headers={"ETag": etag, "Cache-Control": "no-cache, private"},
+        )
+
     results = await db.execute(
         select(ScanResult.control_id, ScanResult.status).where(
             ScanResult.scan_id == scan_id
@@ -261,13 +648,20 @@ async def get_scan_summary(
     rows = results.all()
 
     buckets: dict[str, dict[str, int]] = defaultdict(
-        lambda: {"total": 0, "passed": 0, "failed": 0, "skipped": 0, "error": 0}
+        lambda: {
+            "total": 0,
+            "pending": 0,
+            "passed": 0,
+            "failed": 0,
+            "skipped": 0,
+            "error": 0,
+            "indeterminate": 0,
+            "not_assessable": 0,
+        }
     )
     for control_id, status_ in rows:
         prefix = (
-            control_id.split(".")[0]
-            if "." in control_id
-            else control_id.split("-")[0]
+            control_id.split(".")[0] if "." in control_id else control_id.split("-")[0]
         )
         buckets[prefix]["total"] += 1
         if status_ in buckets[prefix]:
@@ -292,19 +686,61 @@ async def get_scan_summary(
         failed_count=scan.failed_count,
         skipped_count=scan.skipped_count,
         error_count=scan.error_count,
+        pending_count=scan.pending_count,
+        indeterminate_count=scan.indeterminate_count,
+        not_assessable_count=scan.not_assessable_count,
+        selected_count=scan.selected_count,
+        coverage_score=scan.coverage_score,
+        semantics_version=scan.semantics_version,
+        metadata_digest=scan.metadata_digest,
+        correlation_id=scan.correlation_id,
+        dispatch_id=getattr(scan, "dispatch_id", None),
+        dispatch_count=getattr(scan, "dispatch_count", 0),
+        last_progress_at=getattr(scan, "last_progress_at", None),
+        deadline_at=getattr(scan, "deadline_at", None),
+        lifecycle_version=getattr(scan, "lifecycle_version", None),
+        mapping_id=getattr(scan, "mapping_id", None),
+        mapping_version=getattr(scan, "mapping_version", None),
+        mapping_digest=getattr(scan, "mapping_digest", None),
+        policy_corpus_digest=getattr(scan, "policy_corpus_digest", None),
+        evidence_version=getattr(scan, "evidence_version", None),
         categories=categories,
     )
 
-@router.get("/{scan_id}/results", response_model=list[ScanResultRead])
+
+@router.get(
+    "/{scan_id}/results",
+    response_model=list[ScanResultRead],
+    responses={
+        200: {
+            "description": "Scan results; a bounded page when `limit` is given.",
+            "headers": {
+                "X-Total-Count": {
+                    "description": "Total matching results; sent only when `limit` is given.",
+                    "schema": {"type": "integer"},
+                }
+            },
+        }
+    },
+)
 async def get_scan_results(
     scan_id: int,
+    response: Response,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_session),
-    status_filter: str | None = None,
-) -> list[ScanResult]:
+    status_filter: ResultStatus | None = None,
+    limit: int | None = Query(default=None, ge=1, le=MAX_RESULT_PAGE),
+    offset: int = Query(default=0, ge=0),
+) -> list[ScanResultRead]:
     """Get results for a scan.
 
-    Optionally filter by status (pending, passed, failed, error, skipped).
+    Optionally filter by any pending or terminal result status.
+
+    Phase 9 adds an OPTIONAL page. Omitting `limit` returns every result exactly
+    as before, so no existing caller is silently truncated; supplying it returns
+    a bounded page and `X-Total-Count`, so a caller that pages can tell a short
+    page from the end of the population. Each row's provenance is reduced to the
+    published allowlist, which is what the SOC 2 projection has always applied.
     """
     # Verify scan exists and user has access
     scan_result = await db.execute(
@@ -323,8 +759,109 @@ async def get_scan_results(
         query = query.where(ScanResult.status == status_filter)
     query = query.order_by(ScanResult.control_id)
 
+    if limit is not None:
+        total = await db.execute(select(func.count()).select_from(query.subquery()))
+        response.headers["X-Total-Count"] = str(total.scalar_one())
+        query = query.offset(offset).limit(limit)
+
     results = await db.execute(query)
-    return list(results.scalars().all())
+    return _projected_results(results.scalars().all())
+
+
+@router.post("/{scan_id}/cancel", response_model=ScanCreatedResponse)
+async def cancel_scan(
+    scan_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_session),
+) -> ScanCreatedResponse:
+    """Serialize cancellation against every worker terminal write."""
+    result = await db.execute(
+        select(Scan)
+        .where(Scan.id == scan_id, Scan.user_id == current_user.id)
+        .with_for_update()
+    )
+    scan = result.scalar_one_or_none()
+    if not scan:
+        raise HTTPException(status_code=404, detail=f"Scan {scan_id} not found")
+    if scan.status in {"completed", "failed", "cancelled"}:
+        return ScanCreatedResponse(
+            id=scan_id, status=scan.status, message="Scan is already terminal."
+        )
+    pending = await db.execute(
+        select(ScanResult).where(
+            ScanResult.scan_id == scan_id, ScanResult.status == "pending"
+        )
+    )
+    metadata = {
+        control["control_id"]: control
+        for control in (scan.metadata_snapshot or {}).get("controls", [])
+    }
+    for row in pending.scalars():
+        control = metadata.get(row.control_id, {})
+        row.status = "indeterminate"
+        row.reason_code = "scan_cancelled"
+        row.message = "Scan cancelled before assessment completed."
+        row.provenance = {
+            "schema_version": 1,
+            "framework": scan.framework,
+            "benchmark": scan.benchmark,
+            "benchmark_version": scan.version,
+            "control_id": row.control_id,
+            "collector_id": control.get("data_collector_id"),
+            "policy_file": control.get("policy_file"),
+            "metadata_digest": scan.metadata_digest,
+            "correlation_id": scan.correlation_id,
+            "provenance_status": "not_executed",
+            "reason_code": "scan_cancelled",
+            "recorded_at": datetime.now(timezone.utc).isoformat(),
+            **{
+                key: None
+                for key in (
+                    "policy_digest",
+                    "policy_source",
+                    "engine_git_sha",
+                    "engine_image_digest",
+                    "input_digest",
+                    "evaluation_started_at",
+                    "opa_version",
+                    "collection_started_at",
+                    "collection_completed_at",
+                    "evaluated_at",
+                )
+            },
+        }
+    await db.flush()
+    rows = await db.execute(
+        select(ScanResult.status, func.count())
+        .where(ScanResult.scan_id == scan_id)
+        .group_by(ScanResult.status)
+    )
+    counts = dict(rows.all())
+    for state in (
+        "passed",
+        "failed",
+        "indeterminate",
+        "error",
+        "skipped",
+        "not_assessable",
+    ):
+        setattr(scan, state + "_count", counts.get(state, 0))
+    assessed = scan.passed_count + scan.failed_count
+    scan.compliance_score = (
+        round(100 * scan.passed_count / assessed, 2) if assessed else None
+    )
+    scan.coverage_score = (
+        round(100 * assessed / scan.selected_count, 2) if scan.selected_count else None
+    )
+    scan.status = "cancelled"
+    scan.finished_at = scan.last_progress_at = datetime.now(timezone.utc).replace(
+        tzinfo=None
+    )
+    await db.execute(delete(ScanDispatch).where(ScanDispatch.scan_id == scan_id))
+    await db.commit()
+    return ScanCreatedResponse(
+        id=scan_id, status="cancelled", message="Scan cancelled."
+    )
 
 
 @router.delete("/{scan_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -335,7 +872,9 @@ async def delete_scan(
 ) -> None:
     """Delete a scan (hard delete) and its results."""
     result = await db.execute(
-        select(Scan).where(Scan.id == scan_id, Scan.user_id == current_user.id)
+        select(Scan)
+        .where(Scan.id == scan_id, Scan.user_id == current_user.id)
+        .with_for_update()
     )
     scan = result.scalar_one_or_none()
     if not scan:
@@ -345,6 +884,7 @@ async def delete_scan(
         )
 
     # Delete dependent results first (FK is not ON DELETE CASCADE).
+    await db.execute(delete(ScanDispatch).where(ScanDispatch.scan_id == scan_id))
     await db.execute(delete(ScanResult).where(ScanResult.scan_id == scan_id))
     await db.delete(scan)
     await db.commit()

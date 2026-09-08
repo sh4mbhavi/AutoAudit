@@ -3,21 +3,6 @@
 This directory contains collectors that have been implemented but cannot currently
 be used due to authentication or API limitations.
 
-## Compliance Collectors
-
-**Issue:** Security & Compliance PowerShell (IPPSSession) does not support client
-secret authentication for app-only access.
-
-**Reference:** https://learn.microsoft.com/en-us/powershell/exchange/connect-to-scc-powershell
-
-| Collector | CIS Controls | Required Cmdlet |
-|-----------|--------------|-----------------|
-| `dlp_compliance_policy` | 3.2.1, 3.2.2 | Get-DlpCompliancePolicy |
-| `label_policy` | 3.3.1 | Get-LabelPolicy |
-
-**To Enable:** Implement certificate-based authentication in `PowerShellClient`,
-then move these collectors back to `collectors/compliance/` and register them.
-
 ## Teams Collectors
 
 **Issue:** MicrosoftTeams PowerShell module's `-AccessTokens` parameter returns

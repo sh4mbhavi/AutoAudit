@@ -1,0 +1,13 @@
+
+> autoaudit-dashboard@0.1.0 lint
+> oxlint
+
+src/pages/Evidence.tsx:13:34: warning eslint(no-unused-vars): Identifier 'getEvidenceReportUrl' is imported but never used. help: Consider removing this import.
+src/pages/Evidence.tsx:121:10: warning eslint(no-unused-vars): Variable 'apiBase' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/pages/Evidence.tsx:121:19: warning eslint(no-unused-vars): Variable 'setApiBase' is declared but never used. Unused variables should start with a '_'. help: Consider removing this declaration.
+src/utils/api.ts:50:12: warning eslint(no-unused-vars): Catch parameter 'err' is caught but never used. help: Consider handling this error.
+src/utils/api.ts:54:14: warning eslint(no-unused-vars): Catch parameter '_' is caught but never used. help: Consider handling this error.
+src/api/client.ts:135:5: warning unicorn(no-useless-fallback-in-spread): Empty fallbacks in spreads are unnecessary help: Spreading falsy values in object literals won't add any unexpected properties, so it's unnecessary to add an empty object as fallback.
+src/pages/SettingsPage.tsx:66:12: warning eslint(no-unused-vars): Function 'handleReset' is declared but never used. help: Consider removing this declaration.
+src/pages/Auth/components/SignupFormPanel.test.tsx:3:19: warning eslint(no-unused-vars): Identifier 'fireEvent' is imported but never used. help: Consider removing this import.
+src/components/Dropdown.tsx:21:3: warning eslint(no-unused-vars): Parameter 'isDarkMode' is declared but never used. Unused parameters should start with a '_'. help: Consider removing this parameter.

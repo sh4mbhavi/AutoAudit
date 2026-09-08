@@ -1,0 +1,469 @@
+{
+  "description": "Phase4 differences from preserved Phase3 working tree; excludes this self-referential manifest.",
+  "files": {
+    ".github/CODEOWNERS": {
+      "phase3_sha256": "5898ae9002004c5450f4724095841d5a6768acb0015e7dab7db6e3d55b74b659",
+      "phase4_sha256": "4ec5c882d2f07577be7ade4f03c8e2c0905250d16d23f3853e3828d6eb9d0d47"
+    },
+    ".github/dependabot.yml": {
+      "phase3_sha256": "44449491faf2a9f7384bf334bedd6282a046ba427a347481fef807d5beff47fe",
+      "phase4_sha256": "ad20797d6584a17d6dac6737e339851cd00c2d39c152ee0f375e721de7cc9e39"
+    },
+    ".github/workflows/ci.backend-api.yml": {
+      "phase3_sha256": "d71fc841f2a8d55fbe9783eb887a435e79da4ee4de44968f7765696eb563626e",
+      "phase4_sha256": "7538de19648f5b8973d500d3c099375e4dc0cd9814f3c4a137720bb83a4e921e"
+    },
+    ".github/workflows/ci.engine.yml": {
+      "phase3_sha256": "345a673e7b78932bc699f1913aa34cd6dd61ec15dff5a275979c6455a6ce4869",
+      "phase4_sha256": "64bf9f41d6557b221071b399fff1c3e86cb76b0ea3f4f6e3ede1d1b30ae8f2d7"
+    },
+    ".github/workflows/ci.frontend.yml": {
+      "phase3_sha256": "2d77bcd4bd90f4da2db6091dfae677faad254c4c065153bb6688982f00761824",
+      "phase4_sha256": "e63f5b605e6efa28ce06616c6bec80f67b8b60118159ad2b28ef941c718b1049"
+    },
+    ".github/workflows/ci.grype.yml": {
+      "phase3_sha256": "94befbe8d900bc20e6b91ebd00723e614aef19c02f72d124fe81ea38980c231b",
+      "phase4_sha256": "455f7c0b49462cd4eafa03134e52061ae9fcc59410167ed179846ef06827b791"
+    },
+    ".github/workflows/ci.opa-eval.yml": {
+      "phase3_sha256": "2bca3dd0c04885bc53d09cefc34a78a263849e86d7683b2e826123fce3bb179e",
+      "phase4_sha256": "7198e20c62b5e7e7458e36a464911699f67e7dabf2ecf2a29144a8493ace7eb4"
+    },
+    ".github/workflows/ci.runtime.yml": {
+      "phase3_sha256": null,
+      "phase4_sha256": "14d2b5322c829bdfe0c63c1b4eb4bc24d622128f8f9401ca37326bf6df62e145"
+    },
+    ".nvmrc": {
+      "phase3_sha256": null,
+      "phase4_sha256": "68ca3fba3b7e864770cb61aeb306d4bd4354b68ab4dd38450860c5d823e42a53"
+    },
+    ".secrets.baseline": {
+      "phase3_sha256": "da3b0946108c3072bb39cb0b95e648b9c4599cdbc5660787fa416f310a29d0f4",
+      "phase4_sha256": "8b32afb499d6cb21d725a8899e771bfeb8b8f1b23158622772dc14c1694e01c2"
+    },
+    "backend-api/.python-version": {
+      "phase3_sha256": "7a41a41354ab8049091ef1a00253ca00567f5a1d3f9aef5502c0b4b5ce9ae707",
+      "phase4_sha256": "49a506dd32096b010d75205acf3430c9ae6c40351888129499e5a5e487126c93"
+    },
+    "backend-api/pyproject.toml": {
+      "phase3_sha256": "3276eb4c70c13244a25536bcf0b56ec6f2db7aaefc5b3b0b93cccafff3397ea1",
+      "phase4_sha256": "406eddf98036a19e5a11b6f4a851235a361c1047fd1d059e508d089554e8ee72"
+    },
+    "backend-api/tests/conftest.py": {
+      "phase3_sha256": null,
+      "phase4_sha256": "12534b270b548614c389648d9294bcce7b54a2b555d568f98f02eebee9a62b55"
+    },
+    "backend-api/tests/test_manual_verification.py": {
+      "phase3_sha256": "d550a3ffa60078313536d1a4c5f98c8bf0f655f4b892fe7bbc2209586dedd359",
+      "phase4_sha256": "8ffac000e75bf6173c782eb2a3e74cc9876713c4c5f46cc496313773fb84753e"
+    },
+    "backend-api/tests/test_migrations.py": {
+      "phase3_sha256": "be4279b1584842c8a1ed8ed5aa810201402c2e8b9f76a14a037abbbe0214d5bd",
+      "phase4_sha256": "074daf0e8e67ad0887f7534783a35e1cc374ef35c01cb2109cff1dca95ee7f70"
+    },
+    "backend-api/tests/test_phase1_security.py": {
+      "phase3_sha256": "9d32a64f8145d32b658683f2e698871270d5d75f646e0491be84c0f330d90b4b",
+      "phase4_sha256": "ef905c229c226d97aad3d2ee7048cd329a1dca481b59720f511ceac2de41aafa"
+    },
+    "backend-api/tests/test_phase3_migrations.py": {
+      "phase3_sha256": "94afafaf292b07ab119caa087313fdda1e050368f7fa87ad2000c75af585eee2",
+      "phase4_sha256": "a9ced523c1f146702ffdf8273680f75a108cf1d6c7cafb52cd4dc45ae0d661cf"
+    },
+    "backend-api/tests/test_phase4_startup.py": {
+      "phase3_sha256": null,
+      "phase4_sha256": "08bcfdcb9a8a8fd227153672e8aa0c4063b11fe8d8a8a50894fd305b7dba792a"
+    },
+    "backend-api/tests/test_phase4_worker_contract.py": {
+      "phase3_sha256": null,
+      "phase4_sha256": "39e795744a6a7ee03b35254303b401c11c1d2696c86fe0f315aa96da424b6a19"
+    },
+    "backend-api/uv.lock": {
+      "phase3_sha256": "f400916af40f0e1b02c3113b63fdbd0ab6c116c9eb8f71b767f75d2b8189fa5c",
+      "phase4_sha256": "86b9eb1f077d55a34788d780f8b06cd4c4304ae75cb1b3c1637e410236b952fa"
+    },
+    "docs/compliance/phase-4/README.md": {
+      "phase3_sha256": null,
+      "phase4_sha256": "45925304903700a3e7ce2ac36a0124986a8a049af70226606cac149e2446242f"
+    },
+    "docs/compliance/phase-4/branch-protection-proposal.json": {
+      "phase3_sha256": null,
+      "phase4_sha256": "6cf9a0508c69fdc3e0ae48058d5d4407c53749923578fbb6b4433b3c7ba75167"
+    },
+    "docs/compliance/phase-4/change-control.md": {
+      "phase3_sha256": null,
+      "phase4_sha256": "45d244a17dda963ae24294a960c4658d476e18a2d8385b9032bc70a61e150840"
+    },
+    "docs/compliance/phase-4/collector-coverage.md": {
+      "phase3_sha256": null,
+      "phase4_sha256": "3a2061d3bd8933bb65afa01fa39629f8e012caef7697675f15337b0f9fffb53c"
+    },
+    "docs/compliance/phase-4/coordination-snapshot.json": {
+      "phase3_sha256": null,
+      "phase4_sha256": "f58b5b0fefbf93d3cde20670848db9c4fccf0b42efa30bd603723b619dcc45bb"
+    },
+    "docs/compliance/phase-4/phase-3-snapshot.json": {
+      "phase3_sha256": null,
+      "phase4_sha256": "eee1190bd001a976a19c842b5786008a5fa4b36e37fcf181a3a530f6f8805ab1"
+    },
+    "docs/compliance/phase-4/policy-coverage.md": {
+      "phase3_sha256": null,
+      "phase4_sha256": "4588cbfb1844137a1ed839941f546efcf845118a3383864faf46651e9a155a38"
+    },
+    "docs/compliance/phase-4/verification.json": {
+      "phase3_sha256": null,
+      "phase4_sha256": "d2cec1d945ae2a96742c750ee64fd201b2489daa8e8a27c83ab15846387aff5d"
+    },
+    "engine/.python-version": {
+      "phase3_sha256": null,
+      "phase4_sha256": "49a506dd32096b010d75205acf3430c9ae6c40351888129499e5a5e487126c93"
+    },
+    "engine/Dockerfile": {
+      "phase3_sha256": "2429f7b7f72b6e2508feedb80fef952a5f90d372a2e38f47d5d6298e0c24631e",
+      "phase4_sha256": "06ae077dc16233c5d7fced7573e34b0442072a0e05238645a6f89b1c0da193b5"
+    },
+    "engine/collectors/entra/authentication/authentication_methods.py": {
+      "phase3_sha256": "8e351be0577f833f75f9fccd5077e47691668828af3b34537605b47262fa81c6",
+      "phase4_sha256": "00665819aff25fdc688af37d0d9d5235c154e1da4f92897a88120f32dbb7a70b"
+    },
+    "engine/collectors/entra/authentication/mfa_fatigue_protection.py": {
+      "phase3_sha256": "a6748b026b051663474a6361583136840fd858a9b4f36324663734472c2adad2",
+      "phase4_sha256": "5bc263e6aed260f6b7479d2dc7137911379088ec2b03435bc961ae167300420d"
+    },
+    "engine/collectors/entra/authentication/mfa_registration_report.py": {
+      "phase3_sha256": "a3bf4bd7006bea2a7fd6be019b107b7faa392edcc6f142650f5187f571a4eb56",
+      "phase4_sha256": "defda96134574c19d7545a521fe32d1f4592451f171026cec7d05449a7f69418"
+    },
+    "engine/collectors/entra/authentication/password_protection.py": {
+      "phase3_sha256": "cc9a70af377921a91de4e58cd8b7c18ca53074058453fe550286a932f087b6ad",
+      "phase4_sha256": "5fd74a3c30009c39c8f99593be330b556aa2f6c13de362ca5c6637a637b78232"
+    },
+    "engine/collectors/entra/conditional_access/legacy_auth_block.py": {
+      "phase3_sha256": "57b4cc0e07e24af4bc4173cf596d61323822684ef1266ef4125120cba66e2b9c",
+      "phase4_sha256": "391e0d2942242655e043798ddc29038eaee8fc97f4273b7a82dc8c3eab76324c"
+    },
+    "engine/collectors/entra/devices/enrollment_restrictions.py": {
+      "phase3_sha256": "c28462a922e424d49b939d4a679f422beca5662ecc72180f1c6bfc5da9ead478",
+      "phase4_sha256": "b0defc2ea41415e4c0f73558562146a66ff87d863c46ff7e16836ae6f16e8372"
+    },
+    "engine/collectors/entra/domains/password_policy.py": {
+      "phase3_sha256": "a22b7252081d7ac4e7cbc5d459410e384bcf6ca441b883d27715d7cb24b3aaa4",
+      "phase4_sha256": "d880a0b582573c53440ae367217f980b6cc037271c9c90006ac1caa7a133e44b"
+    },
+    "engine/collectors/entra/governance/pim_role_policies.py": {
+      "phase3_sha256": "4201803da14991c1614b75432bdb6c76151e7bcb5bacc90895079fb4a6be698f",
+      "phase4_sha256": "4ade0bcf358151006321e953dcd28c246b14731234b1b7d87f4cea2a0160a952"
+    },
+    "engine/collectors/entra/groups/groups.py": {
+      "phase3_sha256": "e5e04edd3e5ea538c098ce4ad3691e62ba4227097d5552555c99046a66a8e27d",
+      "phase4_sha256": "36f59c4ca37f5d232e8c15543cb875219b7ca265c3b64ad9106fefbec32127cb"
+    },
+    "engine/collectors/entra/policies/b2b_policy.py": {
+      "phase3_sha256": "20f30882075f0e3ef5c49659352e1d9a7bc4897e36be9adaa9754d6c40ab9959",
+      "phase4_sha256": "fd6d54ff4b7be6aac4ca60d6e5a8d24edfc98b89dcf8d7db9289a8031513f48c"
+    },
+    "engine/collectors/entra/roles/admin_license_footprint.py": {
+      "phase3_sha256": "55f35ab74af11e4d066df010c7fba454676cdeea492517e61c36b335481ed5b5",
+      "phase4_sha256": "f9972c2a64c659a893dc5da806c51997d256cc88f42c30353a4a40d25685b3eb"
+    },
+    "engine/collectors/entra/roles/cloud_only_admins.py": {
+      "phase3_sha256": "67449351c49fe66e3dd0a81ff6b351126a0b9282f20212c6a08a8c37bb2d877a",
+      "phase4_sha256": "1a80f5a02ea1fa1e164fa2828ddac0efd25ba03bf26c80f11403d9080b001139"
+    },
+    "engine/collectors/entra/roles/privileged_roles.py": {
+      "phase3_sha256": "d3529ade1bef16472b2c5db95ea75785a29bb00edd760a7973d3945c1e0a8897",
+      "phase4_sha256": "7779d186ece777aa39a1d06b3c9f3738d9aff3be2d32d8a7f21e3d4637968b51"
+    },
+    "engine/collectors/exchange/mailbox/mailbox_audit.py": {
+      "phase3_sha256": "9da5284f15839d6647f28ba780a33ede2455dbb1184376c7d237ea9adf4e5f12",
+      "phase4_sha256": "c2b32590dbd1c7a81cb0bcb96269dc72994723ce0eef78e497faae43483cbd7c"
+    },
+    "engine/collectors/exchange/mailbox/mailbox_audit_actions.py": {
+      "phase3_sha256": "9db6a1bc4b537946fb3a25d466d35913e2f798d7cefb681c5cbe632c46288463",
+      "phase4_sha256": "6a2acdb4de4fb07b38936e5302fa36c4d61a636b75c74743eaa9e29b500d3d92"
+    },
+    "engine/collectors/exchange/organization/organization_config.py": {
+      "phase3_sha256": "31b03377786b7052227e087d9cc4e70ef62d8b12a8b6ed660b7a55458767bef3",
+      "phase4_sha256": "aca45f949a273984a54158ade51f8e86fae03bf33bc0b9afcaddbd7e677cc6fa"
+    },
+    "engine/collectors/exchange/organization/transport_config.py": {
+      "phase3_sha256": "ade5a9b435f32ab84ce9360eed0f84fff049dd9312fe83c93ccc724bb096ca09",
+      "phase4_sha256": "ed0c3abf90e2b661049e8abf00dfd634b4cd3fba08442375fa3bdcc23e4eb281"
+    },
+    "engine/collectors/exchange/protection/anti_phish_policy.py": {
+      "phase3_sha256": "58a17fa7d7f56ba7bb498860de0a01cd1a77cafb74e3477effd50785a3ed5af9",
+      "phase4_sha256": "27d47b8011e974e22b3bce2b54b36628af6d2550debdbb502343e36308aba697"
+    },
+    "engine/collectors/exchange/protection/atp_policy_o365.py": {
+      "phase3_sha256": "881c12af716a43f3b76538bd0959caf811df595cc29f1a39a270fdf7a0224ccf",
+      "phase4_sha256": "2275a194880ed022c38ca49f6530ee985135b65127df3ae220c04949144c7268"
+    },
+    "engine/collectors/exchange/protection/hosted_outbound_spam_filter.py": {
+      "phase3_sha256": "bb95d0d7aba8a7df41bf41a36dd1a5d6d313df2cc3f022b107e74fed296e9db1",
+      "phase4_sha256": "21ed96e397145789e1bd3b277a78e656f3f3f84998707364a9e59b5492ee6283"
+    },
+    "engine/collectors/exchange/protection/malware_filter_policy.py": {
+      "phase3_sha256": "73c6586266d990b27022f4aefd4309ef08d23c276effc019bc10d9f903af9863",
+      "phase4_sha256": "ad605fdd48059029946bff7d8d3b279d2520638204bee0ae81c612cd647bd3a9"
+    },
+    "engine/collectors/exchange/protection/safe_attachment_policy.py": {
+      "phase3_sha256": "1233b729d194459e79ef1d3f2795b73f10db3820d62057cd85dcfe433d769f4d",
+      "phase4_sha256": "c75ce2aa7cb6d2b27a8753c1dff0cbaa6c36eaecf332a38d0977a977ac94eb8f"
+    },
+    "engine/collectors/exchange/protection/safe_links_policy.py": {
+      "phase3_sha256": "bc9e7e5dd60196187209350768ea93964c8a913ef7215b8d74e9e5b8953686a4",
+      "phase4_sha256": "4f3980228b763d1d72f471494ce0f3e809a6fd21f75d6f73804c6ca3e3e3c181"
+    },
+    "engine/collectors/exchange/protection/teams_protection_policy.py": {
+      "phase3_sha256": "b9194ec99bce1439dfa5a14ff67bc5fe3bbc2988e5e150f824e60db378f4badb",
+      "phase4_sha256": "052a94eaec041cc29ed3e89e32771d11c55e119baef04de5bbf18bec2a3db9f3"
+    },
+    "engine/collectors/exchange/transport/external_in_outlook.py": {
+      "phase3_sha256": "0f16848cc82a12e26bb2fe72b652a7ea22b37ed159ad9cd87a9dc0b69ebff765",
+      "phase4_sha256": "add0254b7cdd21674e22e8a1465a81795758ca8de97e6eb76bc221640768e1e4"
+    },
+    "engine/collectors/exchange/transport/transport_rules.py": {
+      "phase3_sha256": "6a9e5b3e4c4fba2731113fa8717a1856061fa4f19809b3d1995bd5fd54a249f5",
+      "phase4_sha256": "e9f3b03a0d286829f4552116e15c8830f5f3d39d21df9577514330ecc4882934"
+    },
+    "engine/collectors/graph_client.py": {
+      "phase3_sha256": "acc9aed81241ca4145a9baca57a7277fe99407b6421d44896a53c169d2208fbe",
+      "phase4_sha256": "297b5dd3f0b718c23d2f55e27757c3188b2838d3c5723e278ed85e53fc9b3d1c"
+    },
+    "engine/collectors/powershell_base.py": {
+      "phase3_sha256": "ffd0d23e09a6d6807e613d2ffd56ae88729315503147f2321ac5f281f8a79baa",
+      "phase4_sha256": "c4004be9a3cd5f824f0612f4763a8e81ab0cf1fffbfb38935b33f003d3f86c87"
+    },
+    "engine/collectors/powershell_client.py": {
+      "phase3_sha256": "d95d8df8f87c08d1f2d36a03bfc26094a8535930d6f95a13665f8444f8470e17",
+      "phase4_sha256": "76d81c422e95e4f447cff1b5e3599dc480bfff5d934916e7892976002ca0b464"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v4.0.0/5.2.2.3_block_legacy_auth.rego": {
+      "phase3_sha256": "f8c3b0b9fd5d68a1e3c400c24da1eb43d5d79ca88a7947866f0cecbde2935541",
+      "phase4_sha256": "387d7ad2020ba51ee0d23a66bf1c33a05b9e42a07776858334909fc7825e6966"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/1.1.3_global_admin_count.rego": {
+      "phase3_sha256": "a501ada6f7e04d75fca931be0cdb918c0ac861e589a65fe31fdf3f70b4dc9821",
+      "phase4_sha256": "3b60f8409099364aeec21e94f576c5aa504513a936b1dc92ebf2d96693fea0df"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/1.2.1_no_unmanaged_public_groups.rego": {
+      "phase3_sha256": "73a493bc2e52fd206be1a1d6606771e3dcca258dd2cc8d243adfb931b592184f",
+      "phase4_sha256": "e15c8f23fd9b8dabf89c1fa3ad557978ba0bb26bcb55d2137e569e398e0bbc85"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/1.3.4_user_owned_apps_restricted.rego": {
+      "phase3_sha256": "9813d3a0acaf4fbded95e92a4b6064f894110d95adabd6126f8c6603c366b82e",
+      "phase4_sha256": "9b7deae0021cc57c38b63e1fc5cea6e5df3e0bc4051e7160458ddc2c45533375"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/2.1.11_Comprehensive_Attachment_Filtering_Applied.rego": {
+      "phase3_sha256": "a3d7496f83d6c7c7307247369ffb10e38f9b852df2d0b516460c3a44481aca01",
+      "phase4_sha256": "a0b5e129206a32e1289a4a78bd2542f7fe2a8eebec4d6bdd4ff5d23ad51b2156"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/2.1.1_SafeLinks_OfficeApplications_Enabled.rego": {
+      "phase3_sha256": "9d47135574a17ae29ac53b38c910bc8703c0d960c5744469a7db94b6bceddc2a",
+      "phase4_sha256": "9a03c0ac45302187cd59fb8d6cb68c31c2d6d020d3c06d914f96b0ab561c2706"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/2.1.2_Common_AttachmentTypes_Filter_Enabled.rego": {
+      "phase3_sha256": "639a86b69e9415be6953c2546b500926259d052d49e8b12995231ed6ade30d5a",
+      "phase4_sha256": "399832a646e7a9f04e84ffa1f4bff568e0b2dc72199361ffbbfd9d85a28e3d06"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/2.1.3_Notifications_InternalUsers_sendingMalware_Enabled.rego": {
+      "phase3_sha256": "99c114607b9078190cbc17b7d05065b4a5cd6e8e4584672bf93479085ab3d1b6",
+      "phase4_sha256": "17b1b711ef9fb256a332b2903bfcf48a34ee31883d4743f87384349627a1fb88"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/2.1.4_Safe_AttachementsPolicy_Enabled.rego": {
+      "phase3_sha256": "f1689fa9f1a86f07e78fd2300a5ca347af4322188de1ecc34a6cf705b8df1e62",
+      "phase4_sha256": "3fac3d25afd5523ae62905a23875dee09968230a80e416fc6deb3b8bfa7f0a62"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/2.1.6_Exchange_OnlineSpam_Policies_Notify_Administrators.rego": {
+      "phase3_sha256": "96beed7b6085911d9dfe2eba9627f8e7630b7d353af092ef3aa6bcb72065bdf6",
+      "phase4_sha256": "a43b02c70f2c27608da2c194b08cb97689b759caddc6fda0824c6cdf4eebcd4a"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/2.1.7_AntiPhishing_Policy_is_created.rego": {
+      "phase3_sha256": "12778bb8c6c2c9d1d7b1f57ede8166585db6ec0839091beec8eee55503683a0a",
+      "phase4_sha256": "778d110d670bcdf0a91f3ad0d06e77f61ab3120edd74b392d6af3d4f0ee15a1d"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/4.2_block_personal_device_enrollment.rego": {
+      "phase3_sha256": "52b8d2f9b1cafd3a6eee43bfeb22b1384080d3e3721547c85e80cd8ca0945b9e",
+      "phase4_sha256": "0d76d4bb0d18fe2da9ad7a4ed19133bfcecc23f6df92071615f230858f24d17b"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/5.1.2.2_block_third_party_integrated_apps.rego": {
+      "phase3_sha256": "7f936e57488b9885ed559bc200ac289802897798694fa95e9f4ee22fe689977f",
+      "phase4_sha256": "1c742906fecaff633a5699c6ef11d66773dd447503b0bdcbac1458f0fe78da66"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/5.1.5.1_block_user_app_consent.rego": {
+      "phase3_sha256": "abe65adc44d8328ac65e1d14d49edd5d3a17721c85aaf29b1103d8fb4c5a7485",
+      "phase4_sha256": "1de57e04618549b6ade19dd5e13abf62d631af676f6909b83075cc08a0f081b1"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/5.1.5.2_admin_consent_workflow_enabled.rego": {
+      "phase3_sha256": "81554280eb1fa04e5d36bc81293080af267f6527965269342ab6d5f120752348",
+      "phase4_sha256": "5070090ab68eabed375aed70afcb7d68defc96506ec4cb479a4a058ffa72ddb1"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/5.1.6.1_restrict_collaboration_invite_domains.rego": {
+      "phase3_sha256": "04d5873b9ac9d43010d5857c9843d1e41dc9a56addffc7934f3ea0adfb2bd5b6",
+      "phase4_sha256": "43e4a79c27b1e77aa2bce376d8d40e9e202bc12e6cb38e3982d30a85ec5caf13"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/5.1.6.2_restrict_guest_user_access.rego": {
+      "phase3_sha256": "cebe7646dd6a501eecc469d4aac4a2db6d6562778849781a73334c4879b89139",
+      "phase4_sha256": "2071e0ead8f5ffa56688b4ea980d33d3babef6ef214b6ba09268e6f818f1471b"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/5.1.6.3_limit_guest_invitations.rego": {
+      "phase3_sha256": "7e58cc3399dbae02d31e1a66eb7fa9f36349f351dbc32bae18839da8b07318d6",
+      "phase4_sha256": "3f71d9ab501264be7b5006770c84defd7918a576c418274ee9e61093d229547f"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/5.2.2.3_block_legacy_auth.rego": {
+      "phase3_sha256": "ca83b396ecd5477d99b6b0bbb2dc762d58a3dff670d31076ae13479e4d1adc9f",
+      "phase4_sha256": "c5c059517fd2f89899de32bce18d3637e808e37b8f261fe10274d3385a498996"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/5.2.3.1_mfa_fatigue_protection.rego": {
+      "phase3_sha256": "002bbd0358be8cf2a408b0bf8e0ef88c86e5069b6cce1cd2561059d117165848",
+      "phase4_sha256": "3a7e2def3ea704cb288f2ab780f84d885466a62259d7e8ac7ea558a030b35dc7"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/5.2.3.2_custom_banned_passwords_enabled.rego": {
+      "phase3_sha256": "e677b2e0c56431fc47afddb10069a93c9811897d79ee4b6aa803a95d86990114",
+      "phase4_sha256": "19a36000e20ef0c93d5b41a79740f0828bf34912a1d3c096da178e430ef8aa08"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/5.2.3.3_enable_on_prem_password_protection.rego": {
+      "phase3_sha256": "efbfe6f1306bcfaae38bb74f9ca75b1bdfc59e05f3c76757cca8b29bf4b81822",
+      "phase4_sha256": "c2b2d462a1cef155187075123e54584e9cc4ab14cafffa3127c0e8d8a20a8485"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/5.2.3.4_all_members_mfa_capable.rego": {
+      "phase3_sha256": "938d066344c289859374ff838f3fd06d23247d1ad33290fed969f6d66d2a35ee",
+      "phase4_sha256": "0e4413257a15becd8809f086f1ea44e4a0d514b560c1a8bda3426e2e927c71e5"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/5.2.3.5_disable_weak_auth_methods.rego": {
+      "phase3_sha256": "498337acfa6c7eed59d11ed6ccf3b42c778625041889eb0e09219f84eefbaaa9",
+      "phase4_sha256": "0f1e65e9bb6c56ae094eddbc922b245e7febc3ca4578abc2be044a0c7c6f571b"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/5.2.3.6_enable_system_preferred_mfa.rego": {
+      "phase3_sha256": "73a72067642bceb6619f5054f2f3ffa250f8629c2a9941adf66a5e2fe0efad49",
+      "phase4_sha256": "bfe24535f6fbbabac99a3017a073ad5c79ad52dbb9c8d5ec689793c382854de9"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/5.2.3.7_disable_email_otp.rego": {
+      "phase3_sha256": "afc6b482a368223d50663bde1ff82523ffa0668f2e70ac1847331b690ea8c1b0",
+      "phase4_sha256": "974ecd995a6542edb94b73e457c102d83adde3291bbd555cc45fcd5b5046bbec"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/5.3.1_pim_enabled.rego": {
+      "phase3_sha256": "fc2ba501abe90edb0d76b9e0d15d9ae07f6430fb1e0dca5e1842de86eea6e132",
+      "phase4_sha256": "779ae967b4522c2ee4747e07d6e96203184e4300f1af891812a22a62fcd4df08"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/5.3.2_guest_access_reviews_configured.rego": {
+      "phase3_sha256": "f4b179659509098b6f915a49cd337e8ad9340c0771be752d097e90ffb5b19a1f",
+      "phase4_sha256": "a9829e41928788ca461f7be4cc5abef92dd8995882be0b3e5617f66fbd7b12b1"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/5.3.3_privileged_role_access_reviews_configured.rego": {
+      "phase3_sha256": "08af2ea291d558ddc314654af308672a2853d565856a26a08e3ed30648153c28",
+      "phase4_sha256": "745afe87036d5727873fa286afd6d89a633679bf9e8d89ecbcc1c4891f55ab7e"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/5.3.4_ga_activation_requires_approval.rego": {
+      "phase3_sha256": "f38b569b3e93f9d5f6178dfa2258e435e9fa1e4995fa7937604bca231995db4b",
+      "phase4_sha256": "b6ad185cfcfd61af04323c26f40b778f9ac16dac32308706f6c42585d302368c"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/5.3.5_pra_activation_requires_approval.rego": {
+      "phase3_sha256": "4b9179d64720b7dfeaeb94c25cc3f4ea1e105f3dc48c822328a7a04315669df5",
+      "phase4_sha256": "13da0250fbcf64d37db24a2f967d1e07c038cbe5af18c4a1e33381cfac00bf47"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/6.1.1_audit_disabled.rego": {
+      "phase3_sha256": "475e7f0ef73bf8f8895af3576fe093003670f00ebad6cd99d868717db369c24d",
+      "phase4_sha256": "be7102fc3c46eb63e7770fffbe15d8411c6d84f4f321342f1ef4b438d6f9a18e"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/6.1.2_mailbox_audit_actions.rego": {
+      "phase3_sha256": "4d12f24238d593b04eb3808d3626ec6697f22d01b5335cce048024ba9b234069",
+      "phase4_sha256": "5a47564cfdbbcd2aed912fefb92a87a106d118b6c769605ff76de680d2fed316"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/6.1.3_audit_bypass.rego": {
+      "phase3_sha256": "1739259c233a0693da537453bb0343650eb18f8e9c80573fa6bb4bcb91beb45c",
+      "phase4_sha256": "33fc14a9ec540acda39f52b75da771c7f4a4c551c46b7f3664d339bfe83c857e"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/6.2.1_mail_forwarding_blocked.rego": {
+      "phase3_sha256": "211cc0e57440b2da99f3763f5d08d6ff2313e061549bbd0c92da2eef8574db51",
+      "phase4_sha256": "3e7631324e15f5d22075e764df6b14f26a37550e412c850960e45786414e3279"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/6.2.2_transport_whitelist.rego": {
+      "phase3_sha256": "2ca1d2183c4958cd7d1c3ff27671b7202468180f1a810a5fbd70b41b16722143",
+      "phase4_sha256": "cb7116a80ad752740ffaf70c39e0aaabef0b0f4a6b535220f199380cb71df51e"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/6.2.3_external_sender_tagging.rego": {
+      "phase3_sha256": "ade06d7ed8433695f6c6affc1900119eca42d46482c1b83d36f340cdeed7fd37",
+      "phase4_sha256": "be69a59f1fd0579b2bb0499c8855eb6deb58e6ffc3cf1f76f77595653a36d596"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/6.5.1_modern_auth.rego": {
+      "phase3_sha256": "566e42303a2d2295fb5e52ffda636e337eb3720cee52b63d21a4b115bd5e1bc1",
+      "phase4_sha256": "a175551e3800a417f0fbd9c85cc600199ec439c63b4ca5ed039eba4d261e11c3"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/6.5.4_smtp_auth.rego": {
+      "phase3_sha256": "f495c8bf9311ed58d6d8f464c79ea402a3da70b84a59e9ff767d6f75d57bc51f",
+      "phase4_sha256": "ad3ca8d7095950bfa50d545fbca9ba99ddf0105fe9dfcf24937557faf067d382"
+    },
+    "engine/policies/cis/microsoft-365-foundations/v6.0.0/6.5.5_direct_send.rego": {
+      "phase3_sha256": "d0ba213004c51b2172c05b8393f6695f7bcb27e4d53fdd9329ff0f38675ae8a0",
+      "phase4_sha256": "99a93c347a8193d418612719f85885c81e45ec971cccbee2d0e704f9a1354c50"
+    },
+    "engine/tests/conftest.py": {
+      "phase3_sha256": "11c9a4a917f84893b94fab5da48aa7b45db19e9d9777144d728bc19fa96be4fd",
+      "phase4_sha256": "7fa04714fa792a62b7f4fa935bcb56044148e140ebb1bce2f44eda18509be496"
+    },
+    "engine/tests/fixtures/crosswalk_semantics.json": {
+      "phase3_sha256": null,
+      "phase4_sha256": "64dcf989064ced4e72b4590a3ee013fd18e4bdf495799481b11da1e43adf69e0"
+    },
+    "engine/tests/test_crosswalk_semantic_coverage.py": {
+      "phase3_sha256": null,
+      "phase4_sha256": "74c65dee4245c2d658bfffd84ef9d28ada080de2287b08aa116355129ad3307c"
+    },
+    "engine/tests/test_crosswalk_semantics.rego": {
+      "phase3_sha256": null,
+      "phase4_sha256": "8c1e2ba8dad618c8777128e6b057731b60a016ae0d5258943754f96880aef5ec"
+    },
+    "engine/tests/test_phase4_collector_contracts.py": {
+      "phase3_sha256": null,
+      "phase4_sha256": "c336a93c10a2371925dfd70d50198436d2127d76056a9b001d80174883c2c46e"
+    },
+    "frontend/package-lock.json": {
+      "phase3_sha256": "90071d08856bb0de5247db19715ab51c4d9e70c09b8e9541033d76cde20d0f16",
+      "phase4_sha256": "d75ecf6da52463ea096ccbaf80c7ecaf3b533a7bf78f59f9683e64ca9a4f8d85"
+    },
+    "frontend/package.json": {
+      "phase3_sha256": "a5f0326ea64ac9dedd27f54cbd7340ecde011266b79cf53fdf9313225653bd53",
+      "phase4_sha256": "70ab71bb8456edcba05598f90e666be35288ea5282246e1f7d0e168fe44564f6"
+    },
+    "frontend/src/pages/AccountPage.test.tsx": {
+      "phase3_sha256": "32a92355feac224b39ad51a2779e945c3791cb53dafb29db5c72f2e71c5353e0",
+      "phase4_sha256": "96791c3bdc7589f020de9c6dc7b59b6435def012dc5df5ee9beaf7f7fd6da417"
+    },
+    "frontend/src/pages/AccountPage.tsx": {
+      "phase3_sha256": "f97c664943c7cec72cae76225da935611cf04fd671ec40c2640ef6d449c5fb5e",
+      "phase4_sha256": "2ed735ef6265b898c0bdd55cff93419ac38c2f1115927ad1407b677064035cdb"
+    },
+    "frontend/src/pages/Auth/SignUpPage.test.tsx": {
+      "phase3_sha256": "ba0153a522e839318d9df1c50af4ebb070bb7986bfa1e1422a73d09d7d48764c",
+      "phase4_sha256": "ef2bf14eafa58ea3631c548e3d49a648fa5ad6e417de43d484bdd6e2a0749443"
+    },
+    "frontend/src/pages/Auth/components/SignupFormPanel.test.tsx": {
+      "phase3_sha256": "e8b045c7792e3d3082dbf4e7a711aaf67f7b35289989c07d0175542cda6db476",
+      "phase4_sha256": "e3119587751d9e02ddceafc1c98635aa9e2318f8cea69a4debb94cfa76777199"
+    },
+    "frontend/src/pages/Auth/components/SignupFormPanel.tsx": {
+      "phase3_sha256": "c8ae367d51a4fd5a1be976cfb8577174a533802387f3b28ff1129fc784081fe1",
+      "phase4_sha256": "aad78dc7a524a75f60a5a4562da14838680add603421d9806992bc7420a70f5e"
+    },
+    "tools/ci/container_smoke.py": {
+      "phase3_sha256": null,
+      "phase4_sha256": "41abd84895b31f034918ff54123a935b59afc76e95a41c4f6f412ced16b8023f"
+    },
+    "tools/ci/install_opa.py": {
+      "phase3_sha256": null,
+      "phase4_sha256": "0878c07a0b6c59aa9ca060bac8842ae5e9d5ec805a1e8ed23fd32ecb58bbd31e"
+    },
+    "tools/ci/integration_requirements.py": {
+      "phase3_sha256": null,
+      "phase4_sha256": "9e76dcb3541aa70becb7259f1b5a63ccb39710da2368ff9a7360b2f86d059019"
+    },
+    "tools/tests/test_integration_requirements.py": {
+      "phase3_sha256": null,
+      "phase4_sha256": "da785c0745c1d6897469838204474ad7a53f07fe435fc00ec82c6e90ab80c76e"
+    },
+    "tools/tests/test_opa_install.py": {
+      "phase3_sha256": null,
+      "phase4_sha256": "0898d7ca65ffaabb19286daa0e9e6d889af06ddb65814aeb8483f052d072a415"
+    }
+  }
+}

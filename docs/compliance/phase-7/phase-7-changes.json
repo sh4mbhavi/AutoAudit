@@ -1,0 +1,419 @@
+{
+  "count": 69,
+  "files": [
+    {
+      "path": ".github/workflows/ci.engine.yml",
+      "change": "modified",
+      "phase6_sha256": "64bf9f41d6557b221071b399fff1c3e86cb76b0ea3f4f6e3ede1d1b30ae8f2d7",
+      "phase7_sha256": "6e92b24267a4808a0763bdaffaf286d9017143bd5caa72073f267416776a296b"
+    },
+    {
+      "path": ".secrets.baseline",
+      "change": "modified",
+      "phase6_sha256": "469dfaca5b4147a0e9aa5617d48c01764f16e25bd2a42b536c39e014a5b16c62",
+      "phase7_sha256": "8285585926df3d71e18cfab89c40de46ff24a1d481ce53ef6648c8855917fe1a"
+    },
+    {
+      "path": "backend-api/Dockerfile",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "7c984fc6bb5dbbd2ce498614ebc7ef5992789268ccbdb3eb01bf475142c570f7"
+    },
+    {
+      "path": "backend-api/alembic/env.py",
+      "change": "modified",
+      "phase6_sha256": "3cbf08e76ce3b7531c19d20e3826232fd9a51427ea1042006e8d62026b40f5d1",
+      "phase7_sha256": "5b4d09450cc39266bbb5a59329608aad4f31f02e3c7a6ad40cef7f630a72734b"
+    },
+    {
+      "path": "backend-api/alembic/versions/f7d2c48b1a03_phase7_audit_evidence.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "c4c4029a7508bab4c3ffb53e2be05c2b1aaa53d748fcfc7c00a9bc2e49e5af9d"
+    },
+    {
+      "path": "backend-api/app/api/v1/evidence.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "594ae8be1d0f6fc38d38b095da81d197729d6a30d073239b42cd538438f8836e"
+    },
+    {
+      "path": "backend-api/app/api/v1/manual_evidence.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "c066291539cd68cc592e0a0a809432daaf31008e5befb63e61c95aacc581fbcb"
+    },
+    {
+      "path": "backend-api/app/api/v1/manual_verification.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "05eab3465def7164e13b460b177c04cbdacca031860a56838affc986079acb3d"
+    },
+    {
+      "path": "backend-api/app/api/v1/router.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "31afe3249bcdd846906fc340ef4c6919ca7ea0243171ce5711ea42c3cd1c35bc"
+    },
+    {
+      "path": "backend-api/app/api/v1/scans.py",
+      "change": "modified",
+      "phase6_sha256": "a55cb925d574e6a0603dadd1a20fd9dd03d970c30d52284730454f0dee0024f7",
+      "phase7_sha256": "aae28a742ffaf1aeb4c22ddc41bb545ac54684d302e5a56e3332a707041d0de6"
+    },
+    {
+      "path": "backend-api/app/api/v1/soc2.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "0c02f637fb0284670e080172c5c15d8e13907beceff418435d84ceb79da983d6"
+    },
+    {
+      "path": "backend-api/app/core/config.py",
+      "change": "modified",
+      "phase6_sha256": "ce6f78775bda19b802caa6161fdc8778a585214b8337fbadebc08d3ce624bc71",
+      "phase7_sha256": "db87cde4edd2890cfe75e2f7f42da1f1a2ce8d630c86caa4eb8b590b4bfd4796"
+    },
+    {
+      "path": "backend-api/app/models/__init__.py",
+      "change": "modified",
+      "phase6_sha256": "678c33a3abd2e84d1e1008d8341f273d88bf9ded76ddb5ee45d58d36df110d8a",
+      "phase7_sha256": "d4d95c38346dc66b4136cfba149722f09935ef9dc8835f78266782f1917ebc08"
+    },
+    {
+      "path": "backend-api/app/models/compliance.py",
+      "change": "modified",
+      "phase6_sha256": "6610e2f077d4b0883f8dec83a66a82618ddf7e034dee65e364f964a3f921795f",
+      "phase7_sha256": "3aa3d96459927d30caf97726df48042307aeee104e78bdb743894815c27f0c2a"
+    },
+    {
+      "path": "backend-api/app/models/evidence_artifact.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "bb69e996f239b400347ed3f9e110f7a6b3a73be39d863a5ac32ce81b81674ede"
+    },
+    {
+      "path": "backend-api/app/models/evidence_audit_event.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "c820cd52ea27d69abff5119c93fadce218cc61886ba30356ba86fd776b02be87"
+    },
+    {
+      "path": "backend-api/app/models/manual_evidence.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "2ccd99d5a4083d1a082d65f296b9a932ae635498034d6eec5f8616bbce21edb7"
+    },
+    {
+      "path": "backend-api/app/schemas/evidence_artifact.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "98f982fdd0ee79c3c821bc2cd4899968695e28d0cea3502eb614e70a6b21186b"
+    },
+    {
+      "path": "backend-api/app/schemas/manual_evidence.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "78b2ed6ec34290e8a9e9d44735114a2dc88663846c001a9d4a1133fe84b2c448"
+    },
+    {
+      "path": "backend-api/app/schemas/scan.py",
+      "change": "modified",
+      "phase6_sha256": "c3197c2da90c195d0451df38e52b58334b6f48a684d7fc3f85d0d512dd68517c",
+      "phase7_sha256": "4ced2f4253475bfbac0086afee0d0dfcb4554df35fee344546e03e504c5815b4"
+    },
+    {
+      "path": "backend-api/app/schemas/soc2.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "52e4e96b35104e6ec13d10b21c0baae1354fda4d0a312559f68a7441c8d38cfe"
+    },
+    {
+      "path": "backend-api/app/services/crosswalk_reader.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "d4b9e7566c86454f2d271ad738de59bbe3c56f2c0fa5968689fd5336d14b4677"
+    },
+    {
+      "path": "backend-api/app/services/evidence_audit.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "0e34c8e993c2f87b8e81d6a9ff935fe4a72d3a92812aac3d14be47b111f3f7a2"
+    },
+    {
+      "path": "backend-api/app/services/evidence_processing.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "3eecd1ed35bd5ca3db74f38dd98e1f8e59ec7ec9712f76eb0e0b4fbe67f78760"
+    },
+    {
+      "path": "backend-api/app/services/evidence_storage.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "c40d0e7c9f3702e5f6906a311a0cb543642c7fae079f2866e88562cdbc2823aa"
+    },
+    {
+      "path": "backend-api/app/services/manual_evidence.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "a62f26477af892c76e627a26adfcd710825f9b0e2271c45899304ac55b36224d"
+    },
+    {
+      "path": "backend-api/tests/test_manual_verification.py",
+      "change": "modified",
+      "phase6_sha256": "8ffac000e75bf6173c782eb2a3e74cc9876713c4c5f46cc496313773fb84753e",
+      "phase7_sha256": "48a57d0cf0e56dfdc693b48c2eed9716732be1be43cfefde973a04fbc33fa7e2"
+    },
+    {
+      "path": "backend-api/tests/test_phase5_cookie_auth.py",
+      "change": "modified",
+      "phase6_sha256": "41ac5d00da158c7050dc0d9c99fb8b413668b4d4beb6fab4010bb2a81993fc0f",
+      "phase7_sha256": "6295b2f6892b86bee90e28c04ac201cd138172e5fffa35a87febd3a0fffbc0cc"
+    },
+    {
+      "path": "backend-api/tests/test_phase7_evidence.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "68c4efbbf8abd8725d1abe1c7a39fa24f38f5c043eb6a0eb6d8e7453d7e8c2d3"
+    },
+    {
+      "path": "backend-api/tests/test_phase7_legacy_evidence.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "c31d8391df5a378800966f568e45a3f8fa10d8a7418bea0293cf0da903ec4696"
+    },
+    {
+      "path": "backend-api/tests/test_phase7_manual_evidence.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "947501a739056cafc63d11200f6751ad3f9d86bf85649078edcc849e873e8416"
+    },
+    {
+      "path": "backend-api/tests/test_phase7_soc2.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "2b461213400333e3782c403c56f92a96a150846cda2e5f38c43b6cf991ab7548"
+    },
+    {
+      "path": "docker-compose.production.yml",
+      "change": "modified",
+      "phase6_sha256": "b100fde91de1efdd51a41bb9ce62f355423344ceafe26cf416abf43ce2122911",
+      "phase7_sha256": "db4ae2a617cc7d11374a76b334714196c1be0d1b20076d7356b78d6cd937f3b0"
+    },
+    {
+      "path": "docker-compose.yml",
+      "change": "modified",
+      "phase6_sha256": "ddb5aa24308594c1a8a11fba23dcd29adf3440cc9d48f2eaa74bf9794c947fd5",
+      "phase7_sha256": "52233d6d1a7e322f68c569b7cc00c958495bf356c8ca38e26114ff07e5965fdd"
+    },
+    {
+      "path": "docs/CONTRIBUTING.md",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "5b6f0de92d6c01e344396a731c269026e2e6e254576cfbd955098527f73c7bb0"
+    },
+    {
+      "path": "docs/compliance/phase-7/README.md",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "8a18abfe42e77fe08193fcf2ce9ea44736fe8764a6caaabc3505378ed3052935"
+    },
+    {
+      "path": "docs/compliance/phase-7/coordination-review.md",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "92dd2b383ce3c0df637ec8c1e0a50f1b4713e8cf502c5d6ac84cbb7e24f97057"
+    },
+    {
+      "path": "docs/compliance/phase-7/coordination-snapshot.json",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "e22044d0e3170f30423fad1e31d50d866f15a8f79d04762823df8a3714b1e9aa"
+    },
+    {
+      "path": "docs/compliance/phase-7/phase-6-snapshot.json",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "f47a7378099fe346c56100c97ea22d696f14ab8844f1b2d8b2348d55461f02ae"
+    },
+    {
+      "path": "docs/compliance/phase-7/phase-7-changes.json",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "7b3aaa15e44574becc086b0b5c61f7ab8437233a3002ac837dd02d8e60aacd61"
+    },
+    {
+      "path": "docs/compliance/phase-7/verification.json",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "e05d388f64377b998f02a2e847213c96ee89f0d803fbe70f317c7d32dc5f0144"
+    },
+    {
+      "path": "docs/compliance/phase-7/verification/backend_tools.log",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "42939f3dd7e55777d98fee11447067a8ac484574601a9c438d1907e5c38023c3"
+    },
+    {
+      "path": "docs/compliance/phase-7/verification/bandit_backend_app.log",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "docs/compliance/phase-7/verification/bandit_backend_tests.log",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "4fd313b4a38468cfcc20d78f6de9342aeba2f7fffd4cae5d6f0631ceb29d7b92"
+    },
+    {
+      "path": "docs/compliance/phase-7/verification/docs_check.log",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "3e3d56eee8d7e46176f07c229cade1061612f16c0aaf132e65d127b4b32c930c"
+    },
+    {
+      "path": "docs/compliance/phase-7/verification/engine.log",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "a95ef8faec20dfbc0d30c67332c2252357afd20ab755235535e32a68e2cec2dc"
+    },
+    {
+      "path": "docs/compliance/phase-7/verification/frontend.log",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "4900fc8ab48940b6368946e08d3f12380784e220cbfc8a6744f7f703d45aeb4e"
+    },
+    {
+      "path": "docs/compliance/phase-7/verification/frontend_build.log",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "0f752daa335c3f0ce87ba63e74c2328d1c044768b3bab717d35b98fafeeb7e18"
+    },
+    {
+      "path": "docs/compliance/phase-7/verification/frontend_lint.log",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "6c8b219c434e89ec51ffbe8089ccb0d42dcfcf73dd1baa0dc56c6b786bcfa617"
+    },
+    {
+      "path": "docs/compliance/phase-7/verification/frontend_typecheck.log",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "857e7fb3cb4042eb21204cc9ef932bdd62a51348888d4d9a2ba59ced9d8fd8fa"
+    },
+    {
+      "path": "docs/compliance/phase-7/verification/precommit.log",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "00750c0ccee80c95bdf37409fb60ea78a8ad5566aaf87283e202b8b739d16328"
+    },
+    {
+      "path": "docs/engine/policies/cis/microsoft-365-foundations/v3.1.0/controls.md",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "9c86aa0da1b39d0d0f292992415efcdae4f8d23e7fb3e5d3fe2530a704d680c0"
+    },
+    {
+      "path": "docs/engine/policies/cis/microsoft-365-foundations/v4.0.0/controls.md",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "c7f3de51f93d74720d12cc1f5aeaa1dd0812db7eb11a7ee81f029070e3680e0e"
+    },
+    {
+      "path": "docs/engine/policies/cis/microsoft-365-foundations/v6.0.0/controls.md",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "13cc0b083b076b90afcce9ede5bab52c9acbbd7858ff49961dd40ecea960f61f"
+    },
+    {
+      "path": "docs/engine/policies/essential-eight/asd-essential-eight/v2025/controls.md",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "e0ac4c218e278c248d0676533f3e8098ec2db2a94c5a7c79d263e54febaec434"
+    },
+    {
+      "path": "engine/Dockerfile",
+      "change": "modified",
+      "phase6_sha256": "0f0036bc5535c0a9568301cc2b37ef57214712fe7ad18da6dea97082e80b3ddf",
+      "phase7_sha256": "b539ab2207978880ccbe4105e4b2d83e7e3bcb10e810c05e701df354f720e10c"
+    },
+    {
+      "path": "engine/mappings/soc2/common-criteria/v1.0.0/mapping.json",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "5b22a1d4a74db1f0ed585a69420157c1172c953e1f7f485ca883d5d797b991b8"
+    },
+    {
+      "path": "engine/tests/test_crosswalk_semantic_coverage.py",
+      "change": "modified",
+      "phase6_sha256": "8878c554a3c67f87af759eea81871213260ffdc529c65c6a4fa8682589f74dde",
+      "phase7_sha256": "55278c4d64cf2d1f3afcf53d12bd317bc68a626c32d7769460798b591539e3e2"
+    },
+    {
+      "path": "engine/tests/test_phase4_collector_contracts.py",
+      "change": "modified",
+      "phase6_sha256": "aa0cf6d4381e25b55c6772d836065250c9f4d2b3d747b1adf43d0b2c76e49fc3",
+      "phase7_sha256": "c030a99b6ea667e50a3900a43a1616f11c83d594e61c1dba12a87858ee748faa"
+    },
+    {
+      "path": "engine/tests/test_phase7_crosswalk.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "9785a9f2b2f96ec8168f381f0443e7b36ff6f74fce3a70eb65da170af5b48a0f"
+    },
+    {
+      "path": "engine/tests/test_wiring.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "5be7963d07ab7deb5040ed01ad1c4a8f30d8475764cb7ace62d57e7556228bae"
+    },
+    {
+      "path": "engine/worker/crosswalk.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "4bd124390bcbd476adb9ca3ba8df2f2c55288d4113567955fd05b54c0916da57"
+    },
+    {
+      "path": "frontend/src/types/scan.ts",
+      "change": "modified",
+      "phase6_sha256": "8247f752ad459f0147e5f5f0b6da9c6f4f54571c3eb7b454676887ae70831d2d",
+      "phase7_sha256": "bf217174f0700d390dd767c19050d5b9e4c8b606714280d2984444c35f4a848e"
+    },
+    {
+      "path": "frontend/src/types/soc2.ts",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "f838eca38455d4b27e96c379ce6f41346267e8ddef0415f6fc0f9ae6a1649bcc"
+    },
+    {
+      "path": "security/Dockerfile",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "27c7abd1f90bc36aa8a79d568145157ebbfc6839c077132318e2d197ff9ed1c5"
+    },
+    {
+      "path": "security/README.md",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "b31c362ee8374773c9508c3cd96fdd1e0a2f6be00e6d12100a55971f54274190"
+    },
+    {
+      "path": "security/evidence_ui/app.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "90801f2a2fbb2d6e2ffafcd780a56bee108db8d139a6f0fce69fa58800d39c02"
+    },
+    {
+      "path": "tools/docs/generate_control_status.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "951d19a1164bc1fe5228c107c7b5106c6a710fc0a617bf88add7e94d8f2d1fb4"
+    },
+    {
+      "path": "tools/tests/test_phase7_doc_generation.py",
+      "change": "added",
+      "phase6_sha256": null,
+      "phase7_sha256": "d4a6ef6d8d6b968b1d4215c6f2de9bf761c1db56f30d7e6e5c490fd7199f7188"
+    }
+  ]
+}

@@ -11,7 +11,7 @@ Required Permissions: Exchange.ManageAsApp + Exchange role assignment
 
 from typing import Any
 
-from collectors.powershell_base import BasePowerShellCollector
+from collectors.powershell_base import BasePowerShellCollector, powershell_object
 from collectors.powershell_client import PowerShellClient
 
 
@@ -31,7 +31,11 @@ class ExternalInOutlookDataCollector(BasePowerShellCollector):
             - enabled: Whether external tagging is enabled
             - allowed_senders: Senders exempt from tagging
         """
-        settings = await client.run_cmdlet("ExchangeOnline", "Get-ExternalInOutlook")
+        settings = await client.run_operation(
+            "exchange.transport.external_in_outlook.read",
+            "exchange.transport.external_in_outlook",
+        )
+        settings = powershell_object(settings)
 
         return {
             "external_in_outlook_settings": settings,

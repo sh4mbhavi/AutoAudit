@@ -26,10 +26,14 @@ class ScanResult(Base):
     scan_id: Mapped[int] = mapped_column(ForeignKey("scan.id"), nullable=False)
     control_id: Mapped[str] = mapped_column(String(50), nullable=False)
 
-    # Status: pending, passed, failed, error, skipped
+    # Status: pending, passed, failed, indeterminate, error, skipped, not_assessable
     status: Mapped[str] = mapped_column(String(20), nullable=False)
     message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     evidence: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
+
+    selected: Mapped[Optional[bool]] = mapped_column(nullable=True)
+    reason_code: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    provenance: Mapped[Optional[dict]] = mapped_column(JSONB, nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
